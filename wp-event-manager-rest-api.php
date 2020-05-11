@@ -52,12 +52,14 @@ class WPEM_Rest_API {
 			include( 'admin/wpem-rest-api-admin.php' );
 		}
 
+		include( 'wp-event-manager-rest-api-functions.php' );
+
 		include( 'includes/wpem-rest-authentication.php' );
-         include( 'includes/wpem-rest-conroller.php' );
-         include( 'includes/wpem-rest-posts-conroller.php' );
-         include( 'includes/wpem-rest-crud-controller.php' );
-         include( 'includes/wpem-rest-events-controller.php' );
-	
+        include( 'includes/wpem-rest-conroller.php' );
+        include( 'includes/wpem-rest-posts-conroller.php' );
+        include( 'includes/wpem-rest-crud-controller.php' );
+        include( 'includes/wpem-rest-events-controller.php' );
+
 
 		// Activate
 		register_activation_hook( __FILE__, array( $this, 'install' ) );

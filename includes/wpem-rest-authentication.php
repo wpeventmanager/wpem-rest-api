@@ -512,18 +512,16 @@ class WPEM_REST_Authentication {
 		global $wpdb;
 
 		$consumer_key = wpem_api_hash( sanitize_text_field( $consumer_key ) );
-		
 		$user         = $wpdb->get_row(
 			$wpdb->prepare(
 				"
 			SELECT key_id, user_id, permissions, consumer_key, consumer_secret, nonces
-			FROM {$wpdb->prefix}wpem_organizer_api_keys
+			FROM {$wpdb->prefix}wpem_rest_api_keys
 			WHERE consumer_key = %s
 		",
 				$consumer_key
 			)
 		);
-
 		return $user;
 	}
 

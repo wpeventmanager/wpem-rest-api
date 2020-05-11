@@ -125,15 +125,15 @@ class WPEM_Rest_API_Admin {
 				$response['message']         = __( 'API Key updated successfully.', 'wp-event-manager-rest-api' );
 			} else {
 				$app_key = wp_rand();
-				$consumer_key    = 'ck_' . bin2hex ( wp_rand());
-				$consumer_secret = 'cs_' . bin2hex ( wp_rand());
+				$consumer_key    = 'ck_' . sha1( wp_rand() );
+				$consumer_secret = 'cs_' . sha1( wp_rand() );
 
 				$data = array(
 					'user_id'         => $user_id,
 					'app_key'         => $app_key,
 					'description'     => $description,
 					'permissions'     => $permissions,
-					'consumer_key'    =>  $consumer_key ,
+					'consumer_key'    =>  wpem_api_hash($consumer_key) ,
 					'consumer_secret' => $consumer_secret,
 					'truncated_key'   => substr( $consumer_key, -7 ),
 				);

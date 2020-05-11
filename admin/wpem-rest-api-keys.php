@@ -104,7 +104,7 @@ class WPEM_Rest_API_Keys {
 
 $keys_table_list = new WPEM_API_Keys_Table_List();
 
-		echo '<h2 class="wpem-table-list-header">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-wp-event-manager-rest-api-settings&create-key=1' ) ) . '" class="add-new-h2">' . esc_html__( 'Add key', 'wp-event-manager-rest-api' ) . '</a>';
+		echo '<h2 class="wpem-table-list-header">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&create-key=1' ) ) . '" class="add-new-h2">' . esc_html__( 'Add key', 'wp-event-manager-rest-api' ) . '</a>';
 
 		// Get the API keys count.
 		$count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_organizer_api_keys WHERE 1 = 1;" );
