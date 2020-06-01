@@ -1,4 +1,4 @@
-var OrganizerAppAccessSettings= function () {
+var WPEMRestAPIAdmin= function () {
     /// <summary>Constructor function of the event settings class.</summary>
     /// <returns type="Settings" />   
     return {
@@ -10,8 +10,10 @@ var OrganizerAppAccessSettings= function () {
         init: function() 
         {
 		     //Bind on click event of the settings section
-			jQuery("#update_api_key").on('click',OrganizerAppAccessSettings.actions.saveApiKey);
-		  
+			jQuery("#update_api_key").on('click',WPEMRestAPIAdmin.actions.saveApiKey);
+			jQuery("select#key_user").chosen(); 
+			jQuery("select#event_id").chosen(); 
+			jQuery("input#date_expires").datepicker(); 
 	   },
 	actions :
 	{
@@ -37,7 +39,8 @@ var OrganizerAppAccessSettings= function () {
 								 	key_id:      jQuery('#key_id').val(),
 									description: jQuery('#key_description').val(),
 									user:        jQuery('#key_user').val(),
-									permissions: jQuery('#key_permissions').val()
+									permissions: jQuery('#key_permissions').val(),
+									event_id: jQuery('#event_id').val()
 								 },
 								beforeSend: function(jqXHR, settings) 
 								{
@@ -58,7 +61,8 @@ var OrganizerAppAccessSettings= function () {
 
 											jQuery( 'p.submit', self.el ).before( template({
 												consumer_key:    data.consumer_key,
-												consumer_secret: data.consumer_secret
+												consumer_secret: data.consumer_secret,
+												app_key: data.app_key
 											}) );
 											//self.createQRCode( data.consumer_key, data.consumer_secret );
 											//self.initTipTip( '.copy-key' );
@@ -91,8 +95,8 @@ var OrganizerAppAccessSettings= function () {
     } //enf of return
 }; //end of class
 
-OrganizerAppAccessSettings = OrganizerAppAccessSettings();
+WPEMRestAPIAdmin = WPEMRestAPIAdmin();
 jQuery(document).ready(function($) 
 {
-  OrganizerAppAccessSettings.init();
+  WPEMRestAPIAdmin.init();
 });

@@ -9,7 +9,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * WPEM_Admin_API_Keys.
+ * WPEM_Rest_API_Keys.
  */
 class WPEM_Rest_API_Keys {
 
@@ -18,7 +18,7 @@ class WPEM_Rest_API_Keys {
 	 */
 	public function __construct() {
 		add_action( 'admin_init', array( $this, 'actions' ) );
-		add_action( 'wp_event_manager_admin_field_wp-table', array( $this, 'screen_option' ) );
+		//add_action( 'wp_event_manager_admin_field_wp-table', array( $this, 'screen_option' ) );
 	}
 
 	/**
@@ -89,8 +89,6 @@ class WPEM_Rest_API_Keys {
 					'option'  => 10,
 				)
 			);
-
-			
 		}
 
 		self::page_output();
@@ -102,12 +100,12 @@ class WPEM_Rest_API_Keys {
 	private static function table_list_output() {
 		global $wpdb, $keys_table_list;
 
-$keys_table_list = new WPEM_API_Keys_Table_List();
+		$keys_table_list = new WPEM_API_Keys_Table_List();
 
-		echo '<h2 class="wpem-table-list-header">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&create-key=1' ) ) . '" class="add-new-h2">' . esc_html__( 'Add key', 'wp-event-manager-rest-api' ) . '</a>';
+		echo '<div class="wrap"><h1 class="wp-heading-inline">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' </h1><a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&create-key=1' ) ) . '" class="add-new-h2">' . esc_html__( 'Add key', 'wp-event-manager-rest-api' ) . '</a><hr class="wp-header-end">';
 
 		// Get the API keys count.
-		$count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_organizer_api_keys WHERE 1 = 1;" );
+		$count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1;" );
 
 		if ( absint( $count ) && $count > 0 ) {
 			 $keys_table_list->prepare_items();
@@ -115,16 +113,16 @@ $keys_table_list = new WPEM_API_Keys_Table_List();
 			$keys_table_list->views();
 			$keys_table_list->search_box( __( 'Search key', 'wp-event-manager-organizer-app-access' ), 'key' );
 			$keys_table_list->display();
-			//$keys_table_list->display_rows();
 
 		} else {
-			echo '<div class="wp-event-manager-organizer-app-access-BlankState wp-event-manager-organizer-app-access-BlankState--api">';
+			echo '<div class="wp-event-manager-rest-api-BlankState wp-event-manager-rest-api-BlankState--api">';
 			?>
-			<h2 class="wp-event-manager-organizer-app-access-BlankState-message"><?php esc_html_e( 'The REST API allows external apps to view and manage store data. Access is granted only to those with valid API keys.', 'wp-event-manager-organizer-app-access' ); ?></h2>
-			<a class="wp-event-manager-organizer-app-access-BlankState-cta button-primary button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=event-manager-organizer-app-access-settings&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-organizer-app-access' ); ?></a>
+			<h2 class="wp-event-manager-rest-api-BlankState-message"><?php esc_html_e( 'Enable and generate Rest API keys.', 'wp-event-manager-rest-api' ); ?></h2>
+			<a class="wp-event-manager-rest-api-BlankState-cta button-primary button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
 			<style type="text/css">#posts-filter .wp-list-table, #posts-filter .tablenav.top, .tablenav.bottom .actions { display: none; }</style>
 			<?php
 		}
+		echo '</div>';
 	}
 
 	/**
@@ -139,10 +137,12 @@ $keys_table_list = new WPEM_API_Keys_Table_List();
 		$empty = array(
 			'key_id'        => 0,
 			'user_id'       => '',
+			'event_id'       => '',
 			'description'   => '',
 			'permissions'   => '',
 			'truncated_key' => '',
 			'last_access'   => '',
+			'date_expires' => '',
 		);
 
 		if ( 0 === $key_id ) {
@@ -151,7 +151,7 @@ $keys_table_list = new WPEM_API_Keys_Table_List();
 
 		$key = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT key_id, user_id, description, permissions, truncated_key, last_access
+				"SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, date_expires
 				FROM {$wpdb->prefix}wpem_rest_api_keys
 				WHERE key_id = %d",
 				$key_id
@@ -210,7 +210,7 @@ $keys_table_list = new WPEM_API_Keys_Table_List();
 			if ( $key_id && $user_id && ( current_user_can( 'edit_user', $user_id ) || get_current_user_id() === $user_id ) ) {
 				$this->remove_key( $key_id );
 			} else {
-				wp_die( esc_html__( 'You do not have permission to revoke this API Key', 'wp-event-manager-organizer-app-access' ) );
+				wp_die( esc_html__( 'You do not have permission to revoke this API Key', 'wp-event-manager-rest-api' ) );
 			}
 		}
 

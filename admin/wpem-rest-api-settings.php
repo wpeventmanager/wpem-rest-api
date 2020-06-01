@@ -63,7 +63,7 @@ class WPEM_Rest_API_Settings {
 											'name'       => 'enable_rest_api_keys',
 											'std'        => '1',
 											'label'      => __( 'Rest api', 'wp-event-manager-rest-api' ),
-											'cb_label'   => __( 'Display api keys.', 'wp-event-manager-rest-api' ),
+											'cb_label'   => __( 'Enable api keys.', 'wp-event-manager-rest-api' ),
 											//'desc'       => '',
 											'type'       => 'wp-table',
 											'attributes' => array(),

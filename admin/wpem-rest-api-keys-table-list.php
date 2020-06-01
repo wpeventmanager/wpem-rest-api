@@ -44,6 +44,8 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 			'title'         => __( 'Description', 'wp-event-manager-rest-api' ),
 			 'truncated_key' => __( 'Consumer key ending in', 'wp-event-manager-rest-api' ),
 			 'user_id'          => __( 'User', 'wp-event-manager-rest-api' ),
+			 'event_id'          => __( 'Event', 'wp-event-manager-rest-api' ),
+			 
 			 'permissions'   => __( 'Permissions', 'wp-event-manager-rest-api' ),
 			 'last_access'   => __( 'Last access', 'wp-event-manager-rest-api' ),
 		);
@@ -148,6 +150,18 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 		return esc_html( $user->display_name );
 	}
 
+	/**
+	 * Return event column.
+	 *
+	 * @param  array $key Key data.
+	 * @return string
+	 */
+	public function column_event_id( $key ) {
+		if(!empty($key['event_id'])){
+			return '<a href="'.admin_url( 'post.php?post=' . $key['event_id'] ) . '&action=edit'.'" />'.get_the_title($key['event_id']).'</a>';
+		}
+		return;
+	}
 	/**
 	 * Return permissions column.
 	 *
@@ -265,7 +279,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 
 		// Get the API keys.
 		$keys = $wpdb->get_results(
-			"SELECT key_id,app_key, user_id, description, permissions, truncated_key, last_access FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search}" .
+			"SELECT key_id,app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search}" .
 			$wpdb->prepare( 'ORDER BY key_id DESC LIMIT %d OFFSET %d;', $per_page, $offset ),
 			ARRAY_A
 		); // WPCS: unprepared SQL ok.

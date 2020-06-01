@@ -33,6 +33,7 @@ class WPEM_REST_Authentication {
 	 */
 	protected $auth_method = '';
 
+
 	/**
 	 * Initialize authentication actions.
 	 */
@@ -42,7 +43,13 @@ class WPEM_REST_Authentication {
 		//rest pre and post allows to authorize the user request
 		add_filter( 'rest_post_dispatch', array( $this, 'send_unauthorized_headers' ), 50 );
 		add_filter( 'rest_pre_dispatch', array( $this, 'check_user_permissions' ), 10, 3 );
+
+		//register rout here for app key and login
+		add_action( 'rest_api_init', array( $this, 'register_routes' ), 10 );
+		
 	}
+
+
 
 	/**
 	 * Check if is request to our REST API.
@@ -612,6 +619,92 @@ class WPEM_REST_Authentication {
 		}
 
 		return $result;
+	}
+
+
+	/**
+	 * Register the routes for auth login and appkey auth.
+	 */
+	public function register_routes() {
+		register_rest_route(
+			'wpem-auth',
+			'/appkey' ,
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'perform_app_key_authentication' ),
+				),
+			)
+		);
+
+		/*register_rest_route(
+			'wpem-auth',
+			'/login' ,
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'perform_login_authentication' ),
+				),
+			)
+		);*/
+	}
+
+	/**
+	 * Login authentication.
+	 *  We will not user this for now in future we will improve and approve.
+	 * Using username and password it is not easy to manage all API using consumer key and secret key. Sometime user created several key and it is difficult to provide exact key using this process.
+	 * 
+	 * @since 1.0.0
+	 */
+	public function perform_login_authentication($request){
+		$response = [];
+		if(isset($_GET['username']) && isset($_GET['password']) && (!empty($_GET['username']) && !empty($_GET['password'])) ){
+			$username = $_GET['username'];
+			$password = $_GET['password'];
+
+			$user = wp_authenticate($username, $password);
+
+			if(!is_wp_error($user)){
+				$response =  array('success' => true,'message' => __('You are logged in successfully.','wp-event-manager-rest-api') );
+			}
+			else
+			{
+				$response =  array('success' => false,'message' => __('Username or password wrong.','wp-event-manager-rest-api') );
+			}
+		}
+
+		if(empty($response))
+			$response =  array('success' => false,'message' => __('Somethign went wrong.','wp-event-manager-rest-api') );
+
+		return $response;
+	}
+
+	/**
+	 * Appkey authentication.
+	 * 
+	 * @since 1.0.0
+	 */
+	public function perform_app_key_authentication($request){
+		global $wpdb;
+
+		if(isset($_GET['key']) && !empty($_GET['key'])){
+			$app_key = $_GET['key'];
+
+			$app_key =  sanitize_text_field( $app_key );
+			$key_data         = $wpdb->get_row(
+				$wpdb->prepare(
+					"
+				SELECT key_id, app_key,user_id, permissions, consumer_key, consumer_secret, nonces
+				FROM {$wpdb->prefix}wpem_rest_api_keys
+				WHERE app_key = %s
+			",
+					$app_key
+				)
+			);
+
+			return $key_data;
+
+		}
 	}
 }
 

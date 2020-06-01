@@ -356,11 +356,48 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 	protected function prepare_object_for_database( $request, $creating = false ) {
 		$id = isset( $request['id'] ) ? absint( $request['id'] ) : 0;
 
-		$event = array(
-					'title' => '',
-					'post_status' => '',
-					'post_name' => ''
-				);
+		if ( isset( $request['id'] ) ) {
+			$event = get_post( $id );
+		}
+		else{
+				if(!empty($request['event_title']) && isset($request['event_id'])  && $request['event_id'] == 0 ){
+					$_POST = $request;
+
+					//we are inserting new event means if there is any already created event cookies we need to remvoe it
+					if(isset($_COOKIE['wp-event-manager-submitting-event-id']) )
+					    unset( $_COOKIE['wp-event-manager-submitting-event-id'] );				
+					if(isset($_COOKIE['wp-event-manager-submitting-event-key']) )
+					    unset( $_COOKIE['wp-event-manager-submitting-event-key'] );
+
+
+					$GLOBALS['event_manager']->forms->get_form( 'submit-event', array() );
+					$form_submit_event_instance = call_user_func( array( 'WP_Event_Manager_Form_Submit_Event', 'instance' ) );
+					$event_fields =	$form_submit_event_instance->merge_with_custom_fields('frontend');
+
+					//submit current event with $_POST values
+					$form_submit_event_instance ->submit_handler();
+					/**
+					* Preview step will move event status if approval required then  pending otherwise publish
+					*/
+					$form_submit_event_instance->preview_handler();
+
+					//we don't need done status it will be managed by response of the current request
+					if(!$form_submit_event_instance->get_event_id() ){
+
+						$validation_errors =  $this->get_errors();
+						foreach ( $validation_errors as $error ) {
+							echo  $error;
+						}
+						return;
+					}
+					$event = get_post( $form_submit_event_instance->get_event_id());
+				}
+				else{
+					return;
+				}
+
+		}
+
 		/**
 		 * Filters an object before it is inserted via the REST API.
 		 *
@@ -371,7 +408,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		 * @param WP_REST_Request $request  Request object.
 		 * @param bool            $creating If is creating a new object.
 		 */
-		return apply_filters( "wpepm_rest_pre_insert_{$this->post_type}_object", $event, $request, $creating );
+		return apply_filters( "wpem_rest_pre_insert_{$this->post_type}_object", $event, $request, $creating );
 	}
 
 	/**
@@ -860,12 +897,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			'validate_callback' => 'rest_validate_request_arg',
 		);
 	
-		$params['sku']            = array(
-			'description'       => __( 'Limit result set to events with specific SKU(s). Use commas to separate.', 'wp-event-manager-rest-api' ),
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
 		$params['featured']       = array(
 			'description'       => __( 'Limit result set to featured events.', 'wp-event-manager-rest-api' ),
 			'type'              => 'boolean',
@@ -884,50 +915,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			'sanitize_callback' => 'wp_parse_id_list',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['shipping_class'] = array(
-			'description'       => __( 'Limit result set to events assigned a specific shipping class ID.', 'wp-event-manager-rest-api' ),
-			'type'              => 'string',
-			'sanitize_callback' => 'wp_parse_id_list',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
-		$params['attribute']      = array(
-			'description'       => __( 'Limit result set to events with a specific attribute. Use the taxonomy name/attribute slug.', 'wp-event-manager-rest-api' ),
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
-		$params['attribute_term'] = array(
-			'description'       => __( 'Limit result set to events with a specific attribute term ID (required an assigned attribute).', 'wp-event-manager-rest-api' ),
-			'type'              => 'string',
-			'sanitize_callback' => 'wp_parse_id_list',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
-
-	
-		$params['in_stock']  = array(
-			'description'       => __( 'Limit result set to events in stock or out of stock.', 'wp-event-manager-rest-api' ),
-			'type'              => 'boolean',
-			'sanitize_callback' => 'wc_string_to_bool',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
-		$params['on_sale']   = array(
-			'description'       => __( 'Limit result set to events on sale.', 'wp-event-manager-rest-api' ),
-			'type'              => 'boolean',
-			'sanitize_callback' => 'wc_string_to_bool',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
-		$params['min_price'] = array(
-			'description'       => __( 'Limit result set to events based on a minimum price.', 'wp-event-manager-rest-api' ),
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
-		$params['max_price'] = array(
-			'description'       => __( 'Limit result set to events based on a maximum price.', 'wp-event-manager-rest-api' ),
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
+		
 
 		return $params;
 	}

@@ -51,7 +51,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function get_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( $object && 0 !== $object->get_id() && ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->get_id() ) ) {
+		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -67,7 +67,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function update_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( $object && 0 !== $object->get_id() && ! wpem_rest_check_post_permissions( $this->post_type, 'edit', $object->get_id() ) ) {
+		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'edit', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_edit', __( 'Sorry, you are not allowed to edit this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -83,7 +83,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function delete_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( $object && 0 !== $object->get_id() && ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->get_id() ) ) {
+		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_delete', __( 'Sorry, you are not allowed to delete this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -135,7 +135,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function get_item( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( ! $object || 0 === $object->get_id() ) {
+		if ( ! $object || 0 === $object->ID ) {
 			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wp-event-manager-rest-api' ), array( 'status' => 404 ) );
 		}
 
@@ -165,9 +165,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 				return $object;
 			}
 
-			$object->save();
-
-			return $this->get_object( $object->get_id() );
+			return $this->get_object( $object->ID);
 		} catch ( Exception $e ) {
 			return new WP_Error( $e->getErrorCode(), $e->getMessage(), array( 'status' => $e->getCode() ) );
 		}
@@ -210,7 +208,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$response = $this->prepare_object_for_response( $object, $request );
 		$response = rest_ensure_response( $response );
 		$response->set_status( 201 );
-		$response->header( 'Location', rest_url( sprintf( '/%s/%s/%d', $this->namespace, $this->rest_base, $object->get_id() ) ) );
+		$response->header( 'Location', rest_url( sprintf( '/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID ) ) );
 
 		return $response;
 	}
@@ -224,7 +222,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function update_item( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( ! $object || 0 === $object->get_id() ) {
+		if ( ! $object || 0 === $object->ID ) {
 			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wp-event-manager-rest-api' ), array( 'status' => 400 ) );
 		}
 
@@ -443,7 +441,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$object = $this->get_object( (int) $request['id'] );
 		$result = false;
 
-		if ( ! $object || 0 === $object->get_id() ) {
+		if ( ! $object || 0 === $object->ID ) {
 			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wp-event-manager-rest-api' ), array( 'status' => 404 ) );
 		}
 
@@ -459,7 +457,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		 */
 		$supports_trash = apply_filters( "wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object );
 
-		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->get_id() ) ) {
+		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
 			/* translators: %s: post type */
 			return new WP_Error( "wpem_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wp-event-manager-rest-api' ), $this->post_type ), array( 'status' => rest_authorization_required_code() ) );
 		}
@@ -470,7 +468,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		// If we're forcing, then delete permanently.
 		if ( $force ) {
 			$object->delete( true );
-			$result = 0 === $object->get_id();
+			$result = 0 === $object->ID;
 		} else {
 			// If we don't support trashing for this type, error out.
 			if ( ! $supports_trash ) {
@@ -517,7 +515,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	protected function prepare_links( $object, $request ) {
 		$links = array(
 			'self' => array(
-				'href' => rest_url( sprintf( '/%s/%s/%d', $this->namespace, $this->rest_base, $object->get_id() ) ),
+				'href' => rest_url( sprintf( '/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID ) ),
 			),
 			'collection' => array(
 				'href' => rest_url( sprintf( '/%s/%s', $this->namespace, $this->rest_base ) ),
