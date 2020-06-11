@@ -22,7 +22,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wpem/';
+	protected $namespace = 'wpem';
 
 	/**
 	 * If object is hierarchical.
@@ -50,6 +50,8 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 */
 	public function get_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
+		
+		
 
 		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
@@ -164,7 +166,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			if ( is_wp_error( $object ) ) {
 				return $object;
 			}
-
 			return $this->get_object( $object->ID);
 		} catch ( Exception $e ) {
 			return new WP_Error( $e->getErrorCode(), $e->getMessage(), array( 'status' => $e->getCode() ) );
@@ -265,6 +266,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$args['order']               = $request['order'];
 		$args['orderby']             = $request['orderby'];
 		$args['paged']               = $request['page'];
+		$args['author']              = $request['author'];
 		$args['post__in']            = $request['include'];
 		$args['post__not_in']        = $request['exclude'];
 		$args['posts_per_page']      = $request['per_page'];
@@ -353,7 +355,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	protected function get_objects( $query_args ) {
 		$query  = new WP_Query();
 		$result = $query->query( $query_args );
-
+		
 		$total_posts = $query->found_posts;
 		if ( $total_posts < 1 ) {
 			// Out-of-bounds, run the query again without LIMIT for total count.
@@ -379,7 +381,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function get_items( $request ) {
 		$query_args    = $this->prepare_objects_query( $request );
 		$query_results = $this->get_objects( $query_args );
-
+	
 		$objects = array();
 		foreach ( $query_results['objects'] as $object ) {
 			if ( ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
@@ -438,6 +440,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 */
 	public function delete_item( $request ) {
 		$force  = (bool) $request['force'];
+
 		$object = $this->get_object( (int) $request['id'] );
 		$result = false;
 

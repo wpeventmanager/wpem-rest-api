@@ -13,7 +13,7 @@ var WPEMRestAPIAdmin= function () {
 			jQuery("#update_api_key").on('click',WPEMRestAPIAdmin.actions.saveApiKey);
 			jQuery("select#key_user").chosen(); 
 			jQuery("select#event_id").chosen(); 
-			jQuery("input#date_expires").datepicker(); 
+			jQuery("input#date_expires").datepicker({ dateFormat: "yy-mm-dd" }); 
 	   },
 	actions :
 	{
@@ -40,7 +40,8 @@ var WPEMRestAPIAdmin= function () {
 									description: jQuery('#key_description').val(),
 									user:        jQuery('#key_user').val(),
 									permissions: jQuery('#key_permissions').val(),
-									event_id: jQuery('#event_id').val()
+									event_id: jQuery('#event_id').val(),
+									date_expires: jQuery('#date_expires').val()
 								 },
 								beforeSend: function(jqXHR, settings) 
 								{

@@ -1,7 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 /**
  * WPEM_Rest_API_Admin class.
  */
@@ -38,7 +36,7 @@ class WPEM_Rest_API_Admin {
 	public function admin_enqueue_scripts() {
 
 		if(isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-key-settings' ){
-			wp_register_script( 'wpem-rest-api-admin-js', WPEM_REST_API_PLUGIN_URL. '/assets/js/admin.js', array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker'), WPEM_REST_API_VERSION, true );
+			wp_register_script( 'wpem-rest-api-admin-js', WPEM_REST_API_PLUGIN_URL. '/assets/js/admin.js', array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'wp-util'), WPEM_REST_API_VERSION, true );
 			 wp_localize_script( 'wpem-rest-api-admin-js', 'wpem_rest_api_admin', array(
 			
 			 	'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -96,7 +94,9 @@ class WPEM_Rest_API_Admin {
 			$permissions = ( in_array( wp_unslash( $_POST['permissions'] ), array( 'read', 'write', 'read_write' ), true ) ) ? sanitize_text_field( wp_unslash( $_POST['permissions'] ) ) : 'read';
 			$user_id      = absint( $_POST['user'] );
 			$event_id     = !empty( $_POST['event_id']) ?  $_POST['event_id'] : '' ;
-			$date_expires = !empty( $_POST['date_expires']) ?  $_POST['date_expires'] : NULL ;
+			$date_expires = !empty( $_POST['date_expires']) ?  date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $_POST['date_expires']))) : NULL ;
+			
+			
 
 			// Check if current user can edit other users.
 			if ( $user_id && ! current_user_can( 'edit_user', $user_id ) ) {
@@ -122,6 +122,9 @@ class WPEM_Rest_API_Admin {
 						'%d',
 						'%s',
 						'%s',
+						'%d',
+						'%s',
+						
 					),
 					array( '%d' )
 				);

@@ -295,7 +295,7 @@ class WPEM_REST_Authentication {
 		if ( ! empty( $errors ) ) {
 			$message = sprintf(
 				/* translators: %s: amount of errors */
-				_n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wp-event-manager' ),
+				_n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wp-event-manager-rest-api' ),
 				implode( ', ', $errors )
 			);
 
@@ -540,7 +540,6 @@ class WPEM_REST_Authentication {
 	 */
 	private function check_permissions( $method ) {
 		$permissions = $this->user->permissions;
-
 		switch ( $method ) {
 			case 'HEAD':
 			case 'GET':

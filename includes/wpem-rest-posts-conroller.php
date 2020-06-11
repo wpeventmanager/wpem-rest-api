@@ -22,7 +22,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wpem/';
+	protected $namespace = 'wpem';
 
 	/**
 	 * Route base.
@@ -156,6 +156,15 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 		if ( $this->public ) {
 			$response->link_header( 'alternate', get_permalink( $id ), array( 'type' => 'text/html' ) );
 		}
+		
+		/**
+		 * Fires before a single item returned via the REST API.
+		 *
+		 * @param WP_Post         $post      Post object.
+		 * @param WP_REST_Request $request   Request object.
+		 */
+		do_action( "wpem_rest_single_{$this->post_type}", $post, $request );
+		
 
 		return $response;
 	}

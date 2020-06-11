@@ -39,6 +39,7 @@ defined( 'ABSPATH' ) || exit;
 											'post_type'        => 'event_listing',
 											'numberposts' =>-1,
 											'author'        =>  get_current_user_id(),
+											'post_status'    => 'publish',
 										));
 				
 					?>
@@ -169,7 +170,7 @@ defined( 'ABSPATH' ) || exit;
 					<?php esc_html_e( 'App key', 'wp-event-manager-rest-api' ); ?>
 				</th>
 				<td class="forminp">
-					<input id="key_consumer_key" type="text" value="{{ data.app_key }}" size="55" readonly="readonly">
+					<input id="app_key" type="text" value="{{ data.app_key }}" size="55" readonly="readonly">
 				</td>
 			</tr>
 			<tr valign="top">

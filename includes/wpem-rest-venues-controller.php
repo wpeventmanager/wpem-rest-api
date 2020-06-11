@@ -28,14 +28,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @var string
 	 */
-	protected $rest_base = 'events';
+	protected $rest_base = 'venues';
 
 	/**
 	 * Post type.
 	 *
 	 * @var string
 	 */
-	protected $post_type = 'event_listing';
+	protected $post_type = 'event_venue';
 
 	/**
 	 * If object is hierarchical.
