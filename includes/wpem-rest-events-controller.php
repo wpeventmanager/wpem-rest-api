@@ -310,7 +310,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				'meta_data'             =>  get_post_meta($event->ID),
 		);
 		
-		return $data;
+		return apply_filters("wpem_rest_get_{$this->post_type}_data",$data, $event, $context);
 	}
 	
 	/**

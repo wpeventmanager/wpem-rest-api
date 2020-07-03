@@ -701,6 +701,9 @@ class WPEM_REST_Authentication {
 				)
 			);
 
+			if(empty($key_data))
+				$key_data = array( 'wpem_rest_authentication_error', __( 'Invalid APP ID.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+
 			return $key_data;
 
 		}

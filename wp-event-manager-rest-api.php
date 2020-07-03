@@ -65,6 +65,8 @@ class WPEM_Rest_API {
 
 		// Add actions
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ), 12 );
+
+		
 	}
     
     /**
