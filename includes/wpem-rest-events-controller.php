@@ -133,6 +133,19 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				'schema' => array( $this, 'get_public_batch_schema' ),
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/fields',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_event_fields' ),
+					'permission_callback' => array( $this, 'get_item_permissions_check' ),
+					'args'                => $this->get_endpoint_args_for_item_schema( WP_REST_Server::READABLE ),
+				)
+			)
+		);
 	}
 
 	/**
@@ -955,6 +968,23 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 	 */
 	public function check_event_permissions($request){
 		
+	}
+
+		/**
+	 * Get the query params and return event fields
+	 *
+	 * @return array
+	 */
+	public function get_event_fields($request){
+
+		if(!class_exists('WP_Event_Manager_Form_Submit_Event') ) {
+			include_once( EVENT_MANAGER_PLUGIN_DIR . '/forms/wp-event-manager-form-abstract.php' );
+			include_once( EVENT_MANAGER_PLUGIN_DIR . '/forms/wp-event-manager-form-submit-event.php' );	
+		}
+		$form_submit_event_instance = call_user_func( array( 'WP_Event_Manager_Form_Submit_Event', 'instance' ) );
+		$fields = $form_submit_event_instance->merge_with_custom_fields('frontend');
+
+		return $fields;
 	}
 	
 }
