@@ -518,7 +518,8 @@ class WPEM_REST_Authentication {
 	private function get_user_data_by_consumer_key( $consumer_key ) {
 		global $wpdb;
 
-		$consumer_key = wpem_api_hash( sanitize_text_field( $consumer_key ) );
+		//$consumer_key = wpem_api_hash( sanitize_text_field( $consumer_key ) ); NEED TO IMPROVE LATER WITH GLOBAL API
+		$consumer_key = sanitize_text_field( $consumer_key );
 		$user         = $wpdb->get_row(
 			$wpdb->prepare(
 				"
