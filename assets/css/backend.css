@@ -1,0 +1,98 @@
+.wpem-admin-left-sidebar {
+  display: inline-block;
+  width: 25%;
+}
+
+.wpem-admin-right-container {
+  display: inline-block;
+  width: 68%;
+  vertical-align: top;
+  background: #fff;
+  margin-top: 12px;
+}
+
+ul.wpem-admin-left-menu {
+  background: #fff;
+  border-left: 1px solid #e3e3e3;
+  border-right: 1px solid #e3e3e3;
+}
+
+.wpem-admin-left-sidebar
+  ul.wpem-admin-left-menu
+  li.wpem-admin-left-menu-item:first:child {
+  border-top: 1px solid #e3e3e3;
+}
+
+li.wpem-admin-left-menu-item {
+  width: 100%;
+  display: flex;
+  margin: 0;
+  border-bottom: 1px solid #e3e3e3;
+}
+
+.wpem-admin-container a.nav-tab {
+  border: 0;
+  margin: 0;
+  padding: 10px 5px 10px 17px;
+  width: 100%;
+  background-color: #fff;
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.wpem-admin-container a.nav-tab:hover {
+  background-color: #00a5fa;
+  color: #fff;
+}
+.wpem-admin-container a.nav-tab-active {
+  position: relative;
+}
+.wpem-admin-container a.nav-tab-active,
+.wpem-admin-container a.nav-tab-active:focus,
+.wpem-admin-container a.nav-tab-active:focus:active,
+.wpem-admin-container a.nav-tab-active:hover {
+  background-color: #535454;
+  color: #fff;
+}
+.wpem-admin-container a.nav-tab-active:after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 38%;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  display: inline-block;
+  padding: 3px;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+.wpem-admin-top-title-section.postbox h3 {
+  background-color: #f3f3f3;
+  padding: 15px 20px 15px 25px;
+  font-family: "Open Sans", Arial, serif;
+  font-weight: 500;
+  font-size: 1.6em;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  background: #535454;
+}
+.wpem-admin-top-title-section.postbox {
+  margin: 0px;
+}
+
+.wpem-admin-bottom-content {
+  padding: 20px;
+}
+
+.wpem-admin-right-container-holder {
+  padding-top: 0px !important;
+}
+@media only screen and (max-width: 768px) {
+  .wpem-admin-left-sidebar,
+  .wpem-admin-right-container {
+    display: block;
+    width: 100%;
+  }
+}

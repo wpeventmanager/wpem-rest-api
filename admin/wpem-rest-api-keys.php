@@ -42,7 +42,7 @@ class WPEM_Rest_API_Keys {
 	 * @return bool
 	 */
 	private function is_api_keys_settings_page() {
-		return isset( $_GET['page'] ) &&  'wpem-rest-api-key-settings' === $_GET['page'] ; // WPCS: input var okay, CSRF ok.
+		return isset( $_GET['page'] ) &&  'wpem-rest-api-settings' === $_GET['page'] ; // WPCS: input var okay, CSRF ok.
 	}
 
 	/**
@@ -102,7 +102,7 @@ class WPEM_Rest_API_Keys {
 
 		$keys_table_list = new WPEM_API_Keys_Table_List();
 
-		echo '<div class="wrap"><h1 class="wp-heading-inline">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' </h1><a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&create-key=1' ) ) . '" class="add-new-h2">' . esc_html__( 'Add key', 'wp-event-manager-rest-api' ) . '</a><hr class="wp-header-end">';
+		echo '<div class="wrap"><h1 class="wp-heading-inline">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' </h1><a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ) . '" class="add-new-h2">' . esc_html__( 'Add key', 'wp-event-manager-rest-api' ) . '</a><hr class="wp-header-end">';
 
 		// Get the API keys count.
 		$count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1;" );
@@ -118,7 +118,7 @@ class WPEM_Rest_API_Keys {
 			echo '<div class="wp-event-manager-rest-api-BlankState wp-event-manager-rest-api-BlankState--api">';
 			?>
 			<h2 class="wp-event-manager-rest-api-BlankState-message"><?php esc_html_e( 'Enable and generate Rest API keys.', 'wp-event-manager-rest-api' ); ?></h2>
-			<a class="wp-event-manager-rest-api-BlankState-cta button-primary button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
+			<a class="wp-event-manager-rest-api-BlankState-cta button-primary button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
 			<style type="text/css">#posts-filter .wp-list-table, #posts-filter .tablenav.top, .tablenav.bottom .actions { display: none; }</style>
 			<?php
 		}
