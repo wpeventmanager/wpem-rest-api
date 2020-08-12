@@ -58,7 +58,7 @@ class WPEM_Rest_API_Admin {
 	 */
 	public function admin_menu() {
 
-		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this->settings_page, 'output' ) );
+		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this, 'page_output' ) );
 
 		
 	}
@@ -70,18 +70,15 @@ class WPEM_Rest_API_Admin {
 	 * @access public
 	 * @return void
 	 */
-	// public function page_output(){
+	public function page_output(){
 
-	// 	if ( isset( $_GET['page'] ) && $_GET['page'] == 'wpem-rest-api-settings' )  {
-
-			
-	// 		//get_event_manager_template( 'wpem-rest-api-settings-menu.php', array('menus' => $this->settings_page->page_output() ));
-			
+		if ( isset( $_GET['page'] ) && $_GET['page'] == 'wpem-rest-api-settings' )  {
 		
-	// 		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
-	// 		//include dirname( __FILE__ ) . '/templates/wpem-rest-settings-panel.php';
-	// 	} 
-	// }
+			wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
+			
+			include dirname( __FILE__ ) . '/templates/wpem-rest-settings-panel.php';
+		} 
+	}
 
 	/**
 	 * Create/Update API key.

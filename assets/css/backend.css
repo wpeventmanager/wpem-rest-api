@@ -1,3 +1,5 @@
+@import "https://staging-wpeventmanagerdemo.kinsta.cloud/wp-content/plugins/wp-event-manager/assets/fonts/style.css?ver=5.4.2";
+
 .wpem-admin-left-sidebar {
   display: inline-block;
   width: 25%;
@@ -19,7 +21,7 @@ ul.wpem-admin-left-menu {
 
 .wpem-admin-left-sidebar
   ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item:first:child {
+  li.wpem-admin-left-menu-item:first-child {
   border-top: 1px solid #e3e3e3;
 }
 
@@ -32,8 +34,10 @@ li.wpem-admin-left-menu-item {
 
 .wpem-admin-container a.nav-tab {
   border: 0;
+  transition: 0.2s all ease-in-out;
+  position: relative;
   margin: 0;
-  padding: 10px 5px 10px 17px;
+  padding: 12px 5px 12px 50px;
   width: 100%;
   background-color: #fff;
   box-sizing: border-box;
@@ -43,8 +47,12 @@ li.wpem-admin-left-menu-item {
   box-shadow: none !important;
 }
 .wpem-admin-container a.nav-tab:hover {
-  background-color: #00a5fa;
-  color: #fff;
+  background-color: #f9f9f9;
+  color: #00a5fa;
+  border-left: 5px solid;
+}
+.wpem-admin-container a.nav-tab:hover:before{
+  color:#00a5fa;
 }
 .wpem-admin-container a.nav-tab-active {
   position: relative;
@@ -53,35 +61,47 @@ li.wpem-admin-left-menu-item {
 .wpem-admin-container a.nav-tab-active:focus,
 .wpem-admin-container a.nav-tab-active:focus:active,
 .wpem-admin-container a.nav-tab-active:hover {
-  background-color: #535454;
-  color: #fff;
+  background-color: #f9f9f9;
+  color: #00a5fa;
+  border-left: 5px solid;
 }
 .wpem-admin-container a.nav-tab-active:after {
   content: "";
   position: absolute;
-  right: 10px;
+  right: 15px;
   top: 38%;
-  border: solid white;
-  border-width: 0 3px 3px 0;
+  border: solid #00a5fb;
+  border-width: 0 2px 2px 0;
   display: inline-block;
   padding: 3px;
   transform: rotate(-45deg);
   -webkit-transform: rotate(-45deg);
 }
 .wpem-admin-top-title-section.postbox h3 {
-  background-color: #f3f3f3;
-  padding: 15px 20px 15px 25px;
+  padding: 20px 20px 20px 25px;
   font-family: "Open Sans", Arial, serif;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1.6em;
   letter-spacing: 0.05em;
-  color: #ffffff;
-  background: #535454;
+  color: #00a5fb;
+  border-bottom: 3px solid;
+  background: #f9f9f9;
 }
 .wpem-admin-top-title-section.postbox {
   margin: 0px;
 }
-
+.wpem-admin-container .nav-tab:before {
+    font-family: 'wp-event-manager';
+    position: absolute;
+    font-weight: normal;
+    left: 26px;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    padding: 0px 5px;
+    transition: 0.3s all ease-in-out;
+    color: #a2acba;
+}
+.wpem-admin-container .nav-tab.nav-tab-active:before{color: #00a5fb;}
 .wpem-admin-bottom-content {
   padding: 20px;
 }
@@ -96,3 +116,31 @@ li.wpem-admin-left-menu-item {
     width: 100%;
   }
 }
+
+
+/* Inside Container CSS */
+.wpem-admin-bottom-content a.add-new-h2,.wpem-admin-bottom-content input.button {
+    background: #00a5fb;
+    color:#fff;
+    border:none;
+    border-radius:0px;
+    transition:0.3s all ease-in-out;
+}
+.wpem-admin-bottom-content a.add-new-h2:hover,.wpem-admin-bottom-content input.button:hover,.wpem-admin-bottom-content input.button:focus,.wpem-admin-bottom-content input.button:active {
+    background: #a7a7a7;
+    color:#fff;
+    border:none;
+    border-radius:0px
+}
+.wpem-admin-bottom-content a{color: #555;}
+.wpem-admin-bottom-content a:active, a:hover {
+    color: #555;
+}
+.wpem-admin-bottom-content input[type=color],.wpem-admin-bottom-content input[type=date],.wpem-admin-bottom-content input[type=datetime-local],.wpem-admin-bottom-content input[type=datetime],.wpem-admin-bottom-content input[type=email],.wpem-admin-bottom-content input[type=month],.wpem-admin-bottom-content input[type=number],.wpem-admin-bottom-content input[type=password],.wpem-admin-bottom-content input[type=search],.wpem-admin-bottom-content input[type=tel],.wpem-admin-bottom-content input[type=text],.wpem-admin-bottom-content input[type=time],.wpem-admin-bottom-content input[type=url],.wpem-admin-bottom-content input[type=week],.wpem-admin-bottom-content select,.wpem-admin-bottom-content textarea {
+    box-shadow: 0 0 0 transparent;
+    border-radius: 0px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #555;
+}
+/* Inside Container CSS */
