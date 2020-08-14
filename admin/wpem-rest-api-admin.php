@@ -35,7 +35,7 @@ class WPEM_Rest_API_Admin {
 
 	public function admin_enqueue_scripts() {
 
-		if(isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-key-settings' ){
+		if(isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ){
 			wp_register_script( 'wpem-rest-api-admin-js', WPEM_REST_API_PLUGIN_URL. '/assets/js/admin.js', array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'wp-util'), WPEM_REST_API_VERSION, true );
 			 wp_localize_script( 'wpem-rest-api-admin-js', 'wpem_rest_api_admin', array(
 			
@@ -43,7 +43,10 @@ class WPEM_Rest_API_Admin {
 			 	'save_api_nonce' =>  wp_create_nonce( 'save-api-key' ),
 			 	) );
 
+
+
 			 wp_enqueue_style( 'jquery-ui' );  
+
 
 			 wp_enqueue_style( 'jquery-ui-style',EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array() );
 		}
@@ -75,6 +78,7 @@ class WPEM_Rest_API_Admin {
 		if ( isset( $_GET['page'] ) && $_GET['page'] == 'wpem-rest-api-settings' )  {
 		
 			wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
+			wp_enqueue_script( 'wpem-rest-api-admin-js' );
 			
 			include dirname( __FILE__ ) . '/templates/wpem-rest-settings-panel.php';
 		} 
@@ -160,7 +164,7 @@ class WPEM_Rest_API_Admin {
 					'description'     => $description,
 					'permissions'     => $permissions,
 					'event_id'     	  => $event_id,
-					'consumer_key'    =>  wpem_api_hash($consumer_key) ,
+					'consumer_key'    =>  $consumer_key ,
 					'consumer_secret' => $consumer_secret,
 					'truncated_key'   => substr( $consumer_key, -7 ),
 					'date_created'    => current_time( 'mysql' ) ,
