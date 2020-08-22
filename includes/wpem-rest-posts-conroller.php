@@ -704,7 +704,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 			);
 		}
 
-		if ( 'wc/v1' === $this->namespace ) {
+		if ( 'wpem/' === $this->namespace ) {
 			$params['filter'] = array(
 				'type'        => 'object',
 				'description' => __( 'Use WP Query arguments to modify the response; private query vars require appropriate authorization.', 'wp-event-manager-rest-api' ),

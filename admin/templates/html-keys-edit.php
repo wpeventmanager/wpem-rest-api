@@ -154,7 +154,7 @@ defined( 'ABSPATH' ) || exit;
 		?>
 		<p class="submit">
 			<?php submit_button( __( 'Save changes', 'wp-event-manager-organizer-app-access' ), 'primary', 'update_api_key', false ); ?>
-			<a style="color: #a00; text-decoration: none; margin-left: 10px;" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=event-manager-organizer-app-access-settings' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wp-event-manager-organizer-app-access' ); ?></a>
+			<a style="color: #a00; text-decoration: none; margin-left: 10px;" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wp-event-manager-organizer-app-access' ); ?></a>
 		</p>
 		<?php
 	}

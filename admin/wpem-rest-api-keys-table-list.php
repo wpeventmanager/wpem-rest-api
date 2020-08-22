@@ -68,7 +68,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 	 * @return string
 	 */
 	public function column_title( $key ) {
-		$url     =  admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&tab=api-access&edit-key=' . $key['key_id'] );
+		$url     =  admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&edit-key=' . $key['key_id'] );
 		$user_id = intval( $key['user_id'] );
 
 		// Check if current user can edit other users or if it's the same user.
@@ -102,7 +102,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 						array(
 							'revoke-key' => $key['key_id'],
 						),
-						admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&tab=api-access' )
+						admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' )
 					),
 					'revoke'
 				)

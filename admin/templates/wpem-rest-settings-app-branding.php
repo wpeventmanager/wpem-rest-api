@@ -11,21 +11,17 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
 ?>
 </h3>
 <div class="wpem-admin-bottom-content">
+  <pre>
+  	<?php print_r($tab_settings);?>
+  </pre>
   <?php
-  if(isset( $tab_settings[1] ))
-    $settings =  $tab_settings[1];
-    else{
-      unset($tab_settings[0]);
-        foreach ($tab_settings as $key => $option_fields) {
-          
-        }
-    } 
-    
-            
+
+    foreach ($tab_settings as $key => $section) {
+            echo '<div id="settings-' . sanitize_title( $key ) . '" class="settings_panel">';
 
             echo '<table class="form-table">';
-            if(isset( $tab_settings[1] ))
-            foreach ( $tab_settings[1] as $option ) {
+            if(isset( $section[1] )) 
+            foreach ( $section[1] as $option ) {
 
               $placeholder    = ( ! empty( $option['placeholder'] ) ) ? 'placeholder="' . $option['placeholder'] . '"' : '';
 
@@ -185,6 +181,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
               echo '</td></tr>';
             }
             echo '</table></div>';
+        }
   ?>
 
 </div>

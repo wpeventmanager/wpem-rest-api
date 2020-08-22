@@ -52,9 +52,9 @@ class WPEM_Rest_API_Settings {
 		$this->settings = apply_filters( 'wpem_rest_api_settings',
 
 			array(
-					'keys_settings' => array(
+					'general' => array(
 							
-							__( 'Keys', 'wp-event-manager' ),
+							__( 'General', 'wp-event-manager' ),
 
 							
 							array(
@@ -62,13 +62,117 @@ class WPEM_Rest_API_Settings {
 								array(
 											'name'       => 'enable_rest_api_keys',
 											'std'        => '1',
-											'label'      => __( 'Rest api', 'wp-event-manager-rest-api' ),
+											'label'      => __( 'Enable rest api', 'wp-event-manager-rest-api' ),
 											'cb_label'   => __( 'Enable api keys.', 'wp-event-manager-rest-api' ),
-											//'desc'       => '',
-											'type'       => 'wp-table',
+											'desc'       => '',
+											'type'       => 'checkbox',
 											'attributes' => array(),
 									),
 							)
+					),
+					'api-access' => array(
+							
+							__( 'API Access', 'wp-event-manager' ),
+							array(
+								array(
+											'name'       => 'wpem_api_access',
+											'std'        => '1',
+											'label'      => __( '', 'wp-event-manager-rest-api' ),
+											'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+											'desc'       => '',
+											'type'       => 'template',
+											'attributes' => array(),
+									),
+							)
+					),
+					'app-branding' => array(
+							
+							__( 'APP Branding', 'wp-event-manager' ),
+							array(
+							
+							array(
+									'name'       => 'app_splash_screen_background_color',
+									'std'        => '1',
+									'label'      => __( 'Splash Image Background Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),
+							array(
+									'name'       => 'app_splash_screen_image_color',
+									'std'        => '1',
+									'label'      => __( 'Splash Image Text Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_heading_color',
+									'std'        => '1',
+									'label'      => __( 'Heading Text Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_sub_heading_color',
+									'std'        => '1',
+									'label'      => __( 'Sub Heading Text Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_login_screen_to_heading_color',
+									'std'        => '1',
+									'label'      => __( 'Login Screen Top Heading Text Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_login_screen_bottom_background_color',
+									'std'        => '1',
+									'label'      => __( 'Login Screen Bottom Background Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_login_screen_bottom_color',
+									'std'        => '1',
+									'label'      => __( 'Login Screen Bottom Text Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_login_screen_textbox_icon_color',
+									'std'        => '1',
+									'label'      => __( 'Login Screen Textbox Icon Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_login_screen_button_color',
+									'std'        => '1',
+									'label'      => __( 'Login Screen Button Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),array(
+									'name'       => 'app_login_screen_button_text_color',
+									'std'        => '1',
+									'label'      => __( 'Login Screen Button Text Color', 'wp-event-manager-rest-api' ),
+									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+									'desc'       => '',
+									'type'       => 'color-picker',
+									'attributes' => array(),
+							),
+						)
 					),
 
 
@@ -117,201 +221,47 @@ class WPEM_Rest_API_Settings {
 		$this->init_settings();
 
 		?>
-		
-	
-       
-		<div class="wrap event-manager-settings-wrap">	
-
-			<form method="post" name="wpem-settings-form" action="options.php">	
-
-				<?php settings_fields( $this->settings_group ); ?>
-
-			    <h2 class="nav-tab-wrapper">
-
-			    	<?php
-
-			    		foreach ( $this->settings as $key => $section ) {
-
-			    			echo '<a href="#settings-' . sanitize_title( $key ) . '" class="nav-tab">' . esc_html( $section[0] ) . '</a>';
-			    		}
-			    	?>
-			    </h2>
-			    
-			 <div class="admin-setting-left">
-			     	
-			     <div class="white-background">
-			     		
-				<?php
-
-					if ( ! empty( $_GET['settings-updated'] ) ) {
-
-						flush_rewrite_rules();
-
-						echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wp-event-manager' ) . '</p></div>';
-					}
-
-					foreach ( $this->settings as $key => $section ) {
-
-						echo '<div id="settings-' . sanitize_title( $key ) . '" class="settings_panel">';
-
-						echo '<table class="form-table">';
-
-
-
-						foreach ( $section[1] as $option ) {
-
-							$placeholder    = ( ! empty( $option['placeholder'] ) ) ? 'placeholder="' . $option['placeholder'] . '"' : '';
-
-							$class          = ! empty( $option['class'] ) ? $option['class'] : '';
-
-							$value          = get_option( $option['name'] );
-
-							$option['type'] = ! empty( $option['type'] ) ? $option['type'] : '';
-
-							$attributes     = array();
-
-							if ( ! empty( $option['attributes'] ) && is_array( $option['attributes'] ) )
-
-								foreach ( $option['attributes'] as $attribute_name => $attribute_value )
-
-									$attributes[] = esc_attr( $attribute_name ) . '="' . esc_attr( $attribute_value ) . '"';
-
-							echo '<tr valign="top" class="' . $class . '"><th scope="row"><label for="setting-' . $option['name'] . '">' . $option['label'] . '</a></th><td>';
-
-							switch ( $option['type'] ) {
-
-								case "checkbox" :
-
-									?><label><input id="setting-<?php echo $option['name']; ?>" name="<?php echo $option['name']; ?>" type="checkbox" value="1" <?php echo implode( ' ', $attributes ); ?> <?php checked( '1', $value ); ?> /> <?php echo $option['cb_label']; ?></label><?php
-
-									if ( $option['desc'] )
-
-										echo ' <p class="description">' . $option['desc'] . '</p>';
-
-								break;
-
-								case "textarea" :
-
-									?><textarea id="setting-<?php echo $option['name']; ?>" class="large-text" cols="50" rows="3" name="<?php echo $option['name']; ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?>><?php echo esc_textarea( $value ); ?></textarea><?php
-
-									if ( $option['desc'] )
-
-										echo ' <p class="description">' . $option['desc'] . '</p>';
-
-								break;
-
-								case "select" :
-
-									?><select id="setting-<?php echo $option['name']; ?>" class="regular-text" name="<?php echo $option['name']; ?>" <?php echo implode( ' ', $attributes ); ?>><?php
-
-										foreach( $option['options'] as $key => $name )
-
-											echo '<option value="' . esc_attr( $key ) . '" ' . selected( $value, $key, false ) . '>' . esc_html( $name ) . '</option>';
-
-									?></select><?php
-
-									if ( $option['desc'] ) {
-
-										echo ' <p class="description">' . $option['desc'] . '</p>';
-
-									}
-
-								break;
-								case "radio":
-									?><fieldset>
-										<legend class="screen-reader-text">
-											<span><?php echo esc_html( $option['label'] ); ?></span>
-										</legend><?php
-
-									if ( $option['desc'] ) {
-										echo '<p class="description">' . $option['desc'] . '</p>';
-									}
-
-									foreach( $option['options'] as $key => $name )
-										echo '<label><input name="' . esc_attr( $option['name'] ) . '" type="radio" value="' . esc_attr( $key ) . '" ' . checked( $value, $key, false ) . ' />' . esc_html( $name ) . '</label><br>';
-
-									?></fieldset><?php
-
-								break;
-
-								case "page" :
-
-									$args = array(
-
-										'name'             => $option['name'],
-
-										'id'               => $option['name'],
-
-										'sort_column'      => 'menu_order',
-
-										'sort_order'       => 'ASC',
-
-										'show_option_none' => __( '--no page--', 'wp-event-manager' ),
-
-										'echo'             => false,
-
-										'selected'         => absint( $value )
-
-									);
-
-									echo str_replace(' id=', " data-placeholder='" . __( 'Select a page&hellip;', 'wp-event-manager' ) .  "' id=", wp_dropdown_pages( $args ) );
-
-									if ( $option['desc'] ) {
-
-										echo ' <p class="description">' . $option['desc'] . '</p>';
-
-									}
-									
-								break;
-
-								case "password" :
-
-									?><input id="setting-<?php echo $option['name']; ?>" class="regular-text" type="password" name="<?php echo $option['name']; ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
-
-									if ( $option['desc'] ) {
-
-										echo ' <p class="description">' . $option['desc'] . '</p>';
-									}
-
-								break;
-
-								case "" :
-
-								case "input" :
-
-								case "text" :
-
-									?><input id="setting-<?php echo $option['name']; ?>" class="regular-text" type="text" name="<?php echo $option['name']; ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
-
-									if ( $option['desc'] ) {
-
-										echo ' <p class="description">' . $option['desc'] . '</p>';
-								}
-
-								break;		
-								
-								case "multi-select-checkbox":
-								    $this->create_multi_select_checkbox($option);
-								break;
-								default :
-									do_action( 'wp_event_manager_admin_field_' . $option['type'], $option, $attributes, $value, $placeholder );
-
-								break;
+		<div id="wpbody" role="main">
+		  <div id="wpbody-content" class="wpem-admin-container">
+		    <h2><?php _e('Rest API Settings','wp-event-manager-rest-api');?></h2>
+		    <div class="wrap">
+				<form method="post" name="wpem-settings-form" action="options.php">	
+
+					<?php settings_fields( $this->settings_group ); ?>
+
+					<div class="wpem-admin-left-sidebar">
+				        <ul class="wpem-admin-left-menu">
+				        	<?php foreach ( $this->settings as $key => $section ) { ?>
+				          <li class="wpem-admin-left-menu-item">
+				            <a class="wpem-icon-meter nav-tab <?php if ( isset( $_GET['tab'] ) && ( $_GET['tab'] == $key )  ) echo 'nav-tab-active'; ?>" href="<?php echo  esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab='.$key ) );?>"><?php echo esc_html( $section[0] ) ;?></a>
+				          </li>
+				       		<?php } ?>
+				        </ul>
+				      </div>
+				      <div class="wpem-admin-right-container wrap">
+				      	<div class="metabox-holder wpem-admin-right-container-holder">
+				          <div class="wpem-admin-top-title-section postbox">
+				          	<?php
+				          	if ( ! empty( $_GET['wpem-rest-api-settings-updated'] ) ) {
+								flush_rewrite_rules();
+								echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wp-event-manager' ) . '</p></div>';
 							}
-							echo '</td></tr>';
-						}
-						echo '</table></div>';
-					}
-				?>
-				 </div>   <!-- .white-background- -->
-				<p class="submit">
+				          	?>
+				            <?php 
+				              
+				                  include('templates/wpem-rest-settings-panel.php');
+				              
+				             ?>
+				          </div>
+				        </div>
+				      </div>
+				      <p class="submit">
 					<input type="submit" class="button-primary" id="save-changes" value="<?php _e( 'Save Changes', 'wp-event-manager' ); ?>" />
 				</p>
-			 </div>  <!-- .admin-setting-left -->						
-		    </form>
-		    
-        	
-
+			    </form>
+		    </div>
+		 </div>
+		</div>
 		<?php  wp_enqueue_script( 'wp-event-manager-admin-settings');
 	}
 	

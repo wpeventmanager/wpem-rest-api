@@ -747,7 +747,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 					'description' => __( 'Event status (post status).', 'wp-event-manager-rest-api' ),
 					'type'        => 'string',
 					'default'     => 'publish',
-					'enum'        => array_merge( array_keys( get_post_statuses() ), array( 'future' ) ),
+					'enum'        => array_merge( array_keys( get_post_statuses() ), array( 'future' ,'expired') ),
 					'context'     => array( 'view', 'edit' ),
 				),
 				'featured'              => array(
@@ -933,7 +933,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			'default'           => 'any',
 			'description'       => __( 'Limit result set to events assigned a specific status.', 'wp-event-manager-rest-api' ),
 			'type'              => 'string',
-			'enum'              => array_merge( array( 'any', 'future' ), array_keys( get_post_statuses() ) ),
+			'enum'              => array_merge( array( 'any', 'future','expired' ), array_keys( get_post_statuses() ) ),
 			'sanitize_callback' => 'sanitize_key',
 			'validate_callback' => 'rest_validate_request_arg',
 		);

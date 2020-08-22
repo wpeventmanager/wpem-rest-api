@@ -36,7 +36,7 @@ class WPEM_Rest_API_Admin {
 	public function admin_enqueue_scripts() {
 
 		if(isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ){
-			wp_register_script( 'wpem-rest-api-admin-js', WPEM_REST_API_PLUGIN_URL. '/assets/js/admin.js', array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'wp-util'), WPEM_REST_API_VERSION, true );
+			wp_register_script( 'wpem-rest-api-admin-js', WPEM_REST_API_PLUGIN_URL. '/assets/js/admin.js', array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'wp-util','wp-color-picker'), WPEM_REST_API_VERSION, true );
 			 wp_localize_script( 'wpem-rest-api-admin-js', 'wpem_rest_api_admin', array(
 			
 			 	'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -50,6 +50,7 @@ class WPEM_Rest_API_Admin {
 
 			 wp_enqueue_style( 'jquery-ui-style',EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array() );
 		}
+
 	}	
 
 	/**
@@ -75,12 +76,14 @@ class WPEM_Rest_API_Admin {
 	 */
 	public function page_output(){
 
+		$this->settings_page->output();
+
 		if ( isset( $_GET['page'] ) && $_GET['page'] == 'wpem-rest-api-settings' )  {
 		
 			wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
 			wp_enqueue_script( 'wpem-rest-api-admin-js' );
 			
-			include dirname( __FILE__ ) . '/templates/wpem-rest-settings-panel.php';
+			//include dirname( __FILE__ ) . '/templates/wpem-rest-settings-panel.php';
 		} 
 	}
 
@@ -194,7 +197,7 @@ class WPEM_Rest_API_Admin {
 				$response['consumer_secret'] = $consumer_secret;
 				$response['app_key'] 		 = $app_key;
 				$response['message']         = __( 'API Key generated successfully. Make sure to copy your new keys now as the secret key will be hidden once you leave this page.', 'wp-event-manager-rest-api' );
-				$response['revoke_url']      = '<a style="color: #a00; text-decoration: none;" href="' . esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings' ) ), 'revoke' ) ) . '">' . __( 'Revoke key', 'wp-event-manager-rest-api' ) . '</a>';
+				$response['revoke_url']      = '<a style="color: #a00; text-decoration: none;" href="' . esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ) . '">' . __( 'Revoke key', 'wp-event-manager-rest-api' ) . '</a>';
 			}
 		} catch ( Exception $e ) {
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );

@@ -14,6 +14,8 @@ var WPEMRestAPIAdmin= function () {
 			jQuery("select#key_user").chosen(); 
 			jQuery("select#event_id").chosen(); 
 			jQuery("input#date_expires").datepicker({ dateFormat: "yy-mm-dd" }); 
+			jQuery('.wpem-colorpicker').wpColorPicker();
+			
 	   },
 	actions :
 	{

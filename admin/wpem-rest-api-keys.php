@@ -214,7 +214,7 @@ class WPEM_Rest_API_Keys {
 			}
 		}
 
-		wp_safe_redirect( esc_url_raw( add_query_arg( array( 'revoked' => 1 ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings' ) ) ) );
+		wp_safe_redirect( esc_url_raw( add_query_arg( array( 'revoked' => 1 ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ) ) );
 		exit();
 	}
 
@@ -258,7 +258,7 @@ class WPEM_Rest_API_Keys {
 		}
 
 		// Redirect to webhooks page.
-		wp_safe_redirect( esc_url_raw( add_query_arg( array( 'revoked' => $qty ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings' ) ) ) );
+		wp_safe_redirect( esc_url_raw( add_query_arg( array( 'revoked' => $qty ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ) ) );
 		exit();
 	}
 
