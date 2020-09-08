@@ -201,7 +201,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			 */
 			do_action( "wpem_rest_insert_{$this->post_type}_object", $object, $request, true );
 		} catch ( Exception $e ) {
-			$object->delete();
+			wp_delete_post( $object->ID );
 			return new WP_Error( $e->getErrorCode(), $e->getMessage(), array( 'status' => $e->getCode() ) );
 		}
 
@@ -470,8 +470,9 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
 		// If we're forcing, then delete permanently.
 		if ( $force ) {
-			$object->delete( true );
-			$result = 0 === $object->ID;
+			wp_delete_post( $object->ID, true );
+			//$result = 0 === $object->ID;
+			$result = 1;
 		} else {
 			// If we don't support trashing for this type, error out.
 			if ( ! $supports_trash ) {
@@ -486,7 +487,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 					return new WP_Error( 'wpem_rest_already_trashed', sprintf( __( 'The %s has already been deleted.', 'wp-event-manager-rest-api' ), $this->post_type ), array( 'status' => 410 ) );
 				}
 
-				$object->delete();
+				wp_delete_post( $object->ID );
 				$result = 'trash' === $object->get_status();
 			}
 		}

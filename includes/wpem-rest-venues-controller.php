@@ -608,8 +608,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		// If we're forcing, then delete permanently.
 		if ( $force ) {	
 
-			$object->delete( true );
-			$result = 0 === $object->ID;
+			wp_delete_post( $object->ID, true );
+			//$result = 0 === $object->ID;
+			$result = 1;
 		} else {
 			// If we don't support trashing for this type, error out.
 			if ( ! $supports_trash ) {
@@ -636,7 +637,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 					);
 				}
 
-				$object->delete();
+				wp_delete_post( $object->ID );
 				$result = 'trash' === $object->get_status();
 			}
 		}
@@ -652,10 +653,12 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			);
 		}
 
+		/*
 		// Delete parent event transients.
 		if ( 0 !== $object->get_parent_id() ) {
 			wpem_delete_event_transients( $object->get_parent_id() );
 		}
+		*/
 
 		/**
 		 * Fires after a single object is deleted or trashed via the REST API.
