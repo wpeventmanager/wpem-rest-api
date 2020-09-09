@@ -398,6 +398,20 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		$id = isset( $request['id'] ) ? absint( $request['id'] ) : 0;
 
 		if ( isset( $request['id'] ) ) {
+
+			$_POST = $request;
+
+			$GLOBALS['event_manager']->forms->get_form( 'edit-event', array() );
+			$form_edit_event_instance = call_user_func( array( 'WP_Event_Manager_Form_Edit_Event', 'instance' ) );
+			$event_fields =	$form_edit_event_instance->merge_with_custom_fields('frontend');
+
+			$values = $form_edit_event_instance->get_posted_fields();
+
+			// Update the event
+			$form_edit_event_instance->save_event( $request['event_title'], $request['event_description'], '', $values, false );
+			$form_edit_event_instance->update_event_data( $values );
+
+			//final response after update
 			$event = get_post( $id );
 		}
 		else{
