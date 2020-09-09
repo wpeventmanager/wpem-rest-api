@@ -973,7 +973,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		
 	}
 
-		/**
+	/**
 	 * Get the query params and return event fields
 	 *
 	 * @return array
@@ -987,9 +987,46 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		$form_submit_event_instance = call_user_func( array( 'WP_Event_Manager_Form_Submit_Event', 'instance' ) );
 		$fields = $form_submit_event_instance->merge_with_custom_fields('frontend');
 
-		return $fields;
+		$event_fields = [];
+
+		foreach ($fields as $group_key => $group_fields) 
+		{
+			foreach ($group_fields as $key => $field) 
+			{
+				if($field['type'] === 'term-select')
+				{
+					$field['options'] = $this->get_event_texonomy($field['taxonomy']);
+				}
+				
+				$event_fields[$group_key][$key] = $field;
+			}	
+		}
+
+		return $event_fields;
 	}
 	
+	/**
+	 * Get the query params and return event fields
+	 *
+	 * @return array
+	 */
+	public function get_event_texonomy($texonomy = ''){
+		$terms = get_terms( array(
+		    'taxonomy' => $texonomy,
+		    'hide_empty' => false,
+		) );
+
+		$data = [];
+
+		if(!empty($terms))
+		{
+			foreach ($terms as $term) {
+				$data[$term->term_id] = $term->name;
+			}
+		}
+
+		return $data;
+	}
 }
 
 
