@@ -313,7 +313,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				'status'                => $event->post_status,
 				'featured'              => $event->_featured,
 				
-				'description'           => 'view' === $context ? wpautop( do_shortcode( get_event_description($event) ) ) : get_event_description($event ),
+				'description'           => 'view' === $context ? wpautop( do_shortcode( get_the_content('',false,$event) ) ) : get_the_content('',false,$event),
 				
 				'event_categories'            => taxonomy_exists( 'event_listing_category' ) ? get_the_terms($event->ID,'event_listing_category') : ''   ,
 				'event_types'            => taxonomy_exists( 'event_listing_type' ) ? get_the_terms($event->ID,'event_listing_type') : '',
@@ -614,7 +614,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		 * Return false to disable trash support for the object.
 		 *
 		 * @param boolean $supports_trash Whether the object type support trashing.
-		 * @param WC_Data $object         The object being considered for trashing support.
+		 * @param  $object         The object being considered for trashing support.
 		 */
 		$supports_trash = apply_filters( "wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object );
 
