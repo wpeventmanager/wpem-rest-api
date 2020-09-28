@@ -70,7 +70,7 @@ li.wpem-admin-left-menu-item {
   position: absolute;
   right: 15px;
   top: 38%;
-  border: solid #00a5fb;
+  border: solid #00a5fa;
   border-width: 0 2px 2px 0;
   display: inline-block;
   padding: 3px;
@@ -78,14 +78,15 @@ li.wpem-admin-left-menu-item {
   -webkit-transform: rotate(-45deg);
 }
 .wpem-admin-top-title-section.postbox h3 {
-  padding: 20px 20px 20px 25px;
+  padding: 15px 20px;
   font-family: "Open Sans", Arial, serif;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 1.6em;
+  margin: 0;
   letter-spacing: 0.05em;
-  color: #00a5fb;
-  border-bottom: 3px solid;
-  background: #f9f9f9;
+  /* border-bottom: 1px solid #ccc; */
+  color: #888;
+  /* background: #e8e8e8; */
 }
 .wpem-admin-top-title-section.postbox {
   margin: 0px;
@@ -101,13 +102,13 @@ li.wpem-admin-left-menu-item {
     transition: 0.3s all ease-in-out;
     color: #a2acba;
 }
-.wpem-admin-container .nav-tab.nav-tab-active:before{color: #00a5fb;}
-.wpem-admin-bottom-content {
-  padding: 20px;
-}
+.wpem-admin-container .nav-tab.nav-tab-active:before{color: #00a5fa;}
 
 .wpem-admin-right-container-holder {
   padding-top: 0px !important;
+}
+.wpem-admin-right-container-holder .postbox table.form-table {
+    border-bottom: 1px solid #ccc;
 }
 @media only screen and (max-width: 768px) {
   .wpem-admin-left-sidebar,
@@ -135,6 +136,9 @@ li.wpem-admin-left-menu-item {
 .wpem-admin-bottom-content a{color: #555;}
 .wpem-admin-bottom-content a:active, a:hover {
     color: #555;
+}
+.wpem-admin-bottom-content table.form-table tbody tr th {
+    padding: 20px;
 }
 .wpem-admin-bottom-content input[type=color],.wpem-admin-bottom-content input[type=date],.wpem-admin-bottom-content input[type=datetime-local],.wpem-admin-bottom-content input[type=datetime],.wpem-admin-bottom-content input[type=email],.wpem-admin-bottom-content input[type=month],.wpem-admin-bottom-content input[type=number],.wpem-admin-bottom-content input[type=password],.wpem-admin-bottom-content input[type=search],.wpem-admin-bottom-content input[type=tel],.wpem-admin-bottom-content input[type=text],.wpem-admin-bottom-content input[type=time],.wpem-admin-bottom-content input[type=url],.wpem-admin-bottom-content input[type=week],.wpem-admin-bottom-content select,.wpem-admin-bottom-content textarea {
     box-shadow: 0 0 0 transparent;

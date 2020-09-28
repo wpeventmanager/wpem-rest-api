@@ -98,69 +98,6 @@ class WPEM_Rest_API_Settings {
 																'desc'       => '',
 																'type'       => 'color-picker',
 																'attributes' => array(),
-															),
-															array(
-																'name'       => 'app_loading_icon_color',
-																'std'        => '#000',
-																'label'      => __( 'Loading Icon Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-															),
-															array(
-																'name'       => 'app_top_and_footer_navigation_and_selected_tab_line_background_color',
-																'std'        => '#000',
-																'label'      => __( 'Top and Footer Navigation & Selected Tab Line Background Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-															),
-															array(
-																'name'       => 'app_top_and_footer_navigation_background_text_color',
-																'std'        => '#000',
-																'label'      => __( 'Top and Footer Navigation Background Text Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-															),
-															array(
-																'name'       => 'app_top_and_footer_navigation_icon_color',
-																'std'        => '#000',
-																'label'      => __( 'Top and Footer Navigation Icon Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-															),
-															array(
-																'name'       => 'app_round_circle_background_color',
-																'std'        => '#000',
-																'label'      => __( 'Round Circle Background Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-															),
-															array(
-																'name'       => 'app_round_circle_calculated_percentage_background_color',
-																'std'        => '#000',
-																'label'      => __( 'Round Circle Calculated Percentage Background Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-															),
-															array(
-																'name'       => 'app_round_circle_inside_text_color',
-																'std'        => '#000',
-																'label'      => __( 'Round Circle inside Text Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
 															)
 														),
 														'login_screen' => array(
@@ -251,16 +188,6 @@ class WPEM_Rest_API_Settings {
 													)
 						),
 													'splash_screen' => array(
-														array(
-																'name'       => 'app_splash_logo',
-																'std'        => '1',
-																'label'      => __( 'Splash Screen logo', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'file',
-																'attributes' => array(),
-														),
-
 															array(
 																'name'       => 'app_splash_screen_background_color',
 																'std'        => '1',
@@ -271,44 +198,17 @@ class WPEM_Rest_API_Settings {
 																'attributes' => array(),
 														),
 														array(
-																'name'       => 'app_splash_bottom_heading_text',
+																'name'       => 'app_splash_screen_image_color',
 																'std'        => '1',
-																'label'      => __( 'Splash Bottom Heading Text', 'wp-event-manager-rest-api' ),
+																'label'      => __( 'Splash Image Text Color', 'wp-event-manager-rest-api' ),
 																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
 																'desc'       => '',
 																'type'       => 'color-picker',
 																'attributes' => array(),
+														)
 														),
-														array(
-																'name'       => 'app_splash_bottom_sub_heading_text',
-																'std'        => '1',
-																'label'      => __( 'Splash Bottom Sub Heading Text', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-														),
-														array(
-																'name'       => 'app_splash_skip_text_color',
-																'std'        => '1',
-																'label'      => __( 'Splash Skip Text Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-														),
-														array(
-																'name'       => 'app_splash_bottom_three_dot_icon_color',
-																'std'        => '1',
-																'label'      => __( 'Splash Bottom Three dot Icon Color', 'wp-event-manager-rest-api' ),
-																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-																'desc'       => '',
-																'type'       => 'color-picker',
-																'attributes' => array(),
-														),
-													),
 														'select_event_screen' => array(),
-													)
+													  )
 								)
 
 							/*array(
