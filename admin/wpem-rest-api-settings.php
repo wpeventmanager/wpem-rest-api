@@ -307,7 +307,37 @@ class WPEM_Rest_API_Settings {
 																'attributes' => array(),
 														),
 													),
-														'select_event_screen' => array(),
+														'select_event_screen' => array(
+array(
+																'name'       => 'app_event_title_text_color',
+																'std'        => '1',
+																'label'      => __( 'Event Title Text Color', 'wp-event-manager-rest-api' ),
+																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+																'desc'       => '',
+																'type'       => 'file',
+																'attributes' => array(),
+														),
+
+															array(
+																'name'       => 'app_tab_title_text_color',
+																'std'        => '1',
+																'label'      => __( 'Tab Title Text Color', 'wp-event-manager-rest-api' ),
+																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+																'desc'       => '',
+																'type'       => 'color-picker',
+																'attributes' => array(),
+														),
+														array(
+																'name'       => 'app_event_address_and_time_text_color',
+																'std'        => '1',
+																'label'      => __( 'Event Address & TIme Text Color', 'wp-event-manager-rest-api' ),
+																'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
+																'desc'       => '',
+																'type'       => 'color-picker',
+																'attributes' => array(),
+														),
+														
+														),
 													)
 								)
 
