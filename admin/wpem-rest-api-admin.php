@@ -65,7 +65,7 @@ class WPEM_Rest_API_Admin {
 		//add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this, 'page_output' ) );
 
 
-		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this, 'page_output' ) );
+		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this->settings_page, 'output' ) );
 
 		
 	}

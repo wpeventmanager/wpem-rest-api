@@ -60,6 +60,8 @@ class WPEM_Rest_API {
         include( 'includes/wpem-rest-crud-controller.php' );
         include( 'includes/wpem-rest-events-controller.php' );
 
+        include( 'includes/wpem-rest-app-branding.php' );
+
 		// Activate
 		register_activation_hook( __FILE__, array( $this, 'install' ) );
 

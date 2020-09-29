@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 class WPEM_Rest_API_Settings {
 
+	public $settings;
+
 	/**
 	 * __construct function.
 	 *
@@ -29,29 +31,11 @@ class WPEM_Rest_API_Settings {
 	/**
 	 * init_settings function.
 	 *
-	 * @access protected
+	 * @access public
 	 * @return void
 	 */
 
-	protected function init_settings() {
-
-		// Prepare roles option
-
-		$roles         = get_editable_roles();
-
-		$account_roles = array();
-		foreach ( $roles as $key => $role ) {
-
-			if ( $key == 'administrator' ) {
-
-				continue;
-			}
-
-			$account_roles[ $key ] = $role['name'];
-		}
-
-		$this->setting_sections = apply_filters( 'wpem_rest_api_setting_sections',array());
-
+	public function init_settings() {
 
 		$this->settings = apply_filters( 'wpem_rest_api_settings',
 
@@ -87,7 +71,7 @@ class WPEM_Rest_API_Settings {
 																	'label'      => __( 'Logo', 'wp-event-manager-rest-api' ),
 																	'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
 																	'desc'       => '',
-																	'type'       => 'text',
+																	'type'       => 'file',
 																	'attributes' => array(),
 																),
 															array(
@@ -340,83 +324,7 @@ array(
 														),
 													)
 								)
-
-							/*array(
-							
-							array(
-									'name'       => 'app_heading_color',
-									'std'        => '1',
-									'label'      => __( 'Heading Text Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),array(
-									'name'       => 'app_sub_heading_color',
-									'std'        => '1',
-									'label'      => __( 'Sub Heading Text Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),array(
-									'name'       => 'app_login_screen_to_heading_color',
-									'std'        => '1',
-									'label'      => __( 'Login Screen Top Heading Text Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),array(
-									'name'       => 'app_login_screen_bottom_background_color',
-									'std'        => '1',
-									'label'      => __( 'Login Screen Bottom Background Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),array(
-									'name'       => 'app_login_screen_bottom_color',
-									'std'        => '1',
-									'label'      => __( 'Login Screen Bottom Text Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),array(
-									'name'       => 'app_login_screen_textbox_icon_color',
-									'std'        => '1',
-									'label'      => __( 'Login Screen Textbox Icon Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),array(
-									'name'       => 'app_login_screen_button_color',
-									'std'        => '1',
-									'label'      => __( 'Login Screen Button Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),array(
-									'name'       => 'app_login_screen_button_text_color',
-									'std'        => '1',
-									'label'      => __( 'Login Screen Button Text Color', 'wp-event-manager-rest-api' ),
-									'cb_label'   => __( '', 'wp-event-manager-rest-api' ),
-									'desc'       => '',
-									'type'       => 'color-picker',
-									'attributes' => array(),
-							),
-						)*/
-					),
-
-
-			
-
-				
-				
-			
+					)	
 		);
 	}
 
@@ -431,17 +339,20 @@ array(
 
 		$this->init_settings();
 
-		/*foreach ( $this->settings as $sections ) {
+		foreach($this->settings as $settings ){
+		if(isset($settings['sections'] ))
+			foreach ( $settings['sections'] as $section_key => $section ) {
+				
+	      		if(isset($settings['fields'][$section_key]))
+		      	foreach ( $settings['fields'][$section_key] as $option ) {
+		      		
+		      		if(isset($option['name']) && isset($option['std']) )
+		      			add_option( $option['name'], $option['std'] );
 
-			foreach ( $section['fields'] as $option ) {
-
-				if ( isset( $option['std'] ) )
-
-					add_option( $option['name'], $option['std'] );
-
-				register_setting( $this->settings_group, $option['name'] );
+		      		register_setting( $this->settings_group, $option['name'] );
+		      	}
 			}
-		}*/
+		}
 	}
 
 
@@ -456,12 +367,15 @@ array(
 
 		$this->init_settings();
 
+		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
+		wp_enqueue_script( 'wpem-rest-api-admin-js' );
+
 		?>
 		<div id="wpbody" role="main">
 		  <div id="wpbody-content" class="wpem-admin-container">
 		    <h2><?php _e('Rest API Settings','wp-event-manager-rest-api');?></h2>
 		    <div class="wrap">
-				<form method="post" name="wpem-settings-form" action="options.php">	
+				<form method="post" name="wpem-rest-settings-form" action="options.php">	
 
 					<?php settings_fields( $this->settings_group ); ?>
 
@@ -502,34 +416,5 @@ array(
 		<?php  wp_enqueue_script( 'wp-event-manager-admin-settings');
 	}
 	
-	/**
-	 * Creates Multiselect checkbox.
-	 * This function generate multiselect 
-	 * @param $value
-	 * @return void
-	 */ 
-	public function create_multi_select_checkbox($value) 
-	{ 
-		
-		echo '<ul class="mnt-checklist" id="'.$value['name'].'" >'."\n";
-		foreach ($value['options'] as $option_value => $option_list) {
-			$checked = " ";
-			if (get_option($value['name'] ) ) {
-			
-                                 $all_country = get_option( $value['name'] );
-                                 $start_string = strpos($option_list['name'],'[');
-                                 $country_code = substr($option_list['name'] ,$start_string + 1 ,  2 );
-                                 $coutry_exist = array_key_exists($country_code , $all_country);
-                              if( $coutry_exist ){
-                                     $checked = " checked='checked' ";       
-                                     
-                              }
-			}
-			echo "<li>\n";
-
-			echo '<input id="setting-'.$option_list['name'].'" name="'.$option_list['name'].'" type="checkbox" '.$checked.'/>'.$option_list['cb_label']."\n";
-			echo "</li>\n";
-		}
-		echo "</ul>\n";
-    }
+	
 }
