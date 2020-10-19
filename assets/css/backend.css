@@ -13,6 +13,10 @@
   margin-top: 12px;
 }
 
+.wpem-admin-right-container.wpem-dark-mode .postbox{
+  background: #222b45;
+}
+
 ul.wpem-admin-left-menu {
   background: #fff;
   border-left: 1px solid #e3e3e3;

@@ -14,19 +14,39 @@ var WPEMRestAPIAdmin= function () {
 			jQuery("select#key_user").chosen(); 
 			jQuery("select#event_id").chosen(); 
 			jQuery("input#date_expires").datepicker({ dateFormat: "yy-mm-dd" }); 
-			jQuery('.wpem-colorpicker').wpColorPicker();
+
+			jQuery( ".wpem-app-branding-mode .app-branding-mode .wpem-light-mode" ).click(function() {
+				jQuery( ".wpem-app-branding-mode" ).removeClass("wpem-dark-mode");
+				jQuery( ".wpem-app-branding-mode" ).addClass("wpem-light-mode");
+			});
+			jQuery( ".wpem-app-branding-mode .app-branding-mode .wpem-dark-mode" ).click(function() {
+				jQuery( ".wpem-app-branding-mode" ).removeClass("wpem-light-mode");
+				jQuery( ".wpem-app-branding-mode" ).addClass("wpem-dark-mode");
+			});
+
+			jQuery("#update_app_branding").on('click',WPEMRestAPIAdmin.actions.saveAppBranding);
+
+			jQuery('.wpem-colorpicker').wpColorPicker({
+				defaultColor: true,
+				change: function (event, ui) {
+			        var element = event.target;
+			        var color = ui.color.toString();
+
+			        WPEMRestAPIAdmin.actions.changeBriteness(event, color);
+			    },
+			});
 			
 	   },
 	actions :
 	{
-	    	   /// <summary>
-			   /// 
-			   /// </summary>
-			   /// <param name="parent" type="Event"></param>    
-			   /// <returns type="actions" />
-			   /// <since>1.0.0</since>    
-			   saveApiKey: function(event) 
-			   {                   
+	    	   	/// <summary>
+			   	/// 
+			   	/// </summary>
+			   	/// <param name="parent" type="Event"></param>    
+			   	/// <returns type="actions" />
+			   	/// <since>1.0.0</since>    
+			   	saveApiKey: function(event) 
+			   	{                   
 			   		event.preventDefault();
 			   		var self = this;
 
@@ -82,7 +102,7 @@ var WPEMRestAPIAdmin= function () {
 								},
 								error: function(jqXHR, textStatus, errorThrown) 
 								{
-									$( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message error"><p>' + response.data.message + '</p></div>' );
+									jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message error"><p>' + response.data.message + '</p></div>' );
 								},
 								complete: function (jqXHR, textStatus) 
 								{
@@ -91,7 +111,71 @@ var WPEMRestAPIAdmin= function () {
 								}
 				        });
 
-			   },
+			   	},
+
+			   	/// <summary>
+			   	/// 
+			   	/// </summary>
+			   	/// <param name="parent" type="Event"></param>    
+			   	/// <returns type="actions" />
+			   	/// <since>1.0.0</since>    
+			   	saveAppBranding: function(event) 
+			   	{                   
+			   		event.preventDefault();
+			   		var self = this;
+
+					//self.block();
+			   		jQuery.ajax({
+								 type: 'POST',
+								 url: wpem_rest_api_admin.ajaxUrl,
+								 data: 
+								 {
+								 	action: 'save_app_branding',
+								 	security: wpem_rest_api_admin.save_app_branding_nonce,
+								 	wpem_primary_color: jQuery('input[name="wpem_primary_color"]').val(),
+								 	wpem_success_color: jQuery('input[name="wpem_success_color"]').val(),
+								 	wpem_info_color: jQuery('input[name="wpem_info_color"]').val(),
+								 	wpem_warning_color: jQuery('input[name="wpem_warning_color"]').val(),
+								 	wpem_danger_color: jQuery('input[name="wpem_danger_color"]').val(),
+								 },
+								beforeSend: function(jqXHR, settings) 
+								{
+								    //Common.logInfo("Before send called...");
+								},
+								success: function(response)
+								{
+									jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message updated"><p>' + response.data.message + '</p></div>' );
+								},
+								error: function(jqXHR, textStatus, errorThrown) 
+								{
+									jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message error"><p>' + response.data.message + '</p></div>' );
+								},
+								complete: function (jqXHR, textStatus) 
+								{
+									//jQuery('#key-fields').find('.status-message').addClass('notice notice notice-success');									
+								}
+				        });
+
+			   	},
+
+			   	changeBriteness: function(event, color)
+			   	{
+			   		var name = event.target.name;
+			   		
+			   		jQuery.ajax({
+                        url: wpem_rest_api_admin.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'HTML',
+                        data: {
+                            action: 'change_brighness_color',
+                            color: color,
+                        },
+                        success: function (responce)
+                        {
+                            jQuery('#app-branding-color tbody tr td#' + name).html(responce);
+                        }
+                    });
+			   	},
 
 			 		  
 	}

@@ -14,6 +14,7 @@ class WPEM_Rest_API_Admin {
 
 		include( 'wpem-rest-api-settings.php' );
 		include( 'wpem-rest-api-keys.php' );
+		include( 'wpem-rest-app-branding.php' );
 		include( 'wpem-rest-api-keys-table-list.php' );
 
 		$this->settings_page = new WPEM_Rest_API_Settings();
@@ -23,6 +24,8 @@ class WPEM_Rest_API_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 
 		add_action("wp_ajax_save_rest_api_keys",array($this, "update_api_key") );
+
+		add_action("wp_ajax_save_app_branding",array($this, "save_app_branding") );
 	}
 
 	/**
@@ -37,18 +40,17 @@ class WPEM_Rest_API_Admin {
 
 		if(isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ){
 			wp_register_script( 'wpem-rest-api-admin-js', WPEM_REST_API_PLUGIN_URL. '/assets/js/admin.js', array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'wp-util','wp-color-picker'), WPEM_REST_API_VERSION, true );
-			 wp_localize_script( 'wpem-rest-api-admin-js', 'wpem_rest_api_admin', array(
-			
+
+			wp_localize_script( 'wpem-rest-api-admin-js', 'wpem_rest_api_admin', array(			
 			 	'ajaxUrl' => admin_url('admin-ajax.php'),
 			 	'save_api_nonce' =>  wp_create_nonce( 'save-api-key' ),
-			 	) );
+			 	'save_app_branding_nonce' =>  wp_create_nonce( 'save-api-branding' ),
+			) );
+
+			wp_enqueue_style( 'jquery-ui' );  
 
 
-
-			 wp_enqueue_style( 'jquery-ui' );  
-
-
-			 wp_enqueue_style( 'jquery-ui-style',EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array() );
+			wp_enqueue_style( 'jquery-ui-style',EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array() );
 		}
 
 	}	
@@ -230,6 +232,92 @@ class WPEM_Rest_API_Admin {
 
 		// wp_send_json_success must be outside the try block not to break phpunit tests.
 		wp_send_json_success( $response );
+	}
+
+	public function save_app_branding() {
+
+		check_ajax_referer( 'save-api-branding', 'security' );
+
+		if(isset($_POST['wpem_primary_color']))
+		{
+			update_option('wpem_primary_color', $_POST['wpem_primary_color']);
+		}
+
+		if(isset($_POST['wpem_success_color']))
+		{
+			update_option('wpem_success_color', $_POST['wpem_success_color']);
+		}
+
+		if(isset($_POST['wpem_info_color']))
+		{
+			update_option('wpem_info_color', $_POST['wpem_info_color']);
+		}
+
+		if(isset($_POST['wpem_warning_color']))
+		{
+			update_option('wpem_warning_color', $_POST['wpem_warning_color']);
+		}
+
+		if(isset($_POST['wpem_primary_color']))
+		{
+			update_option('wpem_danger_color', $_POST['wpem_danger_color']);
+		}
+
+		$primary_color 	= !empty(get_option('wpem_primary_color')) ? get_option('wpem_primary_color') : '#3366FF';
+		$success_color 	= !empty(get_option('wpem_success_color')) ? get_option('wpem_success_color') : '#77DD37';
+		$info_color 	= !empty(get_option('wpem_info_color')) ? get_option('wpem_info_color') : '#42BCFF';
+		$warning_color 	= !empty(get_option('wpem_warning_color')) ? get_option('wpem_warning_color') : '#FCD837';
+		$danger_color 	= !empty(get_option('wpem_danger_color')) ? get_option('wpem_danger_color') : '#FC4C20';
+
+		$rgb_primary_color 	= wpem_hex_to_rgb($primary_color);
+		$rgb_success_color 	= wpem_hex_to_rgb($success_color);
+		$rgb_info_color 	= wpem_hex_to_rgb($info_color);
+		$rgb_warning_color 	= wpem_hex_to_rgb($warning_color);
+		$rgb_danger_color 	= wpem_hex_to_rgb($danger_color);
+
+		$default_rgb = 0.08;
+
+		$wpem_colors = [];
+
+		$data_color = [];
+		for($i=1;$i<10;$i++)
+		{	
+			$brightness = $i*100;
+
+			$wpem_colors['color-primary-'.$brightness] = wpem_color_brightness($primary_color, (1 - $i/10));
+			$wpem_colors['color-success-'.$brightness] = wpem_color_brightness($success_color, (1 - $i/10));
+			$wpem_colors['color-info-'.$brightness] = wpem_color_brightness($info_color, (1 - $i/10));
+			$wpem_colors['color-warning-'.$brightness] = wpem_color_brightness($warning_color, (1 - $i/10));
+			$wpem_colors['color-danger-'.$brightness] = wpem_color_brightness($danger_color, (1 - $i/10));
+
+			if($brightness <= 600)
+			{
+				$wpem_colors['color-primary-transparent-'.$brightness] = 'rgba('.$rgb_primary_color['red'].', '.$rgb_primary_color['green'].', '.$rgb_primary_color['blue'].', '. $i*$default_rgb .')';	
+
+				$wpem_colors['color-success-transparent-'.$brightness] = 'rgba('.$rgb_success_color['red'].', '.$rgb_success_color['green'].', '.$rgb_success_color['blue'].', '. $i*$default_rgb .')';	
+
+				$wpem_colors['color-info-transparent-'.$brightness] = 'rgba('.$rgb_info_color['red'].', '.$rgb_info_color['green'].', '.$rgb_info_color['blue'].', '. $i*$default_rgb .')';	
+
+				$wpem_colors['color-warning-transparent-'.$brightness] = 'rgba('.$rgb_warning_color['red'].', '.$rgb_warning_color['green'].', '.$rgb_warning_color['blue'].', '. $i*$default_rgb .')';	
+
+				$wpem_colors['color-danger-transparent-'.$brightness] = 'rgba('.$rgb_danger_color['red'].', '.$rgb_danger_color['green'].', '.$rgb_danger_color['blue'].', '. $i*$default_rgb .')';	
+			}
+			
+		}
+
+		if(!empty($wpem_colors))
+		{
+			ksort($wpem_colors);
+
+			update_option('wpem_app_branding_settings', $wpem_colors);	
+		}
+
+		$response = [];
+		$response['message'] = __( 'Successfully save App Branding.', 'wp-event-manager-rest-api' );
+
+		wp_send_json_success( $response );
+
+		wp_die();
 	}
 }
 new WPEM_Rest_API_Admin();

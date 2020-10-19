@@ -64,26 +64,15 @@ class WPEM_REST_APP_Branding_Controller extends WPEM_REST_CRUD_Controller {
 	 * @since 1.0.0
 	 * @param 
 	 */
-	public function get_branding_settings(){
-		
+	public function get_branding_settings()
+	{
+		$wpem_app_branding_settings = [];
 
-			$wpem_rest_settings = new WPEM_Rest_API_Settings();
-			$wpem_rest_settings->init_settings();
-			$data = [];
-			
-			if(isset($wpem_rest_settings->settings ))
-			foreach($wpem_rest_settings->settings as $setting_group){
-			if(isset( $setting_group['sections'] ))
-			foreach ( $setting_group['sections'] as $section_key => $section ) {
-	      	if(isset($setting_group['fields'][$section_key]))
-		      	foreach ( $setting_group['fields'][$section_key] as $option ) {
-		      		if(isset($option['name']))
-		      		$data[$section_key][$option['name']] = get_option($option['name']);
-		      	}
-			}
-			}
+		$wpem_app_branding_settings['app_logo'] = get_option('wpem_rest_api_app_logo');
+		$wpem_app_branding_settings['app_splash_screen_image'] = get_option('wpem_rest_api_app_splash_screen_image');
+		$wpem_app_branding_settings['color_scheme'] = get_option('wpem_app_branding_settings');
 
-			return apply_filters('wpem_app_branding_settings',$data);
+		return apply_filters('wpem_app_branding_settings',$wpem_app_branding_settings);
 	}
 }
 

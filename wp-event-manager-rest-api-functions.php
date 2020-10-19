@@ -83,3 +83,53 @@ function wpem_rest_urlencode_rfc3986( $value ) {
 
 	return str_replace( array( '+', '%7E' ), array( ' ', '~' ), rawurlencode( $value ) );
 }
+
+/**
+ * WPEM Color Brightness
+ *
+ * @since  1.0.0
+ * @param  string $data Message to be hashed.
+ * @return string
+ */
+function wpem_color_brightness($hexCode, $adjustPercent) {
+    $hexCode = ltrim($hexCode, '#');
+
+    if (strlen($hexCode) == 3) {
+        $hexCode = $hexCode[0] . $hexCode[0] . $hexCode[1] . $hexCode[1] . $hexCode[2] . $hexCode[2];
+    }
+
+    $hexCode = array_map('hexdec', str_split($hexCode, 2));
+
+    foreach ($hexCode as & $color) {
+        $adjustableLimit = $adjustPercent < 0 ? $color : 255 - $color;
+        $adjustAmount = ceil($adjustableLimit * $adjustPercent);
+
+        $color = str_pad(dechex($color + $adjustAmount), 2, '0', STR_PAD_LEFT);
+    }
+
+    return '#' . implode($hexCode);
+}
+
+/**
+ * WPEM hex to rgb
+ *
+ * @since  1.0.0
+ * @param  string $data Message to be hashed.
+ * @return string
+ */
+function wpem_hex_to_rgb( $colour ) {
+    if ( $colour[0] == '#' ) {
+            $colour = substr( $colour, 1 );
+    }
+    if ( strlen( $colour ) == 6 ) {
+            list( $r, $g, $b ) = array( $colour[0] . $colour[1], $colour[2] . $colour[3], $colour[4] . $colour[5] );
+    } elseif ( strlen( $colour ) == 3 ) {
+            list( $r, $g, $b ) = array( $colour[0] . $colour[0], $colour[1] . $colour[1], $colour[2] . $colour[2] );
+    } else {
+            return false;
+    }
+    $r = hexdec( $r );
+    $g = hexdec( $g );
+    $b = hexdec( $b );
+    return array( 'red' => $r, 'green' => $g, 'blue' => $b );
+}
