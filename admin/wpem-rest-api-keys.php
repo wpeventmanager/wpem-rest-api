@@ -118,7 +118,7 @@ class WPEM_Rest_API_Keys {
 			echo '<div class="wp-event-manager-rest-api-BlankState wp-event-manager-rest-api-BlankState--api">';
 			?>
 			<h2 class="wp-event-manager-rest-api-BlankState-message"><?php esc_html_e( 'Enable and generate Rest API keys.', 'wp-event-manager-rest-api' ); ?></h2>
-			<a class="wp-event-manager-rest-api-BlankState-cta button-primary button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-key-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
+			<a class="wp-event-manager-rest-api-BlankState-cta button-primary button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
 			<style type="text/css">#posts-filter .wp-list-table, #posts-filter .tablenav.top, .tablenav.bottom .actions { display: none; }</style>
 			<?php
 		}
@@ -222,7 +222,7 @@ class WPEM_Rest_API_Keys {
 	 * Bulk actions.
 	 */
 	private function bulk_actions() {
-		check_admin_referer( 'wpem-rest-api-key-settings' );
+		check_admin_referer( 'wpem-rest-api-settings' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to edit API Keys', 'wp-event-manager-rest-api' ) );
