@@ -77,7 +77,7 @@ var WPEMRestAPIAdmin= function () {
 										jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message updated"><p>' + data.message + '</p></div>' );
 
 										if ( 0 < data.consumer_key.length && 0 < data.consumer_secret.length ) {
-											jQuery( '#api-keys-options', self.el ).remove();
+											jQuery( '#api-keys-options', self.el ).parent().remove();
 											jQuery( 'p.submit', self.el ).empty().append( data.revoke_url );
 
 											var template = wp.template( 'api-keys-template' );

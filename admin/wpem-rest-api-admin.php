@@ -224,7 +224,7 @@ class WPEM_Rest_API_Admin {
 				$response['consumer_secret'] = $consumer_secret;
 				$response['app_key'] 		 = $app_key;
 				$response['message']         = __( 'API Key generated successfully. Make sure to copy your new keys now as the secret key will be hidden once you leave this page.', 'wp-event-manager-rest-api' );
-				$response['revoke_url']      = '<a style="color: #a00; text-decoration: none;" href="' . esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ) . '">' . __( 'Revoke key', 'wp-event-manager-rest-api' ) . '</a>';
+				$response['revoke_url']      = '<a class="wpem-backend-theme-button wpem-revoke-button" href="' . esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ) . '">' . __( 'Revoke key', 'wp-event-manager-rest-api' ) . '</a>';
 			}
 		} catch ( Exception $e ) {
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );

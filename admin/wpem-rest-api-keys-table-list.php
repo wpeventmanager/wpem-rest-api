@@ -33,6 +33,24 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 	}
 
 	/**
+	 * Column cb.
+	 *
+	 * @param  array $key Key data.
+	 * @return string
+	 */
+	public function column_cb( $key ) {
+		return sprintf( '<input type="checkbox" name="key[]" value="%1$s" />', $key['key_id'] );
+	}
+
+	public function column_default($item, $column_name) {
+    	return $item[$column_name];
+	}
+
+	public function get_hidden_columns(){
+		return array();
+	}
+
+	/**
 	 * Get list columns.
 	 *
 	 * @return array
@@ -49,16 +67,6 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 			 'permissions'   => __( 'Permissions', 'wp-event-manager-rest-api' ),
 			 'last_access'   => __( 'Last access', 'wp-event-manager-rest-api' ),
 		);
-	}
-
-	/**
-	 * Column cb.
-	 *
-	 * @param  array $key Key data.
-	 * @return string
-	 */
-	public function column_cb( $key ) {
-		return sprintf( '<input type="checkbox" name="key[]" value="%1$s" />', $key['key_id'] );
 	}
 
 	/**
@@ -205,7 +213,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 	 *
 	 * @return array
 	 */
-	protected function get_bulk_actions() {
+	public function get_bulk_actions() {
 		if ( ! current_user_can( 'remove_users' ) ) {
 			return array();
 		}
@@ -213,43 +221,6 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 		return array(
 			'revoke' => __( 'Revoke', 'wp-event-manager-rest-api' ),
 		);
-	}
-
-	/**
-	 * Search box.
-	 *
-	 * @param  string $text     Button text.
-	 * @param  string $input_id Input ID.
-	 */
-	public function search_box( $text, $input_id ) {
-		if ( empty( $_REQUEST['s'] ) && ! $this->has_items() ) { // WPCS: input var okay, CSRF ok.
-			return;
-		}
-
-		$input_id     = $input_id . '-search-input';
-		$search_query = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : ''; // WPCS: input var okay, CSRF ok.
-
-		echo '<p class="search-box">';
-		echo '<label class="screen-reader-text" for="' . esc_attr( $input_id ) . '">' . esc_html( $text ) . ':</label>';
-		echo '<input type="search" id="' . esc_attr( $input_id ) . '" name="s" value="' . esc_attr( $search_query ) . '" />';
-		submit_button(
-			$text,
-			'',
-			'',
-			false,
-			array(
-				'id' => 'search-submit',
-			)
-		);
-		echo '</p>';
-	}
-
-	public function column_default($item, $column_name) {
-    	return $item[$column_name];
-	}
-
-	public function get_hidden_columns(){
-		return array();
 	}
 
 	/**
@@ -265,7 +236,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
         $hidden = $this->get_hidden_columns();
         $sortable = $this->get_sortable_columns();
 
-		if ( 1 < $current_page ) {
+        if ( 1 < $current_page ) {
 			$offset = $per_page * ( $current_page - 1 );
 		} else {
 			$offset = 0;
@@ -297,4 +268,36 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 			)
 		);
 	}
+
+	/**
+	 * Search box.
+	 *
+	 * @param  string $text     Button text.
+	 * @param  string $input_id Input ID.
+	 */
+	public function search_box( $text, $input_id ) {
+		if ( empty( $_REQUEST['s'] ) && ! $this->has_items() ) { // WPCS: input var okay, CSRF ok.
+			return;
+		}
+
+		$input_id     = $input_id . '-search-input';
+		$search_query = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : ''; // WPCS: input var okay, CSRF ok.
+
+		echo '<div class="wpem-admin-body">';
+		echo '<p class="search-box">';
+		echo '<label class="screen-reader-text" for="' . esc_attr( $input_id ) . '">' . esc_html( $text ) . ':</label>';
+		echo '<input type="search" id="' . esc_attr( $input_id ) . '" name="s" value="' . esc_attr( $search_query ) . '" />';
+		submit_button(
+			$text,
+			'',
+			'',
+			false,
+			array(
+				'id' => 'search-submit',
+			)
+		);
+		echo '</p>';
+		
+	}
+
 }

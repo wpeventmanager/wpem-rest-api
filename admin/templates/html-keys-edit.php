@@ -8,10 +8,10 @@ defined( 'ABSPATH' ) || exit;
 ?>
 
 <div id="key-fields" class="settings-panel">
-	<h2><?php esc_html_e( 'Key details', 'wp-event-manager-organizer-app-access' ); ?></h2>
+	<h3 class="wpem-admin-tab-title"><?php esc_html_e( 'Key details', 'wp-event-manager-organizer-app-access' ); ?></h3>
 
 	<input type="hidden" id="key_id" value="<?php echo esc_attr( $key_id ); ?>" />
-
+	<div class="wpem-admin-body">
 	<table id="api-keys-options" class="form-table">
 		<tbody>
 			<tr valign="top">
@@ -144,17 +144,18 @@ defined( 'ABSPATH' ) || exit;
 			<?php endif ?>
 		</tbody>
 	</table>
+	</div>
 
 	<?php do_action( 'wpem_admin_key_fields', $key_data ); ?>
 
 	<?php
 	if ( 0 === intval( $key_id ) ) {
-		submit_button( __( 'Generate API key', 'wp-event-manager-organizer-app-access' ), 'primary', 'update_api_key' );
+		submit_button( __( 'Generate API key', 'wp-event-manager-organizer-app-access' ), 'primary wpem-backend-theme-button', 'update_api_key' );
 	} else {
 		?>
 		<p class="submit">
-			<?php submit_button( __( 'Save changes', 'wp-event-manager-organizer-app-access' ), 'primary', 'update_api_key', false ); ?>
-			<a style="color: #a00; text-decoration: none; margin-left: 10px;" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wp-event-manager-organizer-app-access' ); ?></a>
+			<?php submit_button( __( 'Save changes', 'wp-event-manager-organizer-app-access' ), 'primary wpem-backend-theme-button', 'update_api_key', false ); ?>
+			<a class="wpem-backend-theme-button wpem-revoke-button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wp-event-manager-organizer-app-access' ); ?></a>
 		</p>
 		<?php
 	}
@@ -162,7 +163,7 @@ defined( 'ABSPATH' ) || exit;
 </div>
 
 <script type="text/template" id="tmpl-api-keys-template">
-	<p id="copy-error"></p>
+	<div class="wpem-admin-body">
 	<table class="form-table">
 		<tbody>
 			<tr valign="top">
@@ -192,6 +193,7 @@ defined( 'ABSPATH' ) || exit;
 			
 		</tbody>
 	</table>
+	</div>
 </script>
 
 

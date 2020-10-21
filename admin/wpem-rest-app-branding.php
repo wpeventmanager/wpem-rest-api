@@ -60,11 +60,11 @@ class WPEM_Rest_APP_Branding {
 
 				if($i < 5)
 				{
-					$output .= '<div>'. $brightness .'</div> <div style="width:70%;height:50px;background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div>';	
+					$output .= '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';
 				}
 				else
 				{
-					$output .= '<div>'. $brightness .'</div> <div style="width:70%;height:50px;background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$color_code.'">'.$code.'</span></div>';	
+					$output .= '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$danger_color.'">'.$code.'</span></div></div>';
 				}
 			}
 		}

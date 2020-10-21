@@ -17,6 +17,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
     foreach ( $tab_settings['sections'] as $section_key => $section ) {
       
       echo '<h3 class="wpem-admin-tab-title">'. $section.'</h3>';
+      echo '<div class="wpem-admin-body">';
       echo '<table class="form-table">';
 
       if(isset($tab_settings['fields'][$section_key]))
@@ -190,7 +191,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
 
       }
     }
-    echo '</td></tr></table>';
+    echo '</td></tr></table></div>';
   }
   }
   ?>

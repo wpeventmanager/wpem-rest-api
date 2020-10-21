@@ -102,7 +102,7 @@ class WPEM_Rest_API_Keys {
 
 		$keys_table_list = new WPEM_API_Keys_Table_List();
 
-		echo '<div class="wrap"><h1 class="wp-heading-inline">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' </h1><a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ) . '" class="add-new-h2">' . esc_html__( 'Add key', 'wp-event-manager-rest-api' ) . '</a><hr class="wp-header-end">';
+		echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ) . '" class="add-new-h2 wpem-backend-theme-button">' . esc_html__( 'Add Key', 'wp-event-manager-rest-api' ) . '</a></h3>';
 
 		// Get the API keys count.
 		$count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1;" );
@@ -115,10 +115,10 @@ class WPEM_Rest_API_Keys {
 			$keys_table_list->display();
 
 		} else {
-			echo '<div class="wp-event-manager-rest-api-BlankState wp-event-manager-rest-api-BlankState--api">';
+			echo '<div class="wp-event-manager-rest-api-BlankState wp-event-manager-rest-api-BlankState--api wpem-admin-body">';
 			?>
 			<h2 class="wp-event-manager-rest-api-BlankState-message"><?php esc_html_e( 'Enable and generate Rest API keys.', 'wp-event-manager-rest-api' ); ?></h2>
-			<a class="wp-event-manager-rest-api-BlankState-cta button-primary button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
+			<a class="wp-event-manager-rest-api-BlankState-cta button-primary wpem-backend-theme-button button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
 			<style type="text/css">#posts-filter .wp-list-table, #posts-filter .tablenav.top, .tablenav.bottom .actions { display: none; }</style>
 			<?php
 		}
@@ -222,8 +222,6 @@ class WPEM_Rest_API_Keys {
 	 * Bulk actions.
 	 */
 	private function bulk_actions() {
-		check_admin_referer( 'wpem-rest-api-settings' );
-
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to edit API Keys', 'wp-event-manager-rest-api' ) );
 		}

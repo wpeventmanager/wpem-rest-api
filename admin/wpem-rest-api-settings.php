@@ -79,7 +79,7 @@ class WPEM_Rest_API_Settings {
 					),
 					'api-access' => array(
 							'label'			=>	__( 'API Access', 'wp-event-manager' ),
-							'icon'			=>	'link',
+							'icon'			=>	'loop',
 							'type'       => 'template',	
 					),
 					'app-branding' => array(							
@@ -133,12 +133,20 @@ class WPEM_Rest_API_Settings {
 		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
 		wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
+		$current_tab = isset($_REQUEST['tab']) ? $_REQUEST['tab'] : 'general';
+
+		$action = '';
+		if(in_array($current_tab, ['general']))
+		{
+			$action = 'action="options.php"';
+		}
+
 		?>
 		<div id="wpbody" role="main">
 		  <div id="wpbody-content" class="wpem-admin-container">
 		    <h2><?php _e('Rest API Settings','wp-event-manager-rest-api');?></h2>
-		    <div class="wrap">
-				<form method="post" name="wpem-rest-settings-form" action="options.php">	
+		    <div class="wpem-wrap">
+				<form method="post" name="wpem-rest-settings-form" <?php echo $action; ?> >	
 
 					<?php settings_fields( $this->settings_group ); ?>
 
@@ -152,7 +160,7 @@ class WPEM_Rest_API_Settings {
 				       		<?php } ?>
 				        </ul>
 				      </div>
-				      <div class="wpem-admin-right-container wrap wpem-app-branding-mode wpem-light-mode">
+				      <div class="wpem-admin-right-container wpem-<?php echo $current_tab; ?> wpem-app-branding-mode wpem-light-mode">
 				      	<div class="metabox-holder wpem-admin-right-container-holder">
 				          <div class="wpem-admin-top-title-section postbox">
 				          	<?php
@@ -166,12 +174,14 @@ class WPEM_Rest_API_Settings {
 				                  include('templates/wpem-rest-settings-panel.php');
 				              
 				             ?>
-				          </div>
-				        </div>
+						  </div>
+						  <p class="submit">
+								<input type="submit" class="button-primary wpem-backend-theme-button" id="save-changes" value="<?php _e( 'Save Changes', 'wp-event-manager' ); ?>" />
+						  </p>
+						</div>
+						
 				      </div>
-				      <p class="submit">
-					<input type="submit" class="button-primary" id="save-changes" value="<?php _e( 'Save Changes', 'wp-event-manager' ); ?>" />
-				</p>
+				      
 			    </form>
 		    </div>
 		 </div>
