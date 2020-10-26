@@ -666,3 +666,11 @@
 .wpem-admin-container .wpem-dark-mode .wpem-dark-mode.button img {
   filter: brightness(0) invert(1);
 }
+.wpem-admin-container
+  .wpem-api-access
+  .wpem-admin-right-container-holder
+  .wpem-admin-bottom-content
+  .settings-panel
+  p.submit {
+  display: block;
+}

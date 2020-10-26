@@ -82,7 +82,7 @@ var WPEMRestAPIAdmin= function () {
 
 											var template = wp.template( 'api-keys-template' );
 
-											jQuery( 'p.submit', self.el ).before( template({
+											jQuery( '#key-fields p.submit', self.el ).before( template({
 												consumer_key:    data.consumer_key,
 												consumer_secret: data.consumer_secret,
 												app_key: data.app_key
