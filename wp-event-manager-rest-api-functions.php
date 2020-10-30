@@ -57,6 +57,28 @@ function wpem_rest_check_post_permissions( $post_type, $context = 'read', $objec
 	return apply_filters( 'wpem_rest_check_permissions', $permission, $context, $object_id, $post_type );
 }
 
+
+/**
+ * Check manager permissions on REST API.
+ *
+ * @since 2.6.0
+ * @param string $object  Object.
+ * @param string $context Request context.
+ * @return bool
+ */
+function wpem_rest_check_manager_permissions( $object, $context = 'read' ) {
+
+    $objects = array(
+        'reports'          => 'read_private_posts',
+    );
+
+    $permission = current_user_can( $objects[ $object ] );
+
+    return apply_filters( 'wpem_rest_check_permissions', $permission, $context, 0, $object );
+}
+
+
+
 /**
  * WPEM API - Hash.
  *
