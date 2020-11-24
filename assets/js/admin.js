@@ -15,11 +15,20 @@ var WPEMRestAPIAdmin= function () {
 			jQuery("select#event_id").chosen(); 
 			jQuery("input#date_expires").datepicker({ dateFormat: "yy-mm-dd" }); 
 
+			jQuery( "table#app-branding-color-dark" ).hide();
+
+			//light mode
 			jQuery( ".wpem-app-branding-mode .app-branding-mode .wpem-light-mode" ).click(function() {
 				jQuery( ".wpem-app-branding-mode" ).removeClass("wpem-dark-mode");
 				jQuery( ".wpem-app-branding-mode" ).addClass("wpem-light-mode");
+				jQuery( "table#app-branding-color" ).show();
+				jQuery( "table#app-branding-color-dark" ).hide();
 			});
+			//dark mode
 			jQuery( ".wpem-app-branding-mode .app-branding-mode .wpem-dark-mode" ).click(function() {
+				jQuery( "table#app-branding-color" ).hide();
+				jQuery( "table#app-branding-color-dark" ).show();
+				
 				jQuery( ".wpem-app-branding-mode" ).removeClass("wpem-light-mode");
 				jQuery( ".wpem-app-branding-mode" ).addClass("wpem-dark-mode");
 			});
@@ -137,6 +146,12 @@ var WPEMRestAPIAdmin= function () {
 								 	wpem_info_color: jQuery('input[name="wpem_info_color"]').val(),
 								 	wpem_warning_color: jQuery('input[name="wpem_warning_color"]').val(),
 								 	wpem_danger_color: jQuery('input[name="wpem_danger_color"]').val(),
+
+								 	wpem_primary_dark_color: jQuery('input[name="wpem_primary_dark_color"]').val(),
+								 	wpem_success_dark_color: jQuery('input[name="wpem_success_dark_color"]').val(),
+								 	wpem_info_dark_color: jQuery('input[name="wpem_info_dark_color"]').val(),
+								 	wpem_warning_dark_color: jQuery('input[name="wpem_warning_dark_color"]').val(),
+								 	wpem_danger_dark_color: jQuery('input[name="wpem_danger_dark_color"]').val(),
 								 },
 								beforeSend: function(jqXHR, settings) 
 								{
@@ -161,6 +176,7 @@ var WPEMRestAPIAdmin= function () {
 			   	changeBriteness: function(event, color)
 			   	{
 			   		var name = event.target.name;
+			   		var tableid = jQuery(event.target).parents('table').attr('id');
 			   		
 			   		jQuery.ajax({
                         url: wpem_rest_api_admin.ajaxUrl,
@@ -170,9 +186,9 @@ var WPEMRestAPIAdmin= function () {
                             action: 'change_brighness_color',
                             color: color,
                         },
-                        success: function (responce)
+                        success: function (response)
                         {
-                            jQuery('#app-branding-color tbody tr td#' + name).html(responce);
+                            jQuery('#'+tableid+' tbody tr td#' + name).html(response);
                         }
                     });
 			   	},

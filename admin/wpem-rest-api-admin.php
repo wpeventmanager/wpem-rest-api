@@ -238,6 +238,7 @@ class WPEM_Rest_API_Admin {
 
 		check_ajax_referer( 'save-api-branding', 'security' );
 
+		//normal colors
 		if(isset($_POST['wpem_primary_color']))
 		{
 			update_option('wpem_primary_color', $_POST['wpem_primary_color']);
@@ -258,7 +259,7 @@ class WPEM_Rest_API_Admin {
 			update_option('wpem_warning_color', $_POST['wpem_warning_color']);
 		}
 
-		if(isset($_POST['wpem_primary_color']))
+		if(isset($_POST['wpem_danger_color']))
 		{
 			update_option('wpem_danger_color', $_POST['wpem_danger_color']);
 		}
@@ -268,6 +269,68 @@ class WPEM_Rest_API_Admin {
 		$info_color 	= !empty(get_option('wpem_info_color')) ? get_option('wpem_info_color') : '#42BCFF';
 		$warning_color 	= !empty(get_option('wpem_warning_color')) ? get_option('wpem_warning_color') : '#FCD837';
 		$danger_color 	= !empty(get_option('wpem_danger_color')) ? get_option('wpem_danger_color') : '#FC4C20';
+
+
+		//dark mode colors
+		if(isset($_POST['wpem_primary_dark_color']))
+		{
+			echo $_POST['wpem_primary_dark_color'];
+			update_option('wpem_primary_dark_color', $_POST['wpem_primary_dark_color']);
+		}
+
+		if(isset($_POST['wpem_success_dark_color']))
+		{
+			update_option('wpem_success_dark_color', $_POST['wpem_success_dark_color']);
+		}
+
+		if(isset($_POST['wpem_info_dark_color']))
+		{
+			update_option('wpem_info_dark_color', $_POST['wpem_info_dark_color']);
+		}
+
+		if(isset($_POST['wpem_warning_dark_color']))
+		{
+			update_option('wpem_warning_dark_color', $_POST['wpem_warning_dark_color']);
+		}
+
+		if(isset($_POST['wpem_danger_dark_color']))
+		{
+			update_option('wpem_danger_dark_color', $_POST['wpem_danger_dark_color']);
+		}
+		$primary_dark_color 	= !empty(get_option('wpem_primary_dark_color')) ? get_option('wpem_primary_dark_color') : '#3366FF';
+		$success_dark_color 	= !empty(get_option('wpem_success_dark_color')) ? get_option('wpem_success_dark_color') : '#77DD37';
+		$info_dark_color 	= !empty(get_option('wpem_info_dark_color')) ? get_option('wpem_info_dark_color') : '#42BCFF';
+		$warning_dark_color 	= !empty(get_option('wpem_warning_dark_color')) ? get_option('wpem_warning_dark_color') : '#FCD837';
+		$danger_dark_color 	= !empty(get_option('wpem_danger_dark_color')) ? get_option('wpem_danger_dark_color') : '#FC4C20';
+
+		
+
+		$wpem_dark_colors = $this->generate_scheme_formatted_colorcodes($primary_dark_color,$success_dark_color,$info_dark_color,$warning_dark_color,$danger_dark_color);
+
+		if(!empty($wpem_colors))
+		{
+			ksort($wpem_colors);
+
+			update_option('wpem_app_branding_settings', $wpem_colors);	
+		}
+
+		if(!empty($wpem_dark_colors))
+		{
+			ksort($wpem_dark_colors);
+			
+			update_option('wpem_app_branding_dark_settings', $wpem_dark_colors);	
+		}
+
+		$response = [];
+		$response['message'] = __( 'Successfully save App Branding.', 'wp-event-manager-rest-api' );
+
+		wp_send_json_success( $response );
+
+		wp_die();
+	}
+
+
+	public function generate_scheme_formatted_colorcodes($primary_color = "#3366FF",$success_color="#77DD37",$info_color = "#42BCFF",$warning_color = "#FCD837",$danger_color = "#FC4C20"){
 
 		$rgb_primary_color 	= wpem_hex_to_rgb($primary_color);
 		$rgb_success_color 	= wpem_hex_to_rgb($success_color);
@@ -304,20 +367,7 @@ class WPEM_Rest_API_Admin {
 			}
 			
 		}
-
-		if(!empty($wpem_colors))
-		{
-			ksort($wpem_colors);
-
-			update_option('wpem_app_branding_settings', $wpem_colors);	
-		}
-
-		$response = [];
-		$response['message'] = __( 'Successfully save App Branding.', 'wp-event-manager-rest-api' );
-
-		wp_send_json_success( $response );
-
-		wp_die();
+		return $wpem_colors;
 	}
 }
 new WPEM_Rest_API_Admin();

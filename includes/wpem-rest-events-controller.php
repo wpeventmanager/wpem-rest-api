@@ -1011,9 +1011,17 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				{
 					$field['options'] = $this->get_event_texonomy($field['taxonomy']);
 				}
+
+				if($key == 'event_organizer_ids' )
+				{
+					//echo get_current_user_id();
+				}
+
+
 				
 				$event_fields[$group_key][$key] = $field;
-			}	
+			}
+
 		}
 
 		return $event_fields;

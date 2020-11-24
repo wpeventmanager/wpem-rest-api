@@ -36,6 +36,13 @@ class WPEM_Rest_APP_Branding {
 		$warning_color 	= !empty(get_option('wpem_warning_color')) ? get_option('wpem_warning_color') : '#FCD837';
 		$danger_color 	= !empty(get_option('wpem_danger_color')) ? get_option('wpem_danger_color') : '#FC4C20';
 
+
+		$primary_dark_color 	= !empty(get_option('wpem_primary_dark_color')) ? get_option('wpem_primary_dark_color') : '#3366FF';
+		$success_dark_color 	= !empty(get_option('wpem_success_dark_color')) ? get_option('wpem_success_dark_color') : '#77DD37';
+		$info_dark_color 	= !empty(get_option('wpem_info_dark_color')) ? get_option('wpem_info_dark_color') : '#42BCFF';
+		$warning_dark_color 	= !empty(get_option('wpem_warning_dark_color')) ? get_option('wpem_warning_dark_color') : '#FCD837';
+		$danger_dark_color 	= !empty(get_option('wpem_danger_dark_color')) ? get_option('wpem_danger_dark_color') : '#FC4C20';
+
 		include dirname( __FILE__ ) . '/templates/html-app-branding.php';
 	}
 	
