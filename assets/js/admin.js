@@ -111,7 +111,7 @@ var WPEMRestAPIAdmin= function () {
 								},
 								error: function(jqXHR, textStatus, errorThrown) 
 								{
-									jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message error"><p>' + response.data.message + '</p></div>' );
+									jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message error"><p>' + errorThrown + '</p></div>' );
 								},
 								complete: function (jqXHR, textStatus) 
 								{
@@ -163,7 +163,7 @@ var WPEMRestAPIAdmin= function () {
 								},
 								error: function(jqXHR, textStatus, errorThrown) 
 								{
-									jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message error"><p>' + response.data.message + '</p></div>' );
+									jQuery( 'h2, h3', self.el ).first().append( '<div class="wpem-api-message error"><p>' + errorThrown + '</p></div>' );
 								},
 								complete: function (jqXHR, textStatus) 
 								{

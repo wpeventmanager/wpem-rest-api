@@ -429,6 +429,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			$response->link_header( 'next', $next_link );
 		}
 
+
 		return $response;
 	}
 

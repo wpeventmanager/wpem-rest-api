@@ -274,7 +274,6 @@ class WPEM_Rest_API_Admin {
 		//dark mode colors
 		if(isset($_POST['wpem_primary_dark_color']))
 		{
-			echo $_POST['wpem_primary_dark_color'];
 			update_option('wpem_primary_dark_color', $_POST['wpem_primary_dark_color']);
 		}
 
@@ -304,6 +303,8 @@ class WPEM_Rest_API_Admin {
 		$danger_dark_color 	= !empty(get_option('wpem_danger_dark_color')) ? get_option('wpem_danger_dark_color') : '#FC4C20';
 
 		
+
+		$wpem_colors = $this->generate_scheme_formatted_colorcodes($primary_color,$success_color,$info_color,$warning_color,$danger_color);
 
 		$wpem_dark_colors = $this->generate_scheme_formatted_colorcodes($primary_dark_color,$success_dark_color,$info_dark_color,$warning_dark_color,$danger_dark_color);
 

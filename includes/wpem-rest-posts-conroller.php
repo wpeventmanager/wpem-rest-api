@@ -377,6 +377,8 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 			$count_query = new WP_Query();
 			$count_query->query( $query_args );
 			$total_posts = $count_query->found_posts;
+
+			
 		}
 
 		$max_pages = ceil( $total_posts / (int) $query_args['posts_per_page'] );
@@ -406,6 +408,9 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 			$next_link = add_query_arg( 'page', $next_page, $base );
 			$response->link_header( 'next', $next_link );
 		}
+
+
+
 
 		return $response;
 	}
