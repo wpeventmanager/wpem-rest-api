@@ -146,6 +146,19 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				)
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/upload_file',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'upload_file' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'args'                => $this->get_endpoint_args_for_item_schema( WP_REST_Server::CREATABLE ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -1046,6 +1059,58 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * upload file
+	 *
+	 * @return array
+	 */
+	public function upload_file( $request ) 
+	{
+		$file = $request->get_file_params();
+
+		if ( isset($file['upload_file']) && !empty($file['upload_file']) && isset($file['upload_file']['name']) && !empty($file['upload_file']['name']) )
+        {
+        	$post_id = 0;
+
+        	//sanitize each of the values of file data
+            $file_name=sanitize_file_name($file['upload_file']['name']);
+			$file_type=sanitize_text_field($file['upload_file']['type']);
+			$file_tmp_name=sanitize_text_field($file['upload_file']['tmp_name']);
+			$file_size=absint($file['upload_file']['size']);
+
+			$file_key = isset($request['file_key']) ? $request['file_key'] : '';
+
+			// Upload file
+            $args     = array('file_key' => $file_key);
+            $uploaded_file = event_manager_upload_file($file['upload_file'], $args);
+
+            
+            $attachment = array(
+                'post_title'     => $file_name,
+                'post_content'   => '',
+                'post_type'      => 'attachment',
+                'post_parent'    => null, // populated after inserting post
+                'post_mime_type' => $file_type,
+                'guid'           => $uploaded_file->url
+            );
+
+            $attachment['post_parent'] = $post_id;
+            $attach_id = wp_insert_attachment($attachment, $uploaded_file->file, $post_id);
+            $attach_data = wp_generate_attachment_metadata($attach_id, $uploaded_file->file);
+
+            $data = [];
+            $data['attachment_id'] = $attach_id;
+            $data['attachment_name'] = $file_name;
+            $data['attachment_url'] = $uploaded_file->url;
+
+            return $data;
+        }
+        else
+        {
+        	return new WP_Error( 'wpem_rest_invalid_file', __( 'Please select file.', 'wp-event-manager-rest-api' ), array( 'status' => 404 ) );
+        }
 	}
 }
 
