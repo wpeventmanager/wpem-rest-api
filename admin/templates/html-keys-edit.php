@@ -52,6 +52,8 @@ defined( 'ABSPATH' ) || exit;
 						?>
 						
 					</select>
+					<p class="description"><?php _e('select the event for which the key is generating. You can keep it All events if you want to connect the other end point for all of them.
+','wp-event-manager-rest-api');?></p> 
 				</td>
 			</tr>
 			<tr valign="top">
@@ -77,6 +79,8 @@ defined( 'ABSPATH' ) || exit;
 					<select class="event-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wp-event-manager-rest-api' ); ?>" data-allow_clear="true">
 						<option value="<?php echo esc_attr( $user_id ); ?>" selected="selected"><?php echo htmlspecialchars( wp_kses_post( $user_string ) ); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
 					</select>
+					<p class="description"><?php _e('Name of the owner of the Key.
+','wp-event-manager-rest-api');?></p> 
 				</td>
 			</tr>
 			<tr valign="top">
@@ -87,13 +91,14 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td class="forminp">
 					<input id="date_expires" type="text" class="input-text regular-input" value="<?php echo esc_attr( $key_data['date_expires'] ); ?>" />
+					<p class="description"><?php _e('Set an expiry date till which the key should be activated.','wp-event-manager-rest-api');?></p>
 				</td>
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
 					<label for="key_permissions">
 						<?php esc_html_e( 'Permissions', 'wp-event-manager-rest-api' ); ?>
-						<?php   _e( 'Select the access type of these keys.', 'wp-event-manager-rest-api' ); ?>
+						
 					</label>
 				</th>
 				<td class="forminp">
@@ -110,6 +115,7 @@ defined( 'ABSPATH' ) || exit;
 							<option value="<?php echo esc_attr( $permission_id ); ?>" <?php selected( $key_data['permissions'], $permission_id, true ); ?>><?php echo esc_html( $permission_name ); ?></option>
 						<?php endforeach; ?>
 					</select>
+					<?php   _e( 'Select the access type of these keys.', 'wp-event-manager-rest-api' ); ?>
 				</td>
 			</tr>
 
