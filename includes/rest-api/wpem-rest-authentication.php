@@ -40,6 +40,7 @@ class WPEM_REST_Authentication {
 	public function __construct() {
 		add_filter( 'determine_current_user', array( $this, 'authenticate' ), 15 );
 		add_filter( 'rest_authentication_errors', array( $this, 'check_authentication_error' ), 15 );
+		
 		//rest pre and post allows to authorize the user request
 		add_filter( 'rest_post_dispatch', array( $this, 'send_unauthorized_headers' ), 50 );
 		add_filter( 'rest_pre_dispatch', array( $this, 'check_user_permissions' ), 10, 3 );

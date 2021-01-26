@@ -50,8 +50,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 */
 	public function get_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
-		
-		
 
 		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );

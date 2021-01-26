@@ -1,5 +1,3 @@
-@import "https://staging-wpeventmanagerdemo.kinsta.cloud/wp-content/plugins/wp-event-manager/assets/fonts/style.css?ver=5.4.2";
-
 .wpem-admin-container .wpem-admin-left-sidebar {
   display: inline-block;
   width: 25%;
@@ -23,28 +21,18 @@
   border-right: 1px solid #e3e3e3;
 }
 
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item:first-child {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item:first-child {
   border-top: 1px solid #e3e3e3;
 }
 
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item {
   width: 100%;
   display: flex;
   margin: 0;
   border-bottom: 1px solid #e3e3e3;
 }
 
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab {
   border: 0;
   transition: 0.2s all ease-in-out;
   position: relative;
@@ -56,58 +44,26 @@
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
 }
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab:hover {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab:hover {
   background-color: #f9f9f9;
   color: #00a5fa;
   border-left: 5px solid;
 }
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab:hover:before {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab:hover:before {
   color: #00a5fa;
 }
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab-active {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab-active {
   position: relative;
 }
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab-active,
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab-active:focus,
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab-active:focus:active,
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab-active:hover {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab-active,
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab-active:focus,
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab-active:focus:active,
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab-active:hover {
   background-color: #f9f9f9;
   color: #00a5fa;
   border-left: 5px solid;
 }
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  a.nav-tab-active:after {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab-active:after {
   content: "";
   position: absolute;
   right: 15px;
@@ -133,11 +89,7 @@
   border: none;
   box-shadow: none;
 }
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  .nav-tab:before {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item .nav-tab:before {
   font-family: "wp-event-manager";
   position: absolute;
   font-weight: normal;
@@ -148,11 +100,7 @@
   transition: 0.3s all ease-in-out;
   color: #a2acba;
 }
-.wpem-admin-container
-  .wpem-admin-left-sidebar
-  ul.wpem-admin-left-menu
-  li.wpem-admin-left-menu-item
-  .nav-tab.nav-tab-active:before {
+.wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item .nav-tab.nav-tab-active:before {
   color: #00a5fa;
 }
 
@@ -217,30 +165,12 @@
   border-radius: 3px;
   padding: 7px 10px;
 }
-.wpem-admin-container
-  .wpem-admin-right-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table {
+.wpem-admin-container .wpem-admin-right-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table {
   width: 100%;
   margin-top: 0;
 }
-.wpem-admin-container
-  .wpem-admin-right-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  tbody
-  tr:first-child
-  th,
-.wpem-admin-container
-  .wpem-admin-right-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  tbody
-  tr:first-child
-  td {
+.wpem-admin-container .wpem-admin-right-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table tbody tr:first-child th,
+.wpem-admin-container .wpem-admin-right-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table tbody tr:first-child td {
   padding-top: 10px;
 }
 
@@ -252,34 +182,14 @@
 .wpem-admin-container .wpem-admin-bottom-content .wpem-admin-body {
   padding: 20px;
 }
-.wpem-admin-container
-  .wpem-api-access.wpem-admin-right-container
-  .wpem-admin-right-container-holder
-  .wpem-admin-body {
+.wpem-admin-container .wpem-api-access.wpem-admin-right-container .wpem-admin-right-container-holder .wpem-admin-body {
   padding: 20px;
 }
-.wpem-admin-container
-  .wpem-api-access.wpem-admin-right-container
-  .wpem-admin-right-container-holder
-  .wpem-admin-body
-  table.form-table
-  tbody
-  tr:first-child
-  th,
-.wpem-admin-container
-  .wpem-api-access.wpem-admin-right-container
-  .wpem-admin-right-container-holder
-  .wpem-admin-body
-  table.form-table
-  tbody
-  tr:first-child
-  td {
+.wpem-admin-container .wpem-api-access.wpem-admin-right-container .wpem-admin-right-container-holder .wpem-admin-body table.form-table tbody tr:first-child th,
+.wpem-admin-container .wpem-api-access.wpem-admin-right-container .wpem-admin-right-container-holder .wpem-admin-body table.form-table tbody tr:first-child td {
   padding-top: 0;
 }
-.wpem-admin-container
-  .wpem-admin-bottom-content
-  .wpem-admin-body
-  h2:first-child {
+.wpem-admin-container .wpem-admin-bottom-content .wpem-admin-body h2:first-child {
   margin-top: 0px;
 }
 .wpem-admin-container .wpem-admin-body p.search-box input.button,
@@ -380,112 +290,47 @@
 .wpem-admin-container .wpem-dark-mode .wpem-dark-mode.button svg {
   fill: #fff;
 }
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  thead
-  tr
-  th {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table thead tr th {
   background: #eee;
   padding-left: 20px;
   border: 1px solid #ccc;
   text-align: center;
   border-left: none;
 }
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  thead
-  tr
-  th:last-child {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table thead tr th:last-child {
   border-right: none;
 }
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  thead {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table thead {
   width: 100%;
 }
 
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  thead
-  tr
-  th:last-child {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table thead tr th:last-child {
   border-right: none;
 }
 
-.wpem-admin-container
-  .wpem-app-branding
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr {
+.wpem-admin-container .wpem-app-branding .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr {
   background: #f1f1f1;
 }
 
-.wpem-admin-container
-  .wpem-app-branding
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr
-  + tr {
+.wpem-admin-container .wpem-app-branding .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr + tr {
   background: #fff;
 }
 
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-app-branding
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr
-  td {
+.wpem-admin-container .wpem-app-branding-mode.wpem-app-branding .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr td {
   text-align: center;
   border-right: 1px solid #ccc;
   position: relative;
 }
 
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  span.wp-color-result-text {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table span.wp-color-result-text {
   display: none;
 }
 
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  .wp-picker-container
-  .iris-picker {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table .wp-picker-container .iris-picker {
   position: absolute;
   z-index: 2;
 }
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  tbody
-  td:last-child
-  .wp-picker-container
-  .iris-picker {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table tbody td:last-child .wp-picker-container .iris-picker {
   right: 0;
 }
 .wpem-admin-container .wpem-color-pallet-wrapper {
@@ -501,15 +346,7 @@
   padding: 10px;
   text-align: center;
 }
-.wpem-admin-container
-  .wpem-app-branding
-  .wpem-light-mode
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr:first-child {
+.wpem-admin-container .wpem-app-branding .wpem-light-mode .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr:first-child {
   background: #f1f1f1;
 }
 .wpem-admin-container .wpem-color-pallet-wrapper div {
@@ -520,23 +357,10 @@
   padding: 5px;
   width: 20%;
 }
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  tbody
-  tr
-  td
-  p {
-  text-align: center;
+.wpem-admin-container .wpem-admin-bottom-content table.form-table p {
   padding-bottom: 10px;
 }
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  tbody
-  .wpem-color-pellet-code {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table tbody .wpem-color-pellet-code {
   padding: 10px;
   font-size: 14px;
   line-height: 28px;
@@ -551,126 +375,61 @@
   display: block;
   opacity: 1;
 }
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-dark-mode
-  h3.wpem-admin-tab-title {
+.wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode h3.wpem-admin-tab-title {
   background: #202745;
   color: #fff;
 }
 
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-dark-mode
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  thead
-  tr
-  th {
+.wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table thead tr th {
   background: #202745;
   color: #fff;
   border-color: #151a30;
 }
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-app-branding.wpem-dark-mode
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr
-  td {
+.wpem-admin-container .wpem-app-branding-mode.wpem-app-branding.wpem-dark-mode .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr td {
   border-color: #151a30;
 }
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-app-branding
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr
-  td:last-child {
+.wpem-admin-container .wpem-app-branding-mode.wpem-app-branding .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr td:last-child {
   border: none;
 }
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-dark-mode
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr
-  + tr {
+.wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr + tr {
   background: #202745;
   color: #fff;
 }
 
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-dark-mode
-  .wpem-color-pallet-wrapper
-  div {
+.wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-color-pallet-wrapper div {
   color: #fff;
 }
-.wpem-admin-container
-  .wpem-app-branding
-  .wpem-admin-right-container-holder
-  p.submit,
-.wpem-admin-container
-  .wpem-api-access
-  .wpem-admin-right-container-holder
-  p.submit {
+.wpem-admin-container .wpem-app-branding .wpem-admin-right-container-holder p.submit,
+.wpem-admin-container .wpem-api-access .wpem-admin-right-container-holder p.submit {
   display: none;
 }
 
-.wpem-admin-container
-  .wpem-app-branding
-  .wpem-admin-right-container-holder
-  .wpem-admin-top-title-section
-  p.submit,
-.wpem-admin-container
-  .wpem-admin-right-container-holder.wpem-admin-body
-  .wpem-admin-top-title-section
-  .wpem-admin-bottom-content
-  p.submit {
+.wpem-admin-container .wpem-app-branding .wpem-admin-right-container-holder .wpem-admin-top-title-section p.submit,
+.wpem-admin-container .wpem-admin-right-container-holder.wpem-admin-body .wpem-admin-top-title-section .wpem-admin-bottom-content p.submit {
   display: block;
 }
 
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-dark-mode
-  .wpem-admin-right-container-holder
-  p.submit {
+.wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-admin-right-container-holder p.submit {
   background: #151a30;
 }
 
-.wpem-admin-container
-  .wpem-app-branding-mode.wpem-dark-mode
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  .settings-panel
-  table.form-table
-  tbody
-  tr {
+.wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr {
   background: #151a30;
   color: #fff;
 }
-.wpem-admin-container
-  .wpem-admin-top-title-section.postbox
-  .wpem-admin-bottom-content
-  table.form-table
-  tbody
-  tr
-  td:first-child {
+.wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table tbody tr td:first-child {
   border-left: none;
 }
 .wpem-admin-container .wpem-light-mode .wpem-light-mode.button img,
 .wpem-admin-container .wpem-dark-mode .wpem-dark-mode.button img {
+  -webkit-filter: brightness(0) invert(1);
   filter: brightness(0) invert(1);
 }
-.wpem-admin-container
-  .wpem-api-access
-  .wpem-admin-right-container-holder
-  .wpem-admin-bottom-content
-  .settings-panel
-  p.submit {
+.wpem-admin-container .wpem-api-access .wpem-admin-right-container-holder .wpem-admin-bottom-content .settings-panel p.submit {
   display: block;
+}
+.wpem-admin-container .wpem-admin-bottom-content .wpem-admin-body .form-field .file_url {
+  text-align: left;
+  display: flex;
+  width: 100%;
 }

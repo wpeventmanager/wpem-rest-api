@@ -115,7 +115,8 @@ defined( 'ABSPATH' ) || exit;
 							<option value="<?php echo esc_attr( $permission_id ); ?>" <?php selected( $key_data['permissions'], $permission_id, true ); ?>><?php echo esc_html( $permission_name ); ?></option>
 						<?php endforeach; ?>
 					</select>
-					<?php   _e( 'Select the access type of these keys.', 'wp-event-manager-rest-api' ); ?>
+					<p class="description">
+					<?php   _e( 'Select the access type of these keys.', 'wp-event-manager-rest-api' ); ?></p>
 				</td>
 			</tr>
 

@@ -54,13 +54,16 @@ class WPEM_Rest_API {
 
 		include( 'wp-event-manager-rest-api-functions.php' );
 
-		include( 'includes/wpem-rest-authentication.php' );
-        include( 'includes/wpem-rest-conroller.php' );
-        include( 'includes/wpem-rest-posts-conroller.php' );
-        include( 'includes/wpem-rest-crud-controller.php' );
-        include( 'includes/wpem-rest-events-controller.php' );
+		//include 
+		include( 'includes/wpem-rest-api-dashboard.php' );
 
-        include( 'includes/wpem-rest-app-branding.php' );
+		include( 'includes/rest-api/wpem-rest-authentication.php' );
+        include( 'includes/rest-api/wpem-rest-conroller.php' );
+        include( 'includes/rest-api/wpem-rest-posts-conroller.php' );
+        include( 'includes/rest-api/wpem-rest-crud-controller.php' );
+        include( 'includes/rest-api/wpem-rest-events-controller.php' );
+
+        include( 'includes/rest-api/wpem-rest-app-branding.php' );
 
 		// Activate
 		register_activation_hook( __FILE__, array( $this, 'install' ) );

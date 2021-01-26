@@ -46,6 +46,7 @@ function wpem_rest_check_post_permissions( $post_type, $context = 'read', $objec
 	if ( 'revision' === $post_type ) {
 		$permission = false;
 	} else {
+        
 		$cap              = $contexts[ $context ];
 		
 		$post_type_object = get_post_type_object( $post_type );
