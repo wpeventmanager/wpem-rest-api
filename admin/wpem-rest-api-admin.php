@@ -79,54 +79,9 @@ class WPEM_Rest_API_Admin {
 	 */
 	public function admin_menu() {
 
-		//add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this, 'page_output' ) );
-
-
-		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this->settings_page, 'output' ) );
+		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API Settings', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this->settings_page, 'output' ) );
 
 		
-	}
-
-	/**
-	 * page_output function will output the rest api settings in admin panel.
-	 *
-	 * @since 1.0.0
-	 * @access public
-	 * @return void
-	 */
-	public function page_output(){
-
-		$this->settings_page->output();
-
-		if ( isset( $_GET['page'] ) && $_GET['page'] == 'wpem-rest-api-settings' )  {
-			$tab = (isset($_GET['tab'])) ? $_GET['tab'] : '';
-			if (empty($tab)) {
-			    $tab = 'general';
-			}
-
-		    // switch ($tab) {
-
-		    //     case 'general':
-		    //         $this->settings_page->show_setting_tab('general');
-		    //         break;
-
-		    //     case 'api-access':
-		    //         $this->settings_page->show_setting_tab('api-access');
-		    //         break;
-
-		    //     case 'app-branding':
-		    //         $this->settings_page->show_setting_tab('api-access');
-		    //         break;
-		    //     default: do_action('wpem_settings_menu_' . $tab);
-		    //         break;
-		    // }
-
-		
-			wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
-			wp_enqueue_script( 'wpem-rest-api-admin-js' );
-			
-			//include dirname( __FILE__ ) . '/templates/wpem-rest-settings-panel.php';
-		} 
 	}
 
 	/**

@@ -148,9 +148,13 @@ class WPEM_Rest_API_Settings {
 		}
 
 		?>
+		<div class="wrap">
+        	<h1><?php _e( 'Rest API Settings', 'textdomain' ); ?></h1>
+    	</div>
+
 		<div id="wpbody" role="main">
 		  <div id="wpbody-content" class="wpem-admin-container">
-		    <h2><?php _e('Rest API Settings','wp-event-manager-rest-api');?></h2>
+		    
 		    <div class="wpem-wrap">
 				<form method="post" name="wpem-rest-settings-form" <?php echo $action; ?> >	
 
