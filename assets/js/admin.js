@@ -41,7 +41,7 @@ var WPEMRestAPIAdmin= function () {
 			        var element = event.target;
 			        var color = ui.color.toString();
 
-			        WPEMRestAPIAdmin.actions.changeBriteness(event, color);
+			        WPEMRestAPIAdmin.actions.changeBrightness(event, color);
 			    },
 			});
 
@@ -177,7 +177,7 @@ var WPEMRestAPIAdmin= function () {
 
 			   	},
 
-			   	changeBriteness: function(event, color)
+			   	changeBrightness: function(event, color)
 			   	{
 			   		var name = event.target.name;
 			   		var tableid = jQuery(event.target).parents('table').attr('id');

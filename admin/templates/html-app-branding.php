@@ -215,8 +215,11 @@ defined( 'ABSPATH' ) || exit;
 					<?php
 					for($i=1;$i<10;$i++)
 					{
-						$code = wpem_color_brightness($primary_color, $i/10);
 						$brightness = (1000 - $i*100);
+						$adjust_percentage = $i/10;
+						if($brightness == 500)
+							$adjust_percentage = 0;
+						$code = wpem_color_brightness($primary_dark_color, $adjust_percentage);
 
 						if($i < 5)
 						{
@@ -224,7 +227,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$primary_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$primary_dark_color.'">'.$code.'</span></div></div>';	
 						}
 					}
 					?>
@@ -233,8 +236,12 @@ defined( 'ABSPATH' ) || exit;
 					<?php
 					for($i=1;$i<10;$i++)
 					{
-						$code = wpem_color_brightness($success_color, $i/10);
 						$brightness = (1000 - $i*100);
+						$adjust_percentage = $i/10;
+						if($brightness == 500)
+							$adjust_percentage = 0;
+						$code = wpem_color_brightness($success_dark_color, $adjust_percentage);
+						
 
 						if($i < 5)
 						{
@@ -242,7 +249,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$success_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$success_dark_color.'">'.$code.'</span></div></div>';	
 						}
 					}
 					?>
@@ -251,8 +258,12 @@ defined( 'ABSPATH' ) || exit;
 					<?php
 					for($i=1;$i<10;$i++)
 					{
-						$code = wpem_color_brightness($info_color, $i/10);
 						$brightness = (1000 - $i*100);
+						$adjust_percentage = $i/10;
+						if($brightness == 500)
+							$adjust_percentage = 0;
+						$code = wpem_color_brightness($info_dark_color, $adjust_percentage);
+						
 
 						if($i < 5)
 						{
@@ -260,7 +271,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$info_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$info_dark_color.'">'.$code.'</span></div></div>';	
 						}
 					}
 					?>
@@ -269,8 +280,12 @@ defined( 'ABSPATH' ) || exit;
 					<?php
 					for($i=1;$i<10;$i++)
 					{
-						$code = wpem_color_brightness($warning_color, $i/10);
 						$brightness = (1000 - $i*100);
+						$adjust_percentage = $i/10;
+						if($brightness == 500)
+							$adjust_percentage = 0;
+						$code = wpem_color_brightness($warning_dark_color, $adjust_percentage);
+					
 
 						if($i < 5)
 						{
@@ -278,7 +293,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$warning_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$warning_dark_color.'">'.$code.'</span></div></div>';	
 						}
 					}
 					?>
@@ -287,8 +302,12 @@ defined( 'ABSPATH' ) || exit;
 					<?php
 					for($i=1;$i<10;$i++)
 					{
-						$code = wpem_color_brightness($danger_color, $i/10);
 						$brightness = (1000 - $i*100);
+						$adjust_percentage = $i/10;
+						if($brightness == 500)
+							$adjust_percentage = 0;
+						$code = wpem_color_brightness($danger_dark_color, $adjust_percentage);
+						
 
 						if($i < 5)
 						{
@@ -296,7 +315,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$danger_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$danger_dark_color.'">'.$code.'</span></div></div>';	
 						}
 					}
 					?>
