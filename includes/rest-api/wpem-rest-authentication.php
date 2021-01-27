@@ -177,12 +177,23 @@ class WPEM_REST_Authentication {
 			return false;
 		}
 
+
 		// Validate user secret.
 		if ( ! hash_equals( $this->user->consumer_secret, $consumer_secret ) ) { // @codingStandardsIgnoreLine
 			$this->set_error( new WP_Error( 'wpem_rest_authentication_error', __( 'Consumer secret is invalid.', 'wp-event-manager' ), array( 'status' => 401 ) ) );
 
 			return false;
 		}
+		$current_date = date('Y-m-d H:i:s');
+
+		//Check for key expiry
+		if ( isset($this->user->date_expires) && $current_date>$this->user->date_expires) { 
+			//@codingStandardsIgnoreLine
+			$this->set_error( new WP_Error( 'wpem_rest_authentication_expiry_error', __( 'Consumer key is expired.', 'wp-event-manager' ), array( 'status' => 401 ) ) );
+
+			return false;
+		}
+
 
 		return $this->user->user_id;
 	}
@@ -525,7 +536,7 @@ class WPEM_REST_Authentication {
 		$user         = $wpdb->get_row(
 			$wpdb->prepare(
 				"
-			SELECT key_id, user_id, permissions, consumer_key, consumer_secret, nonces
+			SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created`
 			FROM {$wpdb->prefix}wpem_rest_api_keys
 			WHERE consumer_key = %s
 		",
@@ -615,14 +626,12 @@ class WPEM_REST_Authentication {
 			if ( is_wp_error( $allowed ) ) {
 				return $allowed;
 			}
-
 			// Register last access.
 			$this->update_last_access();
 		}
 
 		return $result;
 	}
-
 
 	/**
 	 * Register the routes for auth login and appkey auth.
