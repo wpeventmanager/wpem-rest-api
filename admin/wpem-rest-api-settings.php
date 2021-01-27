@@ -66,6 +66,7 @@ class WPEM_Rest_API_Settings {
 												'label'      => __( 'App Logo', 'wp-event-manager-rest-api' ),
 												'desc'       => '',
 												'type'       => 'file',
+												
 												'attributes' => array(),
 											),
 
@@ -76,6 +77,7 @@ class WPEM_Rest_API_Settings {
 												'desc'       => __('','wp-event-manager-rest-api'),
 												'cb_label'   => __( 'Splash image is the watermark that will help creating identity of your brand.', 'wp-event-manager' ),
 												'type'       => 'file',
+
 												'attributes' => array(),
 											),
 									),

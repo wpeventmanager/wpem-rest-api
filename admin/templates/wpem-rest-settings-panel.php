@@ -175,7 +175,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
               } else {
                 if(isset($option['value']) && is_array($option['value']) )
                   //$option['value'] = array_shift($option['value']);
-                ?><span class="file_url"><input type="text" name="<?php echo esc_attr( $option['name'] ); ?>" id="<?php echo esc_attr( $key ); ?>" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php //echo esc_attr( $option['value'] ); ?>" /><button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e( 'Use file', 'wp-event-manager' ); ?>"><?php _e( 'Upload', 'wp-event-manager' ); ?></button></span><?php
+                ?><span class="file_url"><input type="text" name="<?php echo esc_attr( $option['name'] ); ?>" id="<?php echo esc_attr( $option['name'] ); ?>" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php echo esc_attr( $value ); ?>" /><button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e( 'Use file', 'wp-event-manager' ); ?>"><?php _e( 'Upload', 'wp-event-manager' ); ?></button></span><?php
               }
               if ( ! empty( $option['multiple'] ) ) {
                 ?><button class="button button-small wp_event_manager_add_another_file_button" data-field_name="<?php echo esc_attr( $key ); ?>" data-field_placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" data-uploader_button_text="<?php _e( 'Use file', 'wp-event-manager' ); ?>" data-uploader_button="<?php _e( 'Upload', 'wp-event-manager' ); ?>"><?php _e( 'Add file', 'wp-event-manager' ); ?></button><?php

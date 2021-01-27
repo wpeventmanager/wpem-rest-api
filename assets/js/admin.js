@@ -44,6 +44,10 @@ var WPEMRestAPIAdmin= function () {
 			        WPEMRestAPIAdmin.actions.changeBriteness(event, color);
 			    },
 			});
+
+
+			//upload media
+			//jQuery('.wp_event_manager_upload_file_button').
 			
 	   },
 	actions :

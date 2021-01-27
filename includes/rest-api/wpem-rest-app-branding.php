@@ -30,6 +30,13 @@ class WPEM_REST_APP_Branding_Controller extends WPEM_REST_CRUD_Controller {
 	protected $rest_base = 'branding';
 
 	/**
+	 * Post type.
+	 *
+	 * @var string
+	 */
+	protected $post_type = 'event_listing';
+
+	/**
 	 * Initialize event actions.
 	 */
 	public function __construct() {
@@ -51,7 +58,7 @@ class WPEM_REST_APP_Branding_Controller extends WPEM_REST_CRUD_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_branding_settings' ),
-					//'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'permission_callback' => array( $this, 'get_items_permissions_check' ),
 					//'args'                => $this->get_collection_params(),
 				)
 				//'schema' => array( $this, 'get_public_item_schema' ),

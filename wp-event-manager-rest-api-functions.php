@@ -35,6 +35,7 @@ function wpem_rest_prepare_date_response( $date, $utc = true ) {
  * @return bool
  */
 function wpem_rest_check_post_permissions( $post_type, $context = 'read', $object_id = 0 ) {
+    global $wpdb;
 	$contexts = array(
 		'read'   => 'read_private_posts',
 		'create' => 'publish_posts',
@@ -52,7 +53,6 @@ function wpem_rest_check_post_permissions( $post_type, $context = 'read', $objec
 		$post_type_object = get_post_type_object( $post_type );
 
 		$permission       = current_user_can( $post_type_object->cap->$cap, $object_id );
-		
 	}
 
 	return apply_filters( 'wpem_rest_check_permissions', $permission, $context, $object_id, $post_type );

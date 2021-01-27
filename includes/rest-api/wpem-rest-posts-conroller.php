@@ -52,6 +52,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	 * @return WP_Error|boolean
 	 */
 	public function get_items_permissions_check( $request ) {
+
 		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'read' ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot list resources.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}

@@ -22,6 +22,7 @@ class WPEM_Rest_API_Admin {
 		//add actions
 		add_action( 'admin_menu', array( $this, 'admin_menu' ), 10 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+		add_filter('event_manager_admin_screen_ids',array($this,'wpem_rest_api_add_admin_screen') );
 
 		add_action("wp_ajax_save_rest_api_keys",array($this, "update_api_key") );
 
@@ -39,6 +40,9 @@ class WPEM_Rest_API_Admin {
 	public function admin_enqueue_scripts() {
 
 		if(isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ){
+
+			wp_enqueue_media();
+
 			wp_register_script( 'wpem-rest-api-admin-js', WPEM_REST_API_PLUGIN_URL. '/assets/js/admin.js', array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'wp-util','wp-color-picker'), WPEM_REST_API_VERSION, true );
 
 			wp_localize_script( 'wpem-rest-api-admin-js', 'wpem_rest_api_admin', array(			
@@ -53,6 +57,19 @@ class WPEM_Rest_API_Admin {
 			wp_enqueue_style( 'jquery-ui-style',EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array() );
 		}
 
+	}
+
+	/**
+	 * admin_enqueue_scripts function.
+	 *
+	 * @since 1.0.0
+	 * @access public
+	 * @return void
+	 */
+	public function wpem_rest_api_add_admin_screen($screen_ids){
+		
+		$screen_ids[]='event_listing_page_wpem-rest-api-settings';
+		return $screen_ids;
 	}	
 
 	/**
