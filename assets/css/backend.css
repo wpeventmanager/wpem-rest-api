@@ -433,3 +433,30 @@
   display: flex;
   width: 100%;
 }
+.wpem-no-api-wrap {
+  height: 100vh;
+  max-height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  max-width: 400px;
+  margin: 0 auto;
+}
+.wpem-no-api-wrap h2.wp-event-manager-rest-api-BlankState-message {
+  line-height: 1.42;
+  color: #ccc;
+  letter-spacing: 0.2px;
+  text-align: center;
+}
+.wpem-no-api-wrap a.wp-event-manager-rest-api-BlankState-cta {
+  padding: 12px 40px;
+  margin: 10px 0px;
+}
+.wpem-no-api-wrap .wpem-no-api-icon span {
+  font-size: 150px;
+  line-height: 150px;
+  height: 150px;
+  width: 150px;
+  color: #dcdcdc;
+}

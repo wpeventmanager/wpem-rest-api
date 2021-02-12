@@ -117,8 +117,13 @@ class WPEM_Rest_API_Keys {
 		} else {
 			echo '<div class="wp-event-manager-rest-api-BlankState wp-event-manager-rest-api-BlankState--api wpem-admin-body">';
 			?>
+			<div class="wpem-no-api-wrap">
+				<div class="wpem-no-api-icon">
+					<span class="dashicons dashicons-cloud-saved"></span>
+				</div>
 			<h2 class="wp-event-manager-rest-api-BlankState-message"><?php esc_html_e( 'Enable and generate Rest API keys.', 'wp-event-manager-rest-api' ); ?></h2>
 			<a class="wp-event-manager-rest-api-BlankState-cta button-primary wpem-backend-theme-button button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
+			</div>
 			<style type="text/css">#posts-filter .wp-list-table, #posts-filter .tablenav.top, .tablenav.bottom .actions { display: none; }</style>
 			<?php
 		}
