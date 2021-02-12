@@ -2,7 +2,6 @@
   display: inline-block;
   width: 25%;
 }
-
 .wpem-admin-container .wpem-admin-right-container {
   display: inline-block;
   width: 68%;
@@ -10,28 +9,23 @@
   background: #fff;
   margin-top: 12px;
 }
-
 .wpem-admin-container .wpem-admin-right-container.wpem-dark-mode .postbox {
   background: #151a30;
 }
-
 .wpem-admin-container ul.wpem-admin-left-menu {
   background: #fff;
   border-left: 1px solid #e3e3e3;
   border-right: 1px solid #e3e3e3;
 }
-
 .wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item:first-child {
   border-top: 1px solid #e3e3e3;
 }
-
 .wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item {
   width: 100%;
   display: flex;
   margin: 0;
   border-bottom: 1px solid #e3e3e3;
 }
-
 .wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item a.nav-tab {
   border: 0;
   transition: 0.2s all ease-in-out;
@@ -103,13 +97,11 @@
 .wpem-admin-container .wpem-admin-left-sidebar ul.wpem-admin-left-menu li.wpem-admin-left-menu-item .nav-tab.nav-tab-active:before {
   color: #00a5fa;
 }
-
 .wpem-admin-container .wpem-admin-right-container-holder {
   padding-top: 0px !important;
   border: 1px solid #ccc;
   overflow: auto;
 }
-
 @media only screen and (max-width: 768px) {
   .wpem-admin-container .wpem-admin-left-sidebar,
   .wpem-admin-container .wpem-admin-right-container {
@@ -117,7 +109,6 @@
     width: 100%;
   }
 }
-
 /* Inside Container CSS */
 
 .wpem-admin-container .wpem-backend-theme-button,
@@ -136,7 +127,6 @@
   font-size: 14px;
   transition: 0.3s all ease-in-out;
 }
-
 .wpem-admin-container a.wpem-backend-theme-button:hover,
 .wpem-admin-container input.wpem-backend-theme-button:hover,
 .wpem-admin-container input.wpem-backend-theme-button:active {
@@ -173,7 +163,6 @@
 .wpem-admin-container .wpem-admin-right-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table tbody tr:first-child td {
   padding-top: 10px;
 }
-
 .wpem-admin-container .wpem-admin-right-container-holder p.submit {
   padding: 15px 20px;
   margin: 0px;
@@ -202,14 +191,12 @@
   color: #fff;
   border: none;
 }
-
 .wpem-admin-container .wpem-admin-body p.search-box input.button:hover,
 .wpem-admin-container .wpem-admin-body input.button.action:hover {
   background: #008cd4;
   color: #fff;
   border: none;
 }
-
 .wpem-admin-container .wpem-admin-bottom-content input[type="color"],
 .wpem-admin-container .wpem-admin-bottom-content input[type="date"],
 .wpem-admin-container .wpem-admin-bottom-content input[type="datetime-local"],
@@ -234,6 +221,7 @@
 /* Inside Container CSS */
 
 /* App Branding */
+
 .wpem-admin-container .wpem-app-branding-mode .button label {
   display: none;
 }
@@ -242,7 +230,6 @@
   width: 100%;
   display: block;
 }
-
 .wpem-admin-container .app-branding-mode .button {
   padding: 10px;
   height: 50px;
@@ -252,13 +239,11 @@
   padding: 15px 20px;
   justify-content: flex-end;
 }
-
 .wpem-admin-container .wpem-light-mode .wpem-light-mode.button {
   background: #00a5fa;
   border: 2px solid #00a5fa;
   border-radius: 3px 0px 0px 3px;
 }
-
 .wpem-admin-container .wpem-light-mode .wpem-light-mode.button svg {
   fill: #fff;
 }
@@ -267,17 +252,14 @@
   border-radius: 0px 3px 3px 0px;
   background: #fff;
 }
-
 .wpem-admin-container .wpem-light-mode .wpem-dark-mode.button svg {
   fill: #00a5fa;
 }
-
 .wpem-admin-container .wpem-dark-mode .wpem-light-mode.button {
   background: transparent;
   border: 2px solid #00a5fa;
   border-radius: 3px 0px 0px 3px;
 }
-
 .wpem-admin-container .wpem-dark-mode .wpem-light-mode.button svg {
   fill: #00a5fa;
 }
@@ -286,7 +268,6 @@
   border-radius: 0px 3px 3px 0px;
   background: #00a5fa;
 }
-
 .wpem-admin-container .wpem-dark-mode .wpem-dark-mode.button svg {
   fill: #fff;
 }
@@ -303,29 +284,23 @@
 .wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table thead {
   width: 100%;
 }
-
 .wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table thead tr th:last-child {
   border-right: none;
 }
-
 .wpem-admin-container .wpem-app-branding .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr {
   background: #f1f1f1;
 }
-
 .wpem-admin-container .wpem-app-branding .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr + tr {
   background: #fff;
 }
-
 .wpem-admin-container .wpem-app-branding-mode.wpem-app-branding .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr td {
   text-align: center;
   border-right: 1px solid #ccc;
   position: relative;
 }
-
 .wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table span.wp-color-result-text {
   display: none;
 }
-
 .wpem-admin-container .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table .wp-picker-container .iris-picker {
   position: absolute;
   z-index: 2;
@@ -339,7 +314,6 @@
   justify-content: center;
   align-items: center;
 }
-
 .wpem-admin-container .wpem-color-pallet-wrapper .wpem-color-pallet {
   width: 80%;
   height: 30px;
@@ -370,7 +344,6 @@
   opacity: 0;
   transition: 0.2s all ease;
 }
-
 .wpem-admin-container .wpem-color-pallet-wrapper .wpem-color-pallet:hover span {
   display: block;
   opacity: 1;
@@ -379,7 +352,6 @@
   background: #202745;
   color: #fff;
 }
-
 .wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content table.form-table thead tr th {
   background: #202745;
   color: #fff;
@@ -395,7 +367,6 @@
   background: #202745;
   color: #fff;
 }
-
 .wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-color-pallet-wrapper div {
   color: #fff;
 }
@@ -403,16 +374,13 @@
 .wpem-admin-container .wpem-api-access .wpem-admin-right-container-holder p.submit {
   display: none;
 }
-
 .wpem-admin-container .wpem-app-branding .wpem-admin-right-container-holder .wpem-admin-top-title-section p.submit,
 .wpem-admin-container .wpem-admin-right-container-holder.wpem-admin-body .wpem-admin-top-title-section .wpem-admin-bottom-content p.submit {
   display: block;
 }
-
 .wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-admin-right-container-holder p.submit {
   background: #151a30;
 }
-
 .wpem-admin-container .wpem-app-branding-mode.wpem-dark-mode .wpem-admin-top-title-section.postbox .wpem-admin-bottom-content .settings-panel table.form-table tbody tr {
   background: #151a30;
   color: #fff;

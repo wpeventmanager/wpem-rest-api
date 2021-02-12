@@ -136,7 +136,7 @@ class WPEM_Rest_API_Settings {
 
 		$this->init_settings();
 
-		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.css' );
+		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.min.css' );
 		wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
 		$current_tab = isset($_REQUEST['tab']) ? $_REQUEST['tab'] : 'general';
