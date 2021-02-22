@@ -70,16 +70,16 @@ class WPEM_Rest_API_Settings {
 												'attributes' => array(),
 											),
 
-											array(
-												'name'       => 'wpem_rest_api_app_splash_screen_image',
-												'std'        => '',
-												'label'      => __( 'App Splash Image', 'wp-event-manager-rest-api' ),
-												'desc'       => __('','wp-event-manager-rest-api'),
-												'cb_label'   => __( 'Splash image is the watermark that will help creating identity of your brand.', 'wp-event-manager' ),
-												'type'       => 'file',
+											// array(
+											// 	'name'       => 'wpem_rest_api_app_splash_screen_image',
+											// 	'std'        => '',
+											// 	'label'      => __( 'App Splash Image', 'wp-event-manager-rest-api' ),
+											// 	'desc'       => __('','wp-event-manager-rest-api'),
+											// 	'cb_label'   => __( 'Splash image is the watermark that will help creating identity of your brand.', 'wp-event-manager' ),
+											// 	'type'       => 'file',
 
-												'attributes' => array(),
-											),
+											// 	'attributes' => array(),
+											// ),
 									),
 							)	
 					),
