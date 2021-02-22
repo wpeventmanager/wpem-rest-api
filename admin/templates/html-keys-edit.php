@@ -28,22 +28,24 @@ defined( 'ABSPATH' ) || exit;
 			<tr valign="top">
 				<th scope="row" class="titledesc">
 					<label for="key_user">
-						<?php esc_html_e( 'Event', 'wp-event-manager-rest-api' ); ?>
+						<?php //esc_html_e( 'Event', 'wp-event-manager-rest-api' ); ?>
 						
 					</label>
 				</th>
 				<td class="forminp">
 					<?php
 					$event_id        = ! empty( $key_data['event_id'] ) ? absint( $key_data['event_id'] ) : '';
-					$events = get_posts(array(
-											'post_type'        => 'event_listing',
-											'numberposts' =>-1,
-											'author'        =>  get_current_user_id(),
-											'post_status'    => 'publish',
-										));
+					// $events = get_posts(array(
+					// 						'post_type'        => 'event_listing',
+					// 						'numberposts' =>-1,
+					// 						'author'        =>  get_current_user_id(),
+					// 						'post_status'    => 'publish',
+					// 					));
+
+					$events = array();
 				
 					?>
-					<select class="wpem-enhanced-select" id="event_id" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wp-event-manager-rest-api' ); ?>" data-allow_clear="true">
+					<!-- <select class="wpem-enhanced-select" id="event_id" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wp-event-manager-rest-api' ); ?>" data-allow_clear="true">
 						<option value=""><?php _e('All Events','wp-event-manager-rest-api');?></option>
 						<?php foreach ($events as $keys => $event) { ?>
 							<option value="<?php echo esc_attr( $event->ID ); ?>" <?php if($event_id == $event->ID )  echo 'selected="selected"';?>><?php echo htmlspecialchars( wp_kses_post($event->post_title ) ); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
@@ -51,9 +53,9 @@ defined( 'ABSPATH' ) || exit;
 						}
 						?>
 						
-					</select>
-					<p class="description"><?php _e('select the event for which the key is generating. You can keep it All events if you want to connect the other end point for all of them.
-','wp-event-manager-rest-api');?></p> 
+					</select> -->
+					<!-- <p class="description"><?php _e('select the event for which the key is generating. You can keep it All events if you want to connect the other end point for all of them.
+','wp-event-manager-rest-api');?></p>  -->
 				</td>
 			</tr>
 			<tr valign="top">
