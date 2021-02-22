@@ -55,7 +55,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
-
+		/*print_r();
 		 $consumer_key          = $request['consumer_key'];
 		 echo $consumer_key;
 		 global $wpdb;
@@ -69,7 +69,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
                     $consumer_key
                     )
                 );
-            print_r($user );
+            print_r($user );*/
            /* if($this->post_type == 'event_listing' && $user->event_id ){
 
                 if($user->event_id != $object_id )
@@ -77,9 +77,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
                     $permission       = false;
             }*/
         
-
-
-
 		return true;
 	}
 

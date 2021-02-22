@@ -576,6 +576,9 @@ class WPEM_REST_Authentication {
 				return new WP_Error( 'wpem_rest_authentication_error', __( 'Unknown request method.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
 		}
 
+
+
+
 		return true;
 	}
 
@@ -626,6 +629,7 @@ class WPEM_REST_Authentication {
 			if ( is_wp_error( $allowed ) ) {
 				return $allowed;
 			}
+			
 			// Register last access.
 			$this->update_last_access();
 		}

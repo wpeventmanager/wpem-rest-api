@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: WP Event Manager - Rest API
+Plugin Name: WP Event Manager -REST API
 Plugin URI: http://www.wp-eventmanager.com/plugins/
 
-Description: Rest api 
+Description: WP Event Manager rest API.
 Author: WP Event Manager
 Author URI: http://www.wp-eventmanager.com
 
