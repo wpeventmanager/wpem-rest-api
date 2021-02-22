@@ -648,11 +648,13 @@ class WPEM_REST_Authentication {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'perform_app_key_authentication' ),
+					'permission_callback' => '__return_true'
 				),
 			)
 		);
 
-		/*register_rest_route(
+		/*
+		register_rest_route(
 			'wpem-auth',
 			'/login' ,
 			array(
@@ -661,7 +663,8 @@ class WPEM_REST_Authentication {
 					'callback'            => array( $this, 'perform_login_authentication' ),
 				),
 			)
-		);*/
+		);
+		*/
 	}
 
 	/**
