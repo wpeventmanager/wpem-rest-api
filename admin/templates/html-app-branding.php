@@ -9,7 +9,7 @@ defined( 'ABSPATH' ) || exit;
 
 <div id="key-fields" class="settings-panel">
 	<h3 class="wpem-admin-tab-title"><?php esc_html_e( 'App Branding', 'wp-event-manager-rest-api' ); ?></h3>
-
+	<div class="wpem-branding-status"></div>
 	<div class="app-branding-mode">
 		<div class="wpem-light-mode button"><label>Day</label><img src="../wp-content/plugins/wp-event-manager-rest-api/assets/images/sun.png" alt=""></div>
 		<div class="wpem-dark-mode button"><label>Night</label><img src="../wp-content/plugins/wp-event-manager-rest-api/assets/images/moon.png" alt=""></div>

@@ -652,19 +652,6 @@ class WPEM_REST_Authentication {
 				),
 			)
 		);
-
-		/*
-		register_rest_route(
-			'wpem-auth',
-			'/login' ,
-			array(
-				array(
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'perform_login_authentication' ),
-				),
-			)
-		);
-		*/
 	}
 
 	/**
