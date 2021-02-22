@@ -80,7 +80,7 @@ class WPEM_Rest_APP_Branding {
 				}
 				else
 				{
-					$output .= '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$danger_color.'">'.$code.'</span></div></div>';
+					$output .= '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$code.'">'.$code.'</span></div></div>';
 				}
 			}
 		}
