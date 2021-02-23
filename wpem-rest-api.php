@@ -52,7 +52,7 @@ class WPEM_Rest_API {
 			include( 'admin/wpem-rest-api-admin.php' );
 		}
 
-		include( 'wp-event-manager-rest-api-functions.php' );
+		include( 'wpem-rest-api-functions.php' );
 
 		//include 
 		include( 'includes/wpem-rest-api-dashboard.php' );
