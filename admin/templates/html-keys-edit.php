@@ -72,7 +72,7 @@ defined( 'ABSPATH' ) || exit;
 					$user           = get_user_by( 'id', $user_id );
 					$user_string    = sprintf(
 						/* translators: 1: user display name 2: user ID 3: user email */
-						esc_html__( '%1$s (#%2$s &ndash; %3$s)', 'wp-event-manager-rest-api' ),
+						esc_html__( '%1$s (#%2$s - %3$s)', 'wp-event-manager-rest-api' ),
 						$user->display_name,
 						absint( $user->ID ),
 						$user->user_email
@@ -92,7 +92,14 @@ defined( 'ABSPATH' ) || exit;
 					</label>
 				</th>
 				<td class="forminp">
-					<input id="date_expires" type="text" class="input-text regular-input" value="<?php echo esc_attr( $key_data['date_expires'] ); ?>" />
+				<?php
+				//convert date and time into date format
+				if(isset($key_data['date_expires']) && !empty($key_data['date_expires']))
+				$expiry_date = date('Y-m-d',strtotime($key_data['date_expires'])); 
+				else
+				$expiry_date = ''; 
+				?>
+					<input id="date_expires" type="text" class="input-text regular-input" value="<?php echo esc_attr($expiry_date ); ?>" />
 					<p class="description"><?php _e('Set an expiry date till which the key should be activated.','wp-event-manager-rest-api');?></p>
 				</td>
 			</tr>
