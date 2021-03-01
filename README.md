@@ -1,1 +1,1 @@
-# wp-event-manager-rest-api
+# wpem-rest-api
