@@ -77,7 +77,11 @@ defined( 'ABSPATH' ) || exit;
 						<?php
 												// Array of WP_User objects.
 						foreach ( $all_users as $user ) { ?>
-						   <option value="<?php echo esc_attr( $user->ID ); ?>"  <?php if($user->ID == $user_id )  echo 'selected="selected"';?>><?php echo $user->user_email; // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
+						   <option value="<?php echo esc_attr( $user->ID ); ?>"  <?php if($user->ID == $user_id )  echo 'selected="selected"';?>><?php 
+						   echo '#'; 
+						   echo $user->ID;
+						   echo ' ';
+						   echo $user->user_login; // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
 						   <?php
 						}
 
