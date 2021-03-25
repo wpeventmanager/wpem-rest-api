@@ -42,6 +42,8 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wp-event-manager-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
 	}
 
+	
+
 	/**
 	 * Check if a given request has access to read an item.
 	 *

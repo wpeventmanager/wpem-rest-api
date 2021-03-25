@@ -67,19 +67,22 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td class="forminp">
 					<?php
-					$curent_user_id = get_current_user_id();
-					$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : $curent_user_id;
-					$user           = get_user_by( 'id', $user_id );
-					$user_string    = sprintf(
-						/* translators: 1: user display name 2: user ID 3: user email */
-						esc_html__( '%1$s (#%2$s - %3$s)', 'wp-event-manager-rest-api' ),
-						$user->display_name,
-						absint( $user->ID ),
-						$user->user_email
-					);
+
+					$all_users = get_users( );
+
+					$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
+
 					?>
 					<select class="event-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wp-event-manager-rest-api' ); ?>" data-allow_clear="true">
-						<option value="<?php echo esc_attr( $user_id ); ?>" selected="selected"><?php echo htmlspecialchars( wp_kses_post( $user_string ) ); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
+						<?php
+												// Array of WP_User objects.
+						foreach ( $all_users as $user ) { ?>
+						   <option value="<?php echo esc_attr( $user->ID ); ?>"  <?php if($user->ID == $user_id )  echo 'selected="selected"';?>><?php echo $user->user_email; // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
+						   <?php
+						}
+
+						?>
+						
 					</select>
 					<p class="description"><?php _e('Name of the owner of the Key.
 ','wp-event-manager-rest-api');?></p> 

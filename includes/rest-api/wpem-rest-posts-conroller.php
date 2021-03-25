@@ -57,6 +57,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot list resources.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
+
 		return true;
 	}
 
