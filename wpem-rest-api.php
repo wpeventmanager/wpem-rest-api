@@ -7,7 +7,7 @@ Description: WP Event Manager rest API.
 Author: WP Event Manager
 Author URI: http://www.wp-eventmanager.com
 
-Text Domain: wp-event-manager-registrations
+Text Domain: wpem-rest-api
 Domain Path: /languages
 Version: 1.0.0
 Since: 1.0.0
