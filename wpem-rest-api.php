@@ -78,9 +78,9 @@ class WPEM_Rest_API {
 	 * Localisation
 	 **/
 	public function load_plugin_textdomain() {
-		$domain = 'wp-event-manager-rest-api'; 
+		$domain = 'wpem-rest-api'; 
         $locale = apply_filters('plugin_locale', get_locale(), $domain);
-		load_textdomain( $domain, WP_LANG_DIR . "/wp-event-manager-rest-api/".$domain."-" .$locale. ".mo" );
+		load_textdomain( $domain, WP_LANG_DIR . "/wpem-rest-api/".$domain."-" .$locale. ".mo" );
 		load_plugin_textdomain($domain, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 	}
 
@@ -154,7 +154,7 @@ function pre_check_before_installing_rest_api()
         	if( $pagenow == 'plugins.php' )
         	{
                 echo '<div id="error" class="error notice is-dismissible"><p>';
-                echo __( 'WP Event Manager is require to use WP Event Manager Rest API ' , 'wp-event-manager-rest-api');
+                echo __( 'WP Event Manager is require to use WP Event Manager Rest API ' , 'wpem-rest-api');
                 echo '</p></div>';		
         	}
         	return false;          	
