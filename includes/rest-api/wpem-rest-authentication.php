@@ -307,7 +307,7 @@ class WPEM_REST_Authentication {
 		if ( ! empty( $errors ) ) {
 			$message = sprintf(
 				/* translators: %s: amount of errors */
-				_n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wp-event-manager-rest-api' ),
+				_n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wpem-rest-api' ),
 				implode( ', ', $errors )
 			);
 
@@ -392,7 +392,7 @@ class WPEM_REST_Authentication {
 
 		// Sort parameters.
 		if ( ! uksort( $params, 'strcmp' ) ) {
-			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - failed to sort parameters.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - failed to sort parameters.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
 		// Normalize parameter key/values.
@@ -401,7 +401,7 @@ class WPEM_REST_Authentication {
 		$string_to_sign = $http_method . '&' . $base_request_uri . '&' . $query_string;
 
 		if ( 'HMAC-SHA1' !== $params['oauth_signature_method'] && 'HMAC-SHA256' !== $params['oauth_signature_method'] ) {
-			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - signature method is invalid.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - signature method is invalid.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
 		$hash_algorithm = strtolower( str_replace( 'HMAC-', '', $params['oauth_signature_method'] ) );
@@ -486,7 +486,7 @@ class WPEM_REST_Authentication {
 		$valid_window = 15 * 60; // 15 minute window.
 
 		if ( ( $timestamp < time() - $valid_window ) || ( $timestamp > time() + $valid_window ) ) {
-			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid timestamp.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid timestamp.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
 		$used_nonces = maybe_unserialize( $user->nonces );
@@ -496,7 +496,7 @@ class WPEM_REST_Authentication {
 		}
 
 		if ( in_array( $nonce, $used_nonces, true ) ) {
-			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid nonce - nonce has already been used.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid nonce - nonce has already been used.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
 		$used_nonces[ $timestamp ] = $nonce;
@@ -566,14 +566,14 @@ class WPEM_REST_Authentication {
 			case 'PATCH':
 			case 'DELETE':
 				if ( 'write' !== $permissions && 'read_write' !== $permissions ) {
-					return new WP_Error( 'wpem_rest_authentication_error', __( 'The API key provided does not have write permissions.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+					return new WP_Error( 'wpem_rest_authentication_error', __( 'The API key provided does not have write permissions.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 				}
 				break;
 			case 'OPTIONS':
 				return true;
 
 			default:
-				return new WP_Error( 'wpem_rest_authentication_error', __( 'Unknown request method.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+				return new WP_Error( 'wpem_rest_authentication_error', __( 'Unknown request method.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
 
@@ -607,7 +607,7 @@ class WPEM_REST_Authentication {
 	 */
 	public function send_unauthorized_headers( $response ) {
 		if ( is_wp_error( $this->get_error() ) && 'basic_auth' === $this->auth_method ) {
-			$auth_message = __( 'WPEM API. Use a consumer key in the username field and a consumer secret in the password field.', 'wp-event-manager-rest-api' );
+			$auth_message = __( 'WPEM API. Use a consumer key in the username field and a consumer secret in the password field.', 'wpem-rest-api' );
 			$response->header( 'WWW-Authenticate', 'Basic realm="' . $auth_message . '"', true );
 		}
 
@@ -670,16 +670,16 @@ class WPEM_REST_Authentication {
 			$user = wp_authenticate($username, $password);
 
 			if(!is_wp_error($user)){
-				$response =  array('success' => true,'message' => __('You are logged in successfully.','wp-event-manager-rest-api') );
+				$response =  array('success' => true,'message' => __('You are logged in successfully.','wpem-rest-api') );
 			}
 			else
 			{
-				$response =  array('success' => false,'message' => __('Username or password wrong.','wp-event-manager-rest-api') );
+				$response =  array('success' => false,'message' => __('Username or password wrong.','wpem-rest-api') );
 			}
 		}
 
 		if(empty($response))
-			$response =  array('success' => false,'message' => __('Somethign went wrong.','wp-event-manager-rest-api') );
+			$response =  array('success' => false,'message' => __('Somethign went wrong.','wpem-rest-api') );
 
 		return $response;
 	}
@@ -708,7 +708,7 @@ class WPEM_REST_Authentication {
 			);
 
 			if(empty($key_data))
-				$key_data = array( 'wpem_rest_authentication_error', __( 'Invalid APP ID.', 'wp-event-manager-rest-api' ), array( 'status' => 401 ) );
+				$key_data = array( 'wpem_rest_authentication_error', __( 'Invalid APP ID.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 
 			return $key_data;
 

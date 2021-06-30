@@ -185,7 +185,7 @@ class WPEM_Rest_APP_Branding {
 		}
 
 		$response = [];
-		$response['message'] = __( 'Successfully save App Branding.', 'wp-event-manager-rest-api' );
+		$response['message'] = __( 'Successfully save App Branding.', 'wpem-rest-api' );
 
 		wp_send_json_success( $response );
 

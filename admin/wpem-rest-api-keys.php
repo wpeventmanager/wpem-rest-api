@@ -62,7 +62,7 @@ class WPEM_Rest_API_Keys {
 
 			if ( $key_id && $user_id && ! current_user_can( 'edit_user', $user_id ) ) {
 				if ( get_current_user_id() !== $user_id ) {
-					wp_die( esc_html__( 'You do not have permission to edit this API Key', 'wp-event-manager-rest-api' ) );
+					wp_die( esc_html__( 'You do not have permission to edit this API Key', 'wpem-rest-api' ) );
 				}
 			}
 			
@@ -102,7 +102,7 @@ class WPEM_Rest_API_Keys {
 
 		$keys_table_list = new WPEM_API_Keys_Table_List();
 
-		echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wp-event-manager-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ) . '" class="add-new-h2 wpem-backend-theme-button">' . esc_html__( 'Add Key', 'wp-event-manager-rest-api' ) . '</a></h3>';
+		echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wpem-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ) . '" class="add-new-h2 wpem-backend-theme-button">' . esc_html__( 'Add Key', 'wpem-rest-api' ) . '</a></h3>';
 
 		// Get the API keys count.
 		$count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1;" );
@@ -115,14 +115,14 @@ class WPEM_Rest_API_Keys {
 			$keys_table_list->display();
 
 		} else {
-			echo '<div class="wp-event-manager-rest-api-BlankState wp-event-manager-rest-api-BlankState--api wpem-admin-body">';
+			echo '<div class="wpem-rest-api-BlankState wpem-rest-api-BlankState--api wpem-admin-body">';
 			?>
 			<div class="wpem-no-api-wrap">
 				<div class="wpem-no-api-icon">
 					<span class="dashicons dashicons-cloud-saved"></span>
 				</div>
-			<h2 class="wp-event-manager-rest-api-BlankState-message"><?php esc_html_e( 'Enable and generate Rest API keys.', 'wp-event-manager-rest-api' ); ?></h2>
-			<a class="wp-event-manager-rest-api-BlankState-cta button-primary wpem-backend-theme-button button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wp-event-manager-rest-api' ); ?></a>
+			<h2 class="wpem-rest-api-BlankState-message"><?php esc_html_e( 'Enable and generate Rest API keys.', 'wpem-rest-api' ); ?></h2>
+			<a class="wpem-rest-api-BlankState-cta button-primary wpem-backend-theme-button button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ); ?>"><?php esc_html_e( 'Create an API key', 'wpem-rest-api' ); ?></a>
 			</div>
 			<style type="text/css">#posts-filter .wp-list-table, #posts-filter .tablenav.top, .tablenav.bottom .actions { display: none; }</style>
 			<?php
@@ -196,7 +196,7 @@ class WPEM_Rest_API_Keys {
 			$revoked = absint( $_GET['revoked'] ); // WPCS: input var okay, CSRF ok.
 
 			/* translators: %d: count */
-			 sprintf( _n( '%d API key permanently revoked.', '%d API keys permanently revoked.', $revoked, 'wp-event-manager-rest-api' ), $revoked );
+			 sprintf( _n( '%d API key permanently revoked.', '%d API keys permanently revoked.', $revoked, 'wpem-rest-api' ), $revoked );
 		}
 	}
 
@@ -215,7 +215,7 @@ class WPEM_Rest_API_Keys {
 			if ( $key_id && $user_id && ( current_user_can( 'edit_user', $user_id ) || get_current_user_id() === $user_id ) ) {
 				$this->remove_key( $key_id );
 			} else {
-				wp_die( esc_html__( 'You do not have permission to revoke this API Key', 'wp-event-manager-rest-api' ) );
+				wp_die( esc_html__( 'You do not have permission to revoke this API Key', 'wpem-rest-api' ) );
 			}
 		}
 
@@ -228,7 +228,7 @@ class WPEM_Rest_API_Keys {
 	 */
 	private function bulk_actions() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit API Keys', 'wp-event-manager-rest-api' ) );
+			wp_die( esc_html__( 'You do not have permission to edit API Keys', 'wpem-rest-api' ) );
 		}
 
 		if ( isset( $_REQUEST['action'] ) ) { // WPCS: input var okay, CSRF ok.
@@ -248,7 +248,7 @@ class WPEM_Rest_API_Keys {
 	 */
 	private function bulk_revoke_key( $keys ) {
 		if ( ! current_user_can( 'remove_users' ) ) {
-			wp_die( esc_html__( 'You do not have permission to revoke API Keys', 'wp-event-manager-rest-api' ) );
+			wp_die( esc_html__( 'You do not have permission to revoke API Keys', 'wpem-rest-api' ) );
 		}
 
 		$qty = 0;

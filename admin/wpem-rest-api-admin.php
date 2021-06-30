@@ -79,7 +79,7 @@ class WPEM_Rest_API_Admin {
 	 */
 	public function admin_menu() {
 
-		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API Settings', 'wp-event-manager-rest-api' ), __( 'Rest API', 'wp-event-manager-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this->settings_page, 'output' ) );
+		add_submenu_page( 'edit.php?post_type=event_listing', __( 'Rest API Settings', 'wpem-rest-api' ), __( 'Rest API', 'wpem-rest-api' ), 'manage_options', 'wpem-rest-api-settings', array( $this->settings_page, 'output' ) );
 
 		
 	}
@@ -100,13 +100,13 @@ class WPEM_Rest_API_Admin {
 
 		try {
 			if ( empty( $_POST['description'] ) ) {
-				throw new Exception( __( 'Description is missing.', 'wp-event-manager-rest-api' ) );
+				throw new Exception( __( 'Description is missing.', 'wpem-rest-api' ) );
 			}
 			if ( empty( $_POST['user'] ) ) {
-				throw new Exception( __( 'User is missing.', 'wp-event-manager-rest-api' ) );
+				throw new Exception( __( 'User is missing.', 'wpem-rest-api' ) );
 			}
 			if ( empty( $_POST['permissions'] ) ) {
-				throw new Exception( __( 'Permissions is missing.', 'wp-event-manager-rest-api' ) );
+				throw new Exception( __( 'Permissions is missing.', 'wpem-rest-api' ) );
 			}
 
 			$key_id      = isset( $_POST['key_id'] ) ? absint( $_POST['key_id'] ) : 0;
@@ -121,7 +121,7 @@ class WPEM_Rest_API_Admin {
 			// Check if current user can edit other users.
 			if ( $user_id && ! current_user_can( 'edit_user', $user_id ) ) {
 				if ( get_current_user_id() !== $user_id ) {
-					throw new Exception( __( 'You do not have permission to assign API Keys to the selected user.', 'wp-event-manager-rest-api' ) );
+					throw new Exception( __( 'You do not have permission to assign API Keys to the selected user.', 'wpem-rest-api' ) );
 				}
 			}
 
@@ -152,7 +152,7 @@ class WPEM_Rest_API_Admin {
 				$response                    = $data;
 				$response['consumer_key']    = '';
 				$response['consumer_secret'] = '';
-				$response['message']         = __( 'API Key updated successfully.', 'wp-event-manager-rest-api' );
+				$response['message']         = __( 'API Key updated successfully.', 'wpem-rest-api' );
 			} else {
 				$app_key = wp_rand();
 				$consumer_key    = 'ck_' . sha1( wp_rand() );
@@ -193,8 +193,8 @@ class WPEM_Rest_API_Admin {
 				$response['consumer_key']    = $consumer_key;
 				$response['consumer_secret'] = $consumer_secret;
 				$response['app_key'] 		 = $app_key;
-				$response['message']         = __( 'API Key generated successfully. Make sure to copy your new keys now as the secret key will be hidden once you leave this page.', 'wp-event-manager-rest-api' );
-				$response['revoke_url']      = '<a class="wpem-backend-theme-button wpem-revoke-button" href="' . esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ) . '">' . __( 'Revoke key', 'wp-event-manager-rest-api' ) . '</a>';
+				$response['message']         = __( 'API Key generated successfully. Make sure to copy your new keys now as the secret key will be hidden once you leave this page.', 'wpem-rest-api' );
+				$response['revoke_url']      = '<a class="wpem-backend-theme-button wpem-revoke-button" href="' . esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ) . '">' . __( 'Revoke key', 'wpem-rest-api' ) . '</a>';
 			}
 		} catch ( Exception $e ) {
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );

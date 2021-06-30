@@ -39,7 +39,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 */
 	protected function get_object( $id ) {
 		// translators: %s: Class method name.
-		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wp-event-manager-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
+		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
 	}
 
 	
@@ -54,7 +54,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$object = $this->get_object( (int) $request['id'] );
 
 		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
-			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
+			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
 		/*print_r();
@@ -92,7 +92,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$object = $this->get_object( (int) $request['id'] );
 
 		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'edit', $object->ID ) ) {
-			return new WP_Error( 'wpem_rest_cannot_edit', __( 'Sorry, you are not allowed to edit this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
+			return new WP_Error( 'wpem_rest_cannot_edit', __( 'Sorry, you are not allowed to edit this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
 		return true;
@@ -108,7 +108,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$object = $this->get_object( (int) $request['id'] );
 
 		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
-			return new WP_Error( 'wpem_rest_cannot_delete', __( 'Sorry, you are not allowed to delete this resource.', 'wp-event-manager-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
+			return new WP_Error( 'wpem_rest_cannot_delete', __( 'Sorry, you are not allowed to delete this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
 		return true;
@@ -134,7 +134,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 */
 	protected function prepare_object_for_response( $object, $request ) {
 		// translators: %s: Class method name.
-		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wp-event-manager-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
+		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
 	}
 
 	/**
@@ -147,7 +147,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 */
 	protected function prepare_object_for_database( $request, $creating = false ) {
 		// translators: %s: Class method name.
-		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wp-event-manager-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
+		return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
 	}
 
 	/**
@@ -160,7 +160,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$object = $this->get_object( (int) $request['id'] );
 
 		if ( ! $object || 0 === $object->ID ) {
-			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wp-event-manager-rest-api' ), array( 'status' => 404 ) );
+			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 404 ) );
 		}
 
 		$data     = $this->prepare_object_for_response( $object, $request );
@@ -203,7 +203,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function create_item( $request ) {
 		if ( ! empty( $request['id'] ) ) {
 			/* translators: %s: post type */
-			return new WP_Error( "wpem_rest_{$this->post_type}_exists", sprintf( __( 'Cannot create existing %s.', 'wp-event-manager-rest-api' ), $this->post_type ), array( 'status' => 400 ) );
+			return new WP_Error( "wpem_rest_{$this->post_type}_exists", sprintf( __( 'Cannot create existing %s.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 400 ) );
 		}
 
 		$object = $this->save_object( $request, true );
@@ -246,7 +246,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$object = $this->get_object( (int) $request['id'] );
 
 		if ( ! $object || 0 === $object->ID ) {
-			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wp-event-manager-rest-api' ), array( 'status' => 400 ) );
+			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 400 ) );
 		}
 
 		$object = $this->save_object( $request, false );
@@ -468,7 +468,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$result = false;
 
 		if ( ! $object || 0 === $object->ID ) {
-			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wp-event-manager-rest-api' ), array( 'status' => 404 ) );
+			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 404 ) );
 		}
 
 		$supports_trash = EMPTY_TRASH_DAYS > 0 && is_callable( array( $object, 'get_status' ) );
@@ -485,7 +485,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
 		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
 			/* translators: %s: post type */
-			return new WP_Error( "wpem_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wp-event-manager-rest-api' ), $this->post_type ), array( 'status' => rest_authorization_required_code() ) );
+			return new WP_Error( "wpem_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
 		$request->set_param( 'context', 'edit' );
@@ -500,14 +500,14 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			// If we don't support trashing for this type, error out.
 			if ( ! $supports_trash ) {
 				/* translators: %s: post type */
-				return new WP_Error( 'wpem_rest_trash_not_supported', sprintf( __( 'The %s does not support trashing.', 'wp-event-manager-rest-api' ), $this->post_type ), array( 'status' => 501 ) );
+				return new WP_Error( 'wpem_rest_trash_not_supported', sprintf( __( 'The %s does not support trashing.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 501 ) );
 			}
 
 			// Otherwise, only trash if we haven't already.
 			if ( is_callable( array( $object, 'get_status' ) ) ) {
 				if ( 'trash' === $object->get_status() ) {
 					/* translators: %s: post type */
-					return new WP_Error( 'wpem_rest_already_trashed', sprintf( __( 'The %s has already been deleted.', 'wp-event-manager-rest-api' ), $this->post_type ), array( 'status' => 410 ) );
+					return new WP_Error( 'wpem_rest_already_trashed', sprintf( __( 'The %s has already been deleted.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 410 ) );
 				}
 
 				wp_delete_post( $object->ID );
@@ -517,7 +517,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
 		if ( ! $result ) {
 			/* translators: %s: post type */
-			return new WP_Error( 'wpem_rest_cannot_delete', sprintf( __( 'The %s cannot be deleted.', 'wp-event-manager-rest-api' ), $this->post_type ), array( 'status' => 500 ) );
+			return new WP_Error( 'wpem_rest_cannot_delete', sprintf( __( 'The %s cannot be deleted.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 500 ) );
 		}
 
 		/**
@@ -563,7 +563,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		$params['context']['default'] = 'view';
 
 		$params['page'] = array(
-			'description'        => __( 'Current page of the collection.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Current page of the collection.', 'wpem-rest-api' ),
 			'type'               => 'integer',
 			'default'            => 1,
 			'sanitize_callback'  => 'absint',
@@ -571,7 +571,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			'minimum'            => 1,
 		);
 		$params['per_page'] = array(
-			'description'        => __( 'Maximum number of items to be returned in result set.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Maximum number of items to be returned in result set.', 'wpem-rest-api' ),
 			'type'               => 'integer',
 			'default'            => 10,
 			'minimum'            => 1,
@@ -580,25 +580,25 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			'validate_callback'  => 'rest_validate_request_arg',
 		);
 		$params['search'] = array(
-			'description'        => __( 'Limit results to those matching a string.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Limit results to those matching a string.', 'wpem-rest-api' ),
 			'type'               => 'string',
 			'sanitize_callback'  => 'sanitize_text_field',
 			'validate_callback'  => 'rest_validate_request_arg',
 		);
 		$params['after'] = array(
-			'description'        => __( 'Limit response to resources published after a given ISO8601 compliant date.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Limit response to resources published after a given ISO8601 compliant date.', 'wpem-rest-api' ),
 			'type'               => 'string',
 			'format'             => 'date-time',
 			'validate_callback'  => 'rest_validate_request_arg',
 		);
 		$params['before'] = array(
-			'description'        => __( 'Limit response to resources published before a given ISO8601 compliant date.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Limit response to resources published before a given ISO8601 compliant date.', 'wpem-rest-api' ),
 			'type'               => 'string',
 			'format'             => 'date-time',
 			'validate_callback'  => 'rest_validate_request_arg',
 		);
 		$params['exclude'] = array(
-			'description'       => __( 'Ensure result set excludes specific IDs.', 'wp-event-manager-rest-api' ),
+			'description'       => __( 'Ensure result set excludes specific IDs.', 'wpem-rest-api' ),
 			'type'              => 'array',
 			'items'             => array(
 				'type'          => 'integer',
@@ -607,7 +607,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			'sanitize_callback' => 'wp_parse_id_list',
 		);
 		$params['include'] = array(
-			'description'       => __( 'Limit result set to specific ids.', 'wp-event-manager-rest-api' ),
+			'description'       => __( 'Limit result set to specific ids.', 'wpem-rest-api' ),
 			'type'              => 'array',
 			'items'             => array(
 				'type'          => 'integer',
@@ -616,20 +616,20 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			'sanitize_callback' => 'wp_parse_id_list',
 		);
 		$params['offset'] = array(
-			'description'        => __( 'Offset the result set by a specific number of items.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Offset the result set by a specific number of items.', 'wpem-rest-api' ),
 			'type'               => 'integer',
 			'sanitize_callback'  => 'absint',
 			'validate_callback'  => 'rest_validate_request_arg',
 		);
 		$params['order'] = array(
-			'description'        => __( 'Order sort attribute ascending or descending.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Order sort attribute ascending or descending.', 'wpem-rest-api' ),
 			'type'               => 'string',
 			'default'            => 'desc',
 			'enum'               => array( 'asc', 'desc' ),
 			'validate_callback'  => 'rest_validate_request_arg',
 		);
 		$params['orderby'] = array(
-			'description'        => __( 'Sort collection by object attribute.', 'wp-event-manager-rest-api' ),
+			'description'        => __( 'Sort collection by object attribute.', 'wpem-rest-api' ),
 			'type'               => 'string',
 			'default'            => 'date',
 			'enum'               => array(
@@ -644,7 +644,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
 		if ( $this->hierarchical ) {
 			$params['parent'] = array(
-				'description'       => __( 'Limit result set to those of particular parent IDs.', 'wp-event-manager-rest-api' ),
+				'description'       => __( 'Limit result set to those of particular parent IDs.', 'wpem-rest-api' ),
 				'type'              => 'array',
 				'items'             => array(
 					'type'          => 'integer',
@@ -653,7 +653,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 				'default'           => array(),
 			);
 			$params['parent_exclude'] = array(
-				'description'       => __( 'Limit result set to all items except those of a particular parent ID.', 'wp-event-manager-rest-api' ),
+				'description'       => __( 'Limit result set to all items except those of a particular parent ID.', 'wpem-rest-api' ),
 				'type'              => 'array',
 				'items'             => array(
 					'type'          => 'integer',

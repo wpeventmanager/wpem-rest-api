@@ -28,7 +28,7 @@ defined( 'ABSPATH' ) || exit;
 			<tr valign="top">
 				<th scope="row" class="titledesc">
 					<label for="key_user">
-						<?php //esc_html_e( 'Event', 'wp-event-manager-rest-api' ); ?>
+						<?php //esc_html_e( 'Event', 'wpem-rest-api' ); ?>
 						
 					</label>
 				</th>
@@ -45,8 +45,8 @@ defined( 'ABSPATH' ) || exit;
 					$events = array();
 				
 					?>
-					<!-- <select class="wpem-enhanced-select" id="event_id" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wp-event-manager-rest-api' ); ?>" data-allow_clear="true">
-						<option value=""><?php _e('All Events','wp-event-manager-rest-api');?></option>
+					<!-- <select class="wpem-enhanced-select" id="event_id" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wpem-rest-api' ); ?>" data-allow_clear="true">
+						<option value=""><?php _e('All Events','wpem-rest-api');?></option>
 						<?php foreach ($events as $keys => $event) { ?>
 							<option value="<?php echo esc_attr( $event->ID ); ?>" <?php if($event_id == $event->ID )  echo 'selected="selected"';?>><?php echo htmlspecialchars( wp_kses_post($event->post_title ) ); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
 						<?php
@@ -55,7 +55,7 @@ defined( 'ABSPATH' ) || exit;
 						
 					</select> -->
 					<!-- <p class="description"><?php _e('select the event for which the key is generating. You can keep it All events if you want to connect the other end point for all of them.
-','wp-event-manager-rest-api');?></p>  -->
+','wpem-rest-api');?></p>  -->
 				</td>
 			</tr>
 			<tr valign="top">
@@ -73,7 +73,7 @@ defined( 'ABSPATH' ) || exit;
 					$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
 
 					?>
-					<select class="event-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wp-event-manager-rest-api' ); ?>" data-allow_clear="true">
+					<select class="event-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wpem-rest-api' ); ?>" data-allow_clear="true">
 						<?php
 												// Array of WP_User objects.
 						foreach ( $all_users as $user ) { ?>
@@ -89,13 +89,13 @@ defined( 'ABSPATH' ) || exit;
 						
 					</select>
 					<p class="description"><?php _e('Name of the owner of the Key.
-','wp-event-manager-rest-api');?></p> 
+','wpem-rest-api');?></p> 
 				</td>
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
 					<label for="key_description">
-						<?php esc_html_e( 'Expiry date', 'wp-event-manager-rest-api' ); ?>
+						<?php esc_html_e( 'Expiry date', 'wpem-rest-api' ); ?>
 					</label>
 				</th>
 				<td class="forminp">
@@ -107,13 +107,13 @@ defined( 'ABSPATH' ) || exit;
 				$expiry_date = ''; 
 				?>
 					<input id="date_expires" type="text" class="input-text regular-input" value="<?php echo esc_attr($expiry_date ); ?>" />
-					<p class="description"><?php _e('Set an expiry date till which the key should be activated.','wp-event-manager-rest-api');?></p>
+					<p class="description"><?php _e('Set an expiry date till which the key should be activated.','wpem-rest-api');?></p>
 				</td>
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
 					<label for="key_permissions">
-						<?php esc_html_e( 'Permissions', 'wp-event-manager-rest-api' ); ?>
+						<?php esc_html_e( 'Permissions', 'wpem-rest-api' ); ?>
 						
 					</label>
 				</th>
@@ -121,9 +121,9 @@ defined( 'ABSPATH' ) || exit;
 					<select id="key_permissions" class="wpem-enhanced-select">
 						<?php
 						$permissions = array(
-							'read'       => __( 'Read', 'wp-event-manager-rest-api' ),
-							'write'      => __( 'Write', 'wp-event-manager-rest-api' ),
-							'read_write' => __( 'Read/Write', 'wp-event-manager-rest-api' ),
+							'read'       => __( 'Read', 'wpem-rest-api' ),
+							'write'      => __( 'Write', 'wpem-rest-api' ),
+							'read_write' => __( 'Read/Write', 'wpem-rest-api' ),
 						);
 
 						foreach ( $permissions as $permission_id => $permission_name ) :
@@ -132,14 +132,14 @@ defined( 'ABSPATH' ) || exit;
 						<?php endforeach; ?>
 					</select>
 					<p class="description">
-					<?php   _e( 'Select the access type of these keys.', 'wp-event-manager-rest-api' ); ?></p>
+					<?php   _e( 'Select the access type of these keys.', 'wpem-rest-api' ); ?></p>
 				</td>
 			</tr>
 
 			<?php if ( 0 !== $key_id ) : ?>
 				<tr valign="top">
 					<th scope="row" class="titledesc">
-						<?php esc_html_e( 'Consumer key ending in', 'wp-event-manager-rest-api' ); ?>
+						<?php esc_html_e( 'Consumer key ending in', 'wpem-rest-api' ); ?>
 					</th>
 					<td class="forminp">
 						<code>&hellip;<?php echo esc_html( $key_data['truncated_key'] ); ?></code>
@@ -147,7 +147,7 @@ defined( 'ABSPATH' ) || exit;
 				</tr>
 				<tr valign="top">
 					<th scope="row" class="titledesc">
-						<?php esc_html_e( 'Last access', 'wp-event-manager-rest-api' ); ?>
+						<?php esc_html_e( 'Last access', 'wpem-rest-api' ); ?>
 					</th>
 					<td class="forminp">
 						<span>
@@ -191,7 +191,7 @@ defined( 'ABSPATH' ) || exit;
 		<tbody>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
-					<?php esc_html_e( 'App key', 'wp-event-manager-rest-api' ); ?>
+					<?php esc_html_e( 'App key', 'wpem-rest-api' ); ?>
 				</th>
 				<td class="forminp">
 					<input id="app_key" type="text" value="{{ data.app_key }}" size="55" readonly="readonly">
@@ -199,7 +199,7 @@ defined( 'ABSPATH' ) || exit;
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
-					<?php esc_html_e( 'Consumer key', 'wp-event-manager-rest-api' ); ?>
+					<?php esc_html_e( 'Consumer key', 'wpem-rest-api' ); ?>
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_key" type="text" value="{{ data.consumer_key }}" size="55" readonly="readonly">
@@ -207,7 +207,7 @@ defined( 'ABSPATH' ) || exit;
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
-					<?php esc_html_e( 'Consumer secret', 'wp-event-manager-rest-api' ); ?>
+					<?php esc_html_e( 'Consumer secret', 'wpem-rest-api' ); ?>
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_secret" type="text" value="{{ data.consumer_secret }}" size="55" readonly="readonly">

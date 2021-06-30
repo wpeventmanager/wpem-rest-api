@@ -82,7 +82,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			array(
 				'args'   => array(
 					'id' => array(
-						'description' => __( 'Unique identifier for the resource.', 'wp-event-manager-rest-api' ),
+						'description' => __( 'Unique identifier for the resource.', 'wpem-rest-api' ),
 						'type'        => 'integer',
 					),
 				),
@@ -111,7 +111,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 					'args'                => array(
 						'force' => array(
 							'default'     => false,
-							'description' => __( 'Whether to bypass trash and force deletion.', 'wp-event-manager-rest-api' ),
+							'description' => __( 'Whether to bypass trash and force deletion.', 'wpem-rest-api' ),
 							'type'        => 'boolean',
 						),
 					),
@@ -285,8 +285,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				'date_modified'     => wpem_rest_prepare_date_response( current_time( 'mysql' ), false ),
 				'date_modified_gmt' => wpem_rest_prepare_date_response( current_time( 'timestamp', true ) ),
 				'src'               => '',
-				'name'              => __( 'Placeholder', 'wp-event-manager-rest-api' ),
-				'alt'               => __( 'Placeholder', 'wp-event-manager-rest-api' ),
+				'name'              => __( 'Placeholder', 'wpem-rest-api' ),
+				'alt'               => __( 'Placeholder', 'wpem-rest-api' ),
 				'position'          => 0,
 			);
 		}
@@ -508,7 +508,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
 				if ( ! wp_attachment_is_image( $attachment_id ) ) {
 					/* translators: %s: attachment id */
-					throw new Exception( 'wpem_event_invalid_image_id', sprintf( __( '#%s is an invalid image ID.', 'wp-event-manager-rest-api' ), $attachment_id ), 400 );
+					throw new Exception( 'wpem_event_invalid_image_id', sprintf( __( '#%s is an invalid image ID.', 'wpem-rest-api' ), $attachment_id ), 400 );
 				}
 
 				$gallery_positions[ $attachment_id ] = absint( isset( $image['position'] ) ? $image['position'] : $index );
@@ -605,7 +605,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		if ( ! $object || 0 === $object->ID ) {
 			return new WP_Error(
 				"wpem_rest_{$this->post_type}_invalid_id",
-				__( 'Invalid ID.', 'wp-event-manager-rest-api' ),
+				__( 'Invalid ID.', 'wpem-rest-api' ),
 				array(
 					'status' => 404,
 				)
@@ -630,7 +630,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			return new WP_Error(
 				"wpem_rest_user_cannot_delete_{$this->post_type}",
 				/* translators: %s: post type */
-				sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wp-event-manager-rest-api' ), $this->post_type ),
+				sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wpem-rest-api' ), $this->post_type ),
 				array(
 					'status' => rest_authorization_required_code(),
 				)
@@ -652,7 +652,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				return new WP_Error(
 					'wpem_rest_trash_not_supported',
 					/* translators: %s: post type */
-					sprintf( __( 'The %s does not support trashing.', 'wp-event-manager-rest-api' ), $this->post_type ),
+					sprintf( __( 'The %s does not support trashing.', 'wpem-rest-api' ), $this->post_type ),
 					array(
 						'status' => 501,
 					)
@@ -665,7 +665,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 					return new WP_Error(
 						'wpem_rest_already_trashed',
 						/* translators: %s: post type */
-						sprintf( __( 'The %s has already been deleted.', 'wp-event-manager-rest-api' ), $this->post_type ),
+						sprintf( __( 'The %s has already been deleted.', 'wpem-rest-api' ), $this->post_type ),
 						array(
 							'status' => 410,
 						)
@@ -681,7 +681,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			return new WP_Error(
 				'wpem_rest_cannot_delete',
 				/* translators: %s: post type */
-				sprintf( __( 'The %s cannot be deleted.', 'wp-event-manager-rest-api' ), $this->post_type ),
+				sprintf( __( 'The %s cannot be deleted.', 'wpem-rest-api' ), $this->post_type ),
 				array(
 					'status' => 500,
 				)
@@ -721,97 +721,97 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 			'type'       => 'object',
 			'properties' => array(
 				'id'                    => array(
-					'description' => __( 'Unique identifier for the resource.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'Unique identifier for the resource.', 'wpem-rest-api' ),
 					'type'        => 'integer',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
 				'name'                  => array(
-					'description' => __( 'Event name.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'Event name.', 'wpem-rest-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 				),
 				'slug'                  => array(
-					'description' => __( 'event slug.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'event slug.', 'wpem-rest-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 				),
 				'permalink'             => array(
-					'description' => __( 'event URL.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'event URL.', 'wpem-rest-api' ),
 					'type'        => 'string',
 					'format'      => 'uri',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
 				'date_created'          => array(
-					'description' => __( "The date the event was created, in the site's timezone.", 'wp-event-manager-rest-api' ),
+					'description' => __( "The date the event was created, in the site's timezone.", 'wpem-rest-api' ),
 					'type'        => 'date-time',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
 				'date_created_gmt'      => array(
-					'description' => __( 'The date the event was created, as GMT.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'The date the event was created, as GMT.', 'wpem-rest-api' ),
 					'type'        => 'date-time',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
 				'date_modified'         => array(
-					'description' => __( "The date the event was last modified, in the site's timezone.", 'wp-event-manager-rest-api' ),
+					'description' => __( "The date the event was last modified, in the site's timezone.", 'wpem-rest-api' ),
 					'type'        => 'date-time',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
 				'date_modified_gmt'     => array(
-					'description' => __( 'The date the event was last modified, as GMT.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'The date the event was last modified, as GMT.', 'wpem-rest-api' ),
 					'type'        => 'date-time',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
 			
 				'status'                => array(
-					'description' => __( 'Event status (post status).', 'wp-event-manager-rest-api' ),
+					'description' => __( 'Event status (post status).', 'wpem-rest-api' ),
 					'type'        => 'string',
 					'default'     => 'publish',
 					'enum'        => array_merge( array_keys( get_post_statuses() ), array( 'future' ,'expired') ),
 					'context'     => array( 'view', 'edit' ),
 				),
 				'featured'              => array(
-					'description' => __( 'Featured event.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'Featured event.', 'wpem-rest-api' ),
 					'type'        => 'boolean',
 					'default'     => false,
 					'context'     => array( 'view', 'edit' ),
 				),
 				'description'           => array(
-					'description' => __( 'Event description.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'Event description.', 'wpem-rest-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 				),
 				'short_description'     => array(
-					'description' => __( 'Event short description.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'Event short description.', 'wpem-rest-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 				),
 				
 				'categories'            => array(
-					'description' => __( 'List of categories.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'List of categories.', 'wpem-rest-api' ),
 					'type'        => 'array',
 					'context'     => array( 'view', 'edit' ),
 					'items'       => array(
 						'type'       => 'object',
 						'properties' => array(
 							'id'   => array(
-								'description' => __( 'Category ID.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Category ID.', 'wpem-rest-api' ),
 								'type'        => 'integer',
 								'context'     => array( 'view', 'edit' ),
 							),
 							'name' => array(
-								'description' => __( 'Category name.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Category name.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
 							),
 							'slug' => array(
-								'description' => __( 'Category slug.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Category slug.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
@@ -820,25 +820,25 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 					),
 				),
 				'tags'                  => array(
-					'description' => __( 'List of tags.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'List of tags.', 'wpem-rest-api' ),
 					'type'        => 'array',
 					'context'     => array( 'view', 'edit' ),
 					'items'       => array(
 						'type'       => 'object',
 						'properties' => array(
 							'id'   => array(
-								'description' => __( 'Tag ID.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Tag ID.', 'wpem-rest-api' ),
 								'type'        => 'integer',
 								'context'     => array( 'view', 'edit' ),
 							),
 							'name' => array(
-								'description' => __( 'Tag name.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Tag name.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
 							),
 							'slug' => array(
-								'description' => __( 'Tag slug.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Tag slug.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
@@ -847,59 +847,59 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 					),
 				),
 				'images'                => array(
-					'description' => __( 'List of images.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'List of images.', 'wpem-rest-api' ),
 					'type'        => 'array',
 					'context'     => array( 'view', 'edit' ),
 					'items'       => array(
 						'type'       => 'object',
 						'properties' => array(
 							'id'                => array(
-								'description' => __( 'Image ID.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Image ID.', 'wpem-rest-api' ),
 								'type'        => 'integer',
 								'context'     => array( 'view', 'edit' ),
 							),
 							'date_created'      => array(
-								'description' => __( "The date the image was created, in the site's timezone.", 'wp-event-manager-rest-api' ),
+								'description' => __( "The date the image was created, in the site's timezone.", 'wpem-rest-api' ),
 								'type'        => 'date-time',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
 							),
 							'date_created_gmt'  => array(
-								'description' => __( 'The date the image was created, as GMT.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'The date the image was created, as GMT.', 'wpem-rest-api' ),
 								'type'        => 'date-time',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
 							),
 							'date_modified'     => array(
-								'description' => __( "The date the image was last modified, in the site's timezone.", 'wp-event-manager-rest-api' ),
+								'description' => __( "The date the image was last modified, in the site's timezone.", 'wpem-rest-api' ),
 								'type'        => 'date-time',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
 							),
 							'date_modified_gmt' => array(
-								'description' => __( 'The date the image was last modified, as GMT.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'The date the image was last modified, as GMT.', 'wpem-rest-api' ),
 								'type'        => 'date-time',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
 							),
 							'src'               => array(
-								'description' => __( 'Image URL.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Image URL.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'format'      => 'uri',
 								'context'     => array( 'view', 'edit' ),
 							),
 							'name'              => array(
-								'description' => __( 'Image name.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Image name.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 							),
 							'alt'               => array(
-								'description' => __( 'Image alternative text.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Image alternative text.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 							),
 							'position'          => array(
-								'description' => __( 'Image position. 0 means that the image is featured.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Image position. 0 means that the image is featured.', 'wpem-rest-api' ),
 								'type'        => 'integer',
 								'context'     => array( 'view', 'edit' ),
 							),
@@ -908,25 +908,25 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				),
 				
 				'meta_data'             => array(
-					'description' => __( 'Meta data.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'Meta data.', 'wpem-rest-api' ),
 					'type'        => 'array',
 					'context'     => array( 'view', 'edit' ),
 					'items'       => array(
 						'type'       => 'object',
 						'properties' => array(
 							'id'    => array(
-								'description' => __( 'Meta ID.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Meta ID.', 'wpem-rest-api' ),
 								'type'        => 'integer',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
 							),
 							'key'   => array(
-								'description' => __( 'Meta key.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Meta key.', 'wpem-rest-api' ),
 								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 							),
 							'value' => array(
-								'description' => __( 'Meta value.', 'wp-event-manager-rest-api' ),
+								'description' => __( 'Meta value.', 'wpem-rest-api' ),
 								'type'        => 'mixed',
 								'context'     => array( 'view', 'edit' ),
 							),
@@ -950,13 +950,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		$params['orderby']['enum'] = array_merge( $params['orderby']['enum'], array( 'menu_order' ) );
 
 		$params['slug']           = array(
-			'description'       => __( 'Limit result set to events with a specific slug.', 'wp-event-manager-rest-api' ),
+			'description'       => __( 'Limit result set to events with a specific slug.', 'wpem-rest-api' ),
 			'type'              => 'string',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
 		$params['status']         = array(
 			'default'           => 'any',
-			'description'       => __( 'Limit result set to events assigned a specific status.', 'wp-event-manager-rest-api' ),
+			'description'       => __( 'Limit result set to events assigned a specific status.', 'wpem-rest-api' ),
 			'type'              => 'string',
 			'enum'              => array_merge( array( 'any', 'future','expired' ), array_keys( get_post_statuses() ) ),
 			'sanitize_callback' => 'sanitize_key',
@@ -964,19 +964,19 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		);
 	
 		$params['featured']       = array(
-			'description'       => __( 'Limit result set to featured events.', 'wp-event-manager-rest-api' ),
+			'description'       => __( 'Limit result set to featured events.', 'wpem-rest-api' ),
 			'type'              => 'boolean',
 			'sanitize_callback' => 'wc_string_to_bool',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
 		$params['category']       = array(
-			'description'       => __( 'Limit result set to events assigned a specific category ID.', 'wp-event-manager-rest-api' ),
+			'description'       => __( 'Limit result set to events assigned a specific category ID.', 'wpem-rest-api' ),
 			'type'              => 'string',
 			'sanitize_callback' => 'wp_parse_id_list',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
 		$params['tag']            = array(
-			'description'       => __( 'Limit result set to events assigned a specific tag ID.', 'wp-event-manager-rest-api' ),
+			'description'       => __( 'Limit result set to events assigned a specific tag ID.', 'wpem-rest-api' ),
 			'type'              => 'string',
 			'sanitize_callback' => 'wp_parse_id_list',
 			'validate_callback' => 'rest_validate_request_arg',

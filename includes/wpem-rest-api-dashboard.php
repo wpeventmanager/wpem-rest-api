@@ -46,7 +46,7 @@ class WPEM_Rest_API_Dashboard {
 	 */
 	public function wpem_rest_api_output_setting(){
 		get_event_manager_template( 
-			'wpem-dashboard-rest-api-settings.php', array(), 'wp-event-manager-rest-api', 
+			'wpem-dashboard-rest-api-settings.php', array(), 'wpem-rest-api', 
 			WPEM_REST_API_PLUGIN_DIR . '/templates/' 
 		);
 

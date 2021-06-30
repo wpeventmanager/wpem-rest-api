@@ -10,7 +10,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
      if( isset( $_GET['tab'] ) && file_exists (__DIR__. '/wpem-rest-settings-'.$_GET['tab'].'.php') )
               include('wpem-rest-settings-'.$_GET['tab'].'.php');
             else
-              _e('Setting template file not exists','wp-event-manager-rest-api');
+              _e('Setting template file not exists','wpem-rest-api');
         
   }
   else if($tab_settings['type'] == 'fields' && isset( $tab_settings['fields'] ) && isset( $tab_settings['sections'] )){

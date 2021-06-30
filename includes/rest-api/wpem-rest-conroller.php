@@ -113,7 +113,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 
 		if ( $total > $limit ) {
 			/* translators: %s: items limit */
-			return new WP_Error( 'wpem_rest_request_entity_too_large', sprintf( __( 'Unable to accept more than %s items for this request.', 'wp-event-manager-rest-api' ), $limit ), array( 'status' => 413 ) );
+			return new WP_Error( 'wpem_rest_request_entity_too_large', sprintf( __( 'Unable to accept more than %s items for this request.', 'wpem-rest-api' ), $limit ), array( 'status' => 413 ) );
 		}
 
 		return true;
@@ -263,7 +263,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 		if ( array_key_exists( $value, $setting['options'] ) ) {
 			return $value;
 		} else {
-			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wp-event-manager-rest-api' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ) );
 		}
 	}
 
@@ -281,7 +281,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 		}
 
 		if ( ! is_array( $values ) ) {
-			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wp-event-manager-rest-api' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ) );
 		}
 
 		$final_values = array();
@@ -304,7 +304,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 	 */
 	public function validate_setting_image_width_field( $values, $setting ) {
 		if ( ! is_array( $values ) ) {
-			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wp-event-manager-rest-api' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ) );
 		}
 
 		$current = $setting['value'];
@@ -347,7 +347,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 			$value = isset( $setting['default'] ) ? $setting['default'] : 'no';
 			return $value;
 		} else {
-			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wp-event-manager-rest-api' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ) );
 		}
 	}
 
@@ -408,7 +408,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 			'type'       => 'object',
 			'properties' => array(
 				'create' => array(
-					'description' => __( 'List of created resources.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'List of created resources.', 'wpem-rest-api' ),
 					'type'        => 'array',
 					'context'     => array( 'view', 'edit' ),
 					'items'       => array(
@@ -416,7 +416,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 					),
 				),
 				'update' => array(
-					'description' => __( 'List of updated resources.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'List of updated resources.', 'wpem-rest-api' ),
 					'type'        => 'array',
 					'context'     => array( 'view', 'edit' ),
 					'items'       => array(
@@ -424,7 +424,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
 					),
 				),
 				'delete' => array(
-					'description' => __( 'List of delete resources.', 'wp-event-manager-rest-api' ),
+					'description' => __( 'List of delete resources.', 'wpem-rest-api' ),
 					'type'        => 'array',
 					'context'     => array( 'view', 'edit' ),
 					'items'       => array(

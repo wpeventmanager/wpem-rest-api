@@ -45,14 +45,14 @@ class WPEM_Rest_API_Settings {
 							'icon'			=>	'meter',
 							'type'       => 'fields',
 							'sections'		=> array(
-									'general' => __('General Settings','wp-event-manager-rest-api'),
+									'general' => __('General Settings','wpem-rest-api'),
 							),
 							'fields'		=> array(
 									'general' => array(
 											array(
 												'name'       => 'enable_wpem_rest_api',
 												'std'        => '1',
-												'label'      => __( 'Enable Rest API', 'wp-event-manager-rest-api' ),
+												'label'      => __( 'Enable Rest API', 'wpem-rest-api' ),
 												'cb_label'   => __( 'Disable to remove the API functionality from your event website.', 'wp-event-manager' ),
 												'desc'       => '',
 												'type'       => 'checkbox',
@@ -63,7 +63,7 @@ class WPEM_Rest_API_Settings {
 												'name'       => 'wpem_rest_api_app_logo',
 												'std'        => '',
 												'cb_label'   => __( 'Upload  the logo of your own brand.', 'wp-event-manager' ),
-												'label'      => __( 'App Logo', 'wp-event-manager-rest-api' ),
+												'label'      => __( 'App Logo', 'wpem-rest-api' ),
 												'desc'       => '',
 												'type'       => 'file',
 												
@@ -73,8 +73,8 @@ class WPEM_Rest_API_Settings {
 											// array(
 											// 	'name'       => 'wpem_rest_api_app_splash_screen_image',
 											// 	'std'        => '',
-											// 	'label'      => __( 'App Splash Image', 'wp-event-manager-rest-api' ),
-											// 	'desc'       => __('','wp-event-manager-rest-api'),
+											// 	'label'      => __( 'App Splash Image', 'wpem-rest-api' ),
+											// 	'desc'       => __('','wpem-rest-api'),
 											// 	'cb_label'   => __( 'Splash image is the watermark that will help creating identity of your brand.', 'wp-event-manager' ),
 											// 	'type'       => 'file',
 
