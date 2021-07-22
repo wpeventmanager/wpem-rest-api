@@ -65,7 +65,7 @@ defined( 'ABSPATH' ) || exit;
 						if($brightness == 500)
 							$adjust_percentage = 0;
 
-						$code = wpem_color_brightness($primary_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($primary_color, $adjust_percentage);
 
 						if($i < 5)
 						{
@@ -87,7 +87,7 @@ defined( 'ABSPATH' ) || exit;
 						if($brightness == 500)
 							$adjust_percentage = 0;
 
-						$code = wpem_color_brightness($success_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($success_color, $adjust_percentage);
 						
 
 						if($i < 5)
@@ -110,7 +110,7 @@ defined( 'ABSPATH' ) || exit;
 						if($brightness == 500)
 							$adjust_percentage = 0;
 
-						$code = wpem_color_brightness($info_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($info_color, $adjust_percentage);
 
 						if($i < 5)
 						{
@@ -131,7 +131,7 @@ defined( 'ABSPATH' ) || exit;
 						$adjust_percentage = $i/10;
 						if($brightness == 500)
 							$adjust_percentage = 0;
-						$code = wpem_color_brightness($warning_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($warning_color, $adjust_percentage);
 						
 
 						if($i < 5)
@@ -153,7 +153,7 @@ defined( 'ABSPATH' ) || exit;
 						$adjust_percentage = $i/10;
 						if($brightness == 500)
 							$adjust_percentage = 0;
-						$code = wpem_color_brightness($danger_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($danger_color, $adjust_percentage);
 
 						if($i < 5)
 						{
@@ -219,7 +219,7 @@ defined( 'ABSPATH' ) || exit;
 						$adjust_percentage = $i/10;
 						if($brightness == 500)
 							$adjust_percentage = 0;
-						$code = wpem_color_brightness($primary_dark_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($primary_dark_color, $adjust_percentage);
 
 						if($i < 5)
 						{
@@ -240,7 +240,7 @@ defined( 'ABSPATH' ) || exit;
 						$adjust_percentage = $i/10;
 						if($brightness == 500)
 							$adjust_percentage = 0;
-						$code = wpem_color_brightness($success_dark_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($success_dark_color, $adjust_percentage);
 						
 
 						if($i < 5)
@@ -262,7 +262,7 @@ defined( 'ABSPATH' ) || exit;
 						$adjust_percentage = $i/10;
 						if($brightness == 500)
 							$adjust_percentage = 0;
-						$code = wpem_color_brightness($info_dark_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($info_dark_color, $adjust_percentage);
 						
 
 						if($i < 5)
@@ -284,7 +284,7 @@ defined( 'ABSPATH' ) || exit;
 						$adjust_percentage = $i/10;
 						if($brightness == 500)
 							$adjust_percentage = 0;
-						$code = wpem_color_brightness($warning_dark_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($warning_dark_color, $adjust_percentage);
 					
 
 						if($i < 5)
@@ -306,7 +306,7 @@ defined( 'ABSPATH' ) || exit;
 						$adjust_percentage = $i/10;
 						if($brightness == 500)
 							$adjust_percentage = 0;
-						$code = wpem_color_brightness($danger_dark_color, $adjust_percentage);
+						$code = wpem_rest_api_color_brightness($danger_dark_color, $adjust_percentage);
 						
 
 						if($i < 5)

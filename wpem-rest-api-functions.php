@@ -8,6 +8,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
+if(!function_exists('wpem_rest_prepare_date_response')){
 /**
  * Parses and formats a date for ISO8601/RFC3339.
  *
@@ -24,7 +25,9 @@ function wpem_rest_prepare_date_response( $date, $utc = true ) {
 	//need improvements as per wpem date time class
 	return $date;
 }
+}
 
+if(!function_exists('wpem_rest_check_post_permissions')){
 /**
  * Check permissions of posts on REST API.
  *
@@ -67,6 +70,10 @@ function wpem_rest_check_post_permissions( $post_type, $context = 'read', $objec
 
 	return apply_filters( 'wpem_rest_check_permissions', $permission, $context, $object_id, $post_type );
 }
+}
+
+
+if(!function_exists('wpem_api_hash')){
 
 /**
  * WPEM API - Hash.
@@ -78,7 +85,9 @@ function wpem_rest_check_post_permissions( $post_type, $context = 'read', $objec
 function wpem_api_hash( $data ) {
     return hash_hmac( 'sha256', $data, 'wpem-api' );
 }
+}
 
+if(!function_exists('wpem_rest_urlencode_rfc3986')){
 /**
  * Encodes a value according to RFC 3986.
  * Supports multidimensional arrays.
@@ -94,6 +103,9 @@ function wpem_rest_urlencode_rfc3986( $value ) {
 
 	return str_replace( array( '+', '%7E' ), array( ' ', '~' ), rawurlencode( $value ) );
 }
+}
+
+if(!function_exists('wpem_rest_api_color_brightness')){
 
 /**
  * WPEM Color Brightness
@@ -102,7 +114,7 @@ function wpem_rest_urlencode_rfc3986( $value ) {
  * @param  string $data Message to be hashed.
  * @return string
  */
-function wpem_color_brightness($hexCode, $adjustPercent) {
+function wpem_rest_api_color_brightness($hexCode, $adjustPercent) {
     $hexCode = ltrim($hexCode, '#');
 
     if (strlen($hexCode) == 3) {
@@ -120,7 +132,9 @@ function wpem_color_brightness($hexCode, $adjustPercent) {
 
     return '#' . implode($hexCode);
 }
+}
 
+if(!function_exists('wpem_rest_api_hex_to_rgb')){
 /**
  * WPEM hex to rgb
  *
@@ -128,7 +142,7 @@ function wpem_color_brightness($hexCode, $adjustPercent) {
  * @param  string $data Message to be hashed.
  * @return string
  */
-function wpem_hex_to_rgb( $colour ) {
+function wpem_rest_api_hex_to_rgb( $colour ) {
     if ( $colour[0] == '#' ) {
             $colour = substr( $colour, 1 );
     }
@@ -144,8 +158,8 @@ function wpem_hex_to_rgb( $colour ) {
     $b = hexdec( $b );
     return array( 'red' => $r, 'green' => $g, 'blue' => $b );
 }
-
-
+}
+if(!function_exists('wpem_rest_check_manager_permissions')){
 /**
  * Check manager permissions on REST API.
  *
@@ -163,4 +177,5 @@ function wpem_rest_check_manager_permissions( $object, $context = 'read' ) {
     $permission = current_user_can( $objects[ $object ] );
 
     return apply_filters( 'wpem_rest_check_permissions', $permission, $context, 0, $object );
+}
 }

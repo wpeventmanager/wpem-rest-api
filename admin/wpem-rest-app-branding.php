@@ -72,7 +72,7 @@ class WPEM_Rest_APP_Branding {
 					$adjust_percentage = 0;
 				
 
-				$code = wpem_color_brightness($color_code, $adjust_percentage);
+				$code = wpem_rest_api_color_brightness($color_code, $adjust_percentage);
 
 				if($i < 5)
 				{
@@ -195,11 +195,11 @@ class WPEM_Rest_APP_Branding {
 
 	public function generate_scheme_formatted_colorcodes($primary_color = "#3366FF",$success_color="#77DD37",$info_color = "#42BCFF",$warning_color = "#FCD837",$danger_color = "#FC4C20"){
 
-		$rgb_primary_color 	= wpem_hex_to_rgb($primary_color);
-		$rgb_success_color 	= wpem_hex_to_rgb($success_color);
-		$rgb_info_color 	= wpem_hex_to_rgb($info_color);
-		$rgb_warning_color 	= wpem_hex_to_rgb($warning_color);
-		$rgb_danger_color 	= wpem_hex_to_rgb($danger_color);
+		$rgb_primary_color 	= wpem_rest_api_hex_to_rgb($primary_color);
+		$rgb_success_color 	= wpem_rest_api_hex_to_rgb($success_color);
+		$rgb_info_color 	= wpem_rest_api_hex_to_rgb($info_color);
+		$rgb_warning_color 	= wpem_rest_api_hex_to_rgb($warning_color);
+		$rgb_danger_color 	= wpem_rest_api_hex_to_rgb($danger_color);
 
 		$default_rgb = 0.08;
 
@@ -214,11 +214,11 @@ class WPEM_Rest_APP_Branding {
 			if($brightness == 500)
 				$adjust_percentage = 9/10;
 
-			$wpem_colors['color-primary-'.$brightness] = wpem_color_brightness($primary_color, (1 - $adjust_percentage));
-			$wpem_colors['color-success-'.$brightness] = wpem_color_brightness($success_color, (1 - $adjust_percentage));
-			$wpem_colors['color-info-'.$brightness] = wpem_color_brightness($info_color, (1 - $adjust_percentage));
-			$wpem_colors['color-warning-'.$brightness] = wpem_color_brightness($warning_color, (1 - $adjust_percentage));
-			$wpem_colors['color-danger-'.$brightness] = wpem_color_brightness($danger_color, (1 - $adjust_percentage));
+			$wpem_colors['color-primary-'.$brightness] = wpem_rest_api_color_brightness($primary_color, (1 - $adjust_percentage));
+			$wpem_colors['color-success-'.$brightness] = wpem_rest_api_color_brightness($success_color, (1 - $adjust_percentage));
+			$wpem_colors['color-info-'.$brightness] = wpem_rest_api_color_brightness($info_color, (1 - $adjust_percentage));
+			$wpem_colors['color-warning-'.$brightness] = wpem_rest_api_color_brightness($warning_color, (1 - $adjust_percentage));
+			$wpem_colors['color-danger-'.$brightness] = wpem_rest_api_color_brightness($danger_color, (1 - $adjust_percentage));
 
 
 			if($brightness <= 600)
