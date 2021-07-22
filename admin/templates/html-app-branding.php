@@ -11,8 +11,8 @@ defined( 'ABSPATH' ) || exit;
 	<h3 class="wpem-admin-tab-title"><?php esc_html_e( 'App Branding', 'wpem-rest-api' ); ?></h3>
 	<div class="wpem-branding-status"></div>
 	<div class="app-branding-mode">
-		<div class="wpem-light-mode button"><label>Day</label><img src="../wp-content/plugins/wpem-rest-api/assets/images/sun.png" alt=""></div>
-		<div class="wpem-dark-mode button"><label>Night</label><img src="../wp-content/plugins/wpem-rest-api/assets/images/moon.png" alt=""></div>
+		<div class="wpem-light-mode button"><label>Day</label><img src="<?php echo WPEM_REST_API_PLUGIN_URL;?>/assets/images/sun.png" alt=""></div>
+		<div class="wpem-dark-mode button"><label>Night</label><img src="<?php echo WPEM_REST_API_PLUGIN_URL;?>/assets/images/moon.png" alt=""></div>
 	</div>
 
 	<table id="app-branding-color" class="form-table">
@@ -69,11 +69,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness ).'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$primary_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($primary_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -92,11 +92,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$success_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($success_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -114,11 +114,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$info_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($info_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -136,11 +136,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$warning_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($warning_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -157,11 +157,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$danger_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'.esc_html( $brightness ).'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($danger_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -223,11 +223,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$primary_dark_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($primary_dark_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -245,11 +245,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$success_dark_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($success_dark_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -267,11 +267,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$info_dark_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($info_dark_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -289,11 +289,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$warning_dark_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($warning_dark_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -311,11 +311,11 @@ defined( 'ABSPATH' ) || exit;
 
 						if($i < 5)
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';	
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$danger_dark_color.'">'.$code.'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($danger_dark_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>

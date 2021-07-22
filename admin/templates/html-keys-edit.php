@@ -79,9 +79,9 @@ defined( 'ABSPATH' ) || exit;
 						foreach ( $all_users as $user ) { ?>
 						   <option value="<?php echo esc_attr( $user->ID ); ?>"  <?php if($user->ID == $user_id )  echo 'selected="selected"';?>><?php 
 						   echo '#'; 
-						   echo $user->ID;
+						   printf(__('%d','wpem-rest-api'),$user->ID);
 						   echo ' ';
-						   echo $user->user_login; // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
+						    printf(__('%s','wpem-rest-api'),$user->user_login); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
 						   <?php
 						}
 
