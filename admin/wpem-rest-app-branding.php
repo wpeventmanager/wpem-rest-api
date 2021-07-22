@@ -103,27 +103,27 @@ class WPEM_Rest_APP_Branding {
 		//normal colors
 		if(isset($_POST['wpem_primary_color']))
 		{
-			update_option('wpem_primary_color', $_POST['wpem_primary_color']);
+			update_option('wpem_primary_color', sanitize_text_field($_POST['wpem_primary_color']));
 		}
 
 		if(isset($_POST['wpem_success_color']))
 		{
-			update_option('wpem_success_color', $_POST['wpem_success_color']);
+			update_option('wpem_success_color', sanitize_text_field($_POST['wpem_success_color']));
 		}
 
 		if(isset($_POST['wpem_info_color']))
 		{
-			update_option('wpem_info_color', $_POST['wpem_info_color']);
+			update_option('wpem_info_color', sanitize_text_field($_POST['wpem_info_color']));
 		}
 
 		if(isset($_POST['wpem_warning_color']))
 		{
-			update_option('wpem_warning_color', $_POST['wpem_warning_color']);
+			update_option('wpem_warning_color', sanitize_text_field($_POST['wpem_warning_color']));
 		}
 
 		if(isset($_POST['wpem_danger_color']))
 		{
-			update_option('wpem_danger_color', $_POST['wpem_danger_color']);
+			update_option('wpem_danger_color', sanitize_text_field($_POST['wpem_danger_color']));
 		}
 
 		$primary_color 	= !empty(get_option('wpem_primary_color')) ? get_option('wpem_primary_color') : '#3366FF';
