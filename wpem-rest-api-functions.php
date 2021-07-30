@@ -8,7 +8,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-if(!function_exists('wpem_rest_prepare_date_response')){
+if(!function_exists('wpem_rest_api_prepare_date_response')){
 /**
  * Parses and formats a date for ISO8601/RFC3339.
  *
@@ -20,14 +20,14 @@ if(!function_exists('wpem_rest_prepare_date_response')){
  * @param  bool                    $utc  Send false to get local/offset time.
  * @return string|null ISO8601/RFC3339 formatted datetime.
  */
-function wpem_rest_prepare_date_response( $date, $utc = true ) {
+function wpem_rest_api_prepare_date_response( $date, $utc = true ) {
 
 	//need improvements as per wpem date time class
 	return $date;
 }
 }
 
-if(!function_exists('wpem_rest_check_post_permissions')){
+if(!function_exists('wpem_rest_api_check_post_permissions')){
 /**
  * Check permissions of posts on REST API.
  *
@@ -37,7 +37,7 @@ if(!function_exists('wpem_rest_check_post_permissions')){
  * @param int    $object_id Post ID.
  * @return bool
  */
-function wpem_rest_check_post_permissions( $post_type, $context = 'read', $object_id = 0 ) {
+function wpem_rest_api_check_post_permissions( $post_type, $context = 'read', $object_id = 0 ) {
     global $wpdb;
 	$contexts = array(
 		'read'   => 'read',
@@ -68,26 +68,11 @@ function wpem_rest_check_post_permissions( $post_type, $context = 'read', $objec
         
 	}
 
-	return apply_filters( 'wpem_rest_check_permissions', $permission, $context, $object_id, $post_type );
+	return apply_filters( 'wpem_rest_api_check_permissions', $permission, $context, $object_id, $post_type );
 }
 }
 
-
-if(!function_exists('wpem_api_hash')){
-
-/**
- * WPEM API - Hash.
- *
- * @since  1.0.0
- * @param  string $data Message to be hashed.
- * @return string
- */
-function wpem_api_hash( $data ) {
-    return hash_hmac( 'sha256', $data, 'wpem-api' );
-}
-}
-
-if(!function_exists('wpem_rest_urlencode_rfc3986')){
+if(!function_exists('wpem_rest_api_urlencode_rfc3986')){
 /**
  * Encodes a value according to RFC 3986.
  * Supports multidimensional arrays.
@@ -96,9 +81,9 @@ if(!function_exists('wpem_rest_urlencode_rfc3986')){
  * @param string|array $value The value to encode.
  * @return string|array       Encoded values.
  */
-function wpem_rest_urlencode_rfc3986( $value ) {
+function wpem_rest_api_urlencode_rfc3986( $value ) {
 	if ( is_array( $value ) ) {
-		return array_map( 'wpem_rest_urlencode_rfc3986', $value );
+		return array_map( 'wpem_rest_api_urlencode_rfc3986', $value );
 	}
 
 	return str_replace( array( '+', '%7E' ), array( ' ', '~' ), rawurlencode( $value ) );
@@ -159,7 +144,7 @@ function wpem_rest_api_hex_to_rgb( $colour ) {
     return array( 'red' => $r, 'green' => $g, 'blue' => $b );
 }
 }
-if(!function_exists('wpem_rest_check_manager_permissions')){
+if(!function_exists('wpem_rest_api_check_manager_permissions')){
 /**
  * Check manager permissions on REST API.
  *
@@ -168,7 +153,7 @@ if(!function_exists('wpem_rest_check_manager_permissions')){
  * @param string $context Request context.
  * @return bool
  */
-function wpem_rest_check_manager_permissions( $object, $context = 'read' ) {
+function wpem_rest_api_check_manager_permissions( $object, $context = 'read' ) {
 
     $objects = array(
         'reports'          => 'read_private_posts',
@@ -176,6 +161,6 @@ function wpem_rest_check_manager_permissions( $object, $context = 'read' ) {
 
     $permission = current_user_can( $objects[ $object ] );
 
-    return apply_filters( 'wpem_rest_check_permissions', $permission, $context, 0, $object );
+    return apply_filters( 'wpem_rest_api_check_permissions', $permission, $context, 0, $object );
 }
 }

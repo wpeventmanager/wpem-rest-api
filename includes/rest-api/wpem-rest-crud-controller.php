@@ -53,7 +53,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function get_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
+		if ( $object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -91,7 +91,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function update_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'edit', $object->ID ) ) {
+		if ( $object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions( $this->post_type, 'edit', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_edit', __( 'Sorry, you are not allowed to edit this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -107,7 +107,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	public function delete_item_permissions_check( $request ) {
 		$object = $this->get_object( (int) $request['id'] );
 
-		if ( $object && 0 !== $object->ID && ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
+		if ( $object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_delete', __( 'Sorry, you are not allowed to delete this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -406,7 +406,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	
 		$objects = array();
 		foreach ( $query_results['objects'] as $object ) {
-			if ( ! wpem_rest_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
+			if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
 				continue;
 			}
 
@@ -483,7 +483,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		 */
 		$supports_trash = apply_filters( "wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object );
 
-		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
+		if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
 			/* translators: %s: post type */
 			return new WP_Error( "wpem_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => rest_authorization_required_code() ) );
 		}

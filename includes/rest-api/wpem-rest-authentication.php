@@ -434,7 +434,7 @@ class WPEM_REST_Authentication {
 				$query_params = $this->join_with_equals_sign( $param_value, $query_params, $param_key );
 			} else {
 				$string         = $param_key . '=' . $param_value; // Join with equals sign.
-				$query_params[] = wpem_rest_urlencode_rfc3986( $string );
+				$query_params[] = wpem_rest_api_urlencode_rfc3986( $string );
 			}
 		}
 
@@ -461,8 +461,8 @@ class WPEM_REST_Authentication {
 	 * @return array Normalized parameters.
 	 */
 	private function normalize_parameters( $parameters ) {
-		$keys       = wpem_rest_urlencode_rfc3986( array_keys( $parameters ) );
-		$values     = wpem_rest_urlencode_rfc3986( array_values( $parameters ) );
+		$keys       = wpem_rest_api_urlencode_rfc3986( array_keys( $parameters ) );
+		$values     = wpem_rest_api_urlencode_rfc3986( array_values( $parameters ) );
 		$parameters = array_combine( $keys, $values );
 
 		return $parameters;

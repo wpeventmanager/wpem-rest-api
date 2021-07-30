@@ -53,7 +53,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	 */
 	public function get_items_permissions_check( $request ) {
 
-		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'read' ) ) {
+		if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'read' ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot list resources.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -68,7 +68,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	 * @return WP_Error|boolean
 	 */
 	public function create_item_permissions_check( $request ) {
-		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'create' ) ) {
+		if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'create' ) ) {
 			return new WP_Error( 'wpem_rest_cannot_create', __( 'Sorry, you are not allowed to create resources.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -84,7 +84,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	public function get_item_permissions_check( $request ) {
 		$post = get_post( (int) $request['id'] );
 
-		if ( $post && ! wpem_rest_check_post_permissions( $this->post_type, 'read', $post->ID ) ) {
+		if ( $post && ! wpem_rest_api_check_post_permissions( $this->post_type, 'read', $post->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -100,7 +100,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	public function update_item_permissions_check( $request ) {
 		$post = get_post( (int) $request['id'] );
 
-		if ( $post && ! wpem_rest_check_post_permissions( $this->post_type, 'edit', $post->ID ) ) {
+		if ( $post && ! wpem_rest_api_check_post_permissions( $this->post_type, 'edit', $post->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_edit', __( 'Sorry, you are not allowed to edit this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -116,7 +116,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	public function delete_item_permissions_check( $request ) {
 		$post = get_post( (int) $request['id'] );
 
-		if ( $post && ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $post->ID ) ) {
+		if ( $post && ! wpem_rest_api_check_post_permissions( $this->post_type, 'delete', $post->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_delete', __( 'Sorry, you are not allowed to delete this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -131,7 +131,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 	 * @return boolean|WP_Error
 	 */
 	public function batch_items_permissions_check( $request ) {
-		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'batch' ) ) {
+		if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'batch' ) ) {
 			return new WP_Error( 'wpem_rest_cannot_batch', __( 'Sorry, you are not allowed to batch manipulate this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -362,7 +362,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 
 		$posts = array();
 		foreach ( $query_result as $post ) {
-			if ( ! wpem_rest_check_post_permissions( $this->post_type, 'read', $post->ID ) ) {
+			if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'read', $post->ID ) ) {
 				continue;
 			}
 
@@ -444,7 +444,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 		 */
 		$supports_trash = apply_filters( "wpem_rest_{$this->post_type}_trashable", $supports_trash, $post );
 
-		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $post->ID ) ) {
+		if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'delete', $post->ID ) ) {
 			/* translators: %s: post type */
 			return new WP_Error( "wpem_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => rest_authorization_required_code() ) );
 		}

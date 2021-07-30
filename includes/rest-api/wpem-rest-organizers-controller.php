@@ -265,10 +265,10 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		if ( empty( $images ) ) {
 			$images[] = array(
 				'id'                => 0,
-				'date_created'      => wpem_rest_prepare_date_response( current_time( 'mysql' ), false ), // Default to now.
-				'date_created_gmt'  => wpem_rest_prepare_date_response( current_time( 'timestamp', true ) ), // Default to now.
-				'date_modified'     => wpem_rest_prepare_date_response( current_time( 'mysql' ), false ),
-				'date_modified_gmt' => wpem_rest_prepare_date_response( current_time( 'timestamp', true ) ),
+				'date_created'      => wpem_rest_api_prepare_date_response( current_time( 'mysql' ), false ), // Default to now.
+				'date_created_gmt'  => wpem_rest_api_prepare_date_response( current_time( 'timestamp', true ) ), // Default to now.
+				'date_modified'     => wpem_rest_api_prepare_date_response( current_time( 'mysql' ), false ),
+				'date_modified_gmt' => wpem_rest_api_prepare_date_response( current_time( 'timestamp', true ) ),
 				'src'               => '',
 				'name'              => __( 'Placeholder', 'wpem-rest-api' ),
 				'alt'               => __( 'Placeholder', 'wpem-rest-api' ),
@@ -591,7 +591,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		 */
 		$supports_trash = apply_filters( "wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object );
 
-		if ( ! wpem_rest_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
+		if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
 			return new WP_Error(
 				"wpem_rest_user_cannot_delete_{$this->post_type}",
 				/* translators: %s: post type */
