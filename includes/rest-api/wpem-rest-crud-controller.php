@@ -56,29 +56,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		if ( $object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
 			return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
-
-		/*print_r();
-		 $consumer_key          = $request['consumer_key'];
-		 echo $consumer_key;
-		 global $wpdb;
-
-            $user         = $wpdb->get_row(
-                $wpdb->prepare(
-                    "
-                SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`event_id`,`date_expires`,`date_created`
-                FROM {$wpdb->prefix}wpem_rest_api_keys
-                WHERE `consumer_key` = %s",
-                    $consumer_key
-                    )
-                );
-            print_r($user );*/
-           /* if($this->post_type == 'event_listing' && $user->event_id ){
-
-                if($user->event_id != $object_id )
-
-                    $permission       = false;
-            }*/
-        
+		
 		return true;
 	}
 

@@ -156,7 +156,7 @@ class WPEM_Rest_API_Settings {
 		  <div id="wpbody-content" class="wpem-admin-container">
 		    
 		    <div class="wpem-wrap">
-				<form method="post" name="wpem-rest-settings-form" <?php echo $action; ?> >	
+				<form method="post" name="wpem-rest-settings-form" <?php echo esc_attr($action); ?> >	
 
 					<?php settings_fields( $this->settings_group ); ?>
 

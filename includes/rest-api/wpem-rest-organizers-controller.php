@@ -414,7 +414,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
 						$validation_errors =  $this->get_errors();
 						foreach ( $validation_errors as $error ) {
-							echo  $error;
+							echo  esc_html($error);
 						}
 						return;
 					}
