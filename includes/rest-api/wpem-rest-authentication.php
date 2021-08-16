@@ -156,14 +156,14 @@ class WPEM_REST_Authentication {
 
 		// If the $_GET parameters are present, use those first.
 		if ( ! empty( $_GET['consumer_key'] ) && ! empty( $_GET['consumer_secret'] ) ) { // WPCS: CSRF ok.
-			$consumer_key    = $_GET['consumer_key']; // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = $_GET['consumer_secret']; // WPCS: CSRF ok, sanitization ok.
+			$consumer_key    = sanitize_text_field($_GET['consumer_key']); // WPCS: CSRF ok, sanitization ok.
+			$consumer_secret = sanitize_text_field($_GET['consumer_secret']); // WPCS: CSRF ok, sanitization ok.
 		}
 
 		// If the above is not present, we will do full basic auth.
 		if ( ! $consumer_key && ! empty( $_SERVER['PHP_AUTH_USER'] ) && ! empty( $_SERVER['PHP_AUTH_PW'] ) ) {
-			$consumer_key    = $_SERVER['PHP_AUTH_USER']; // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = $_SERVER['PHP_AUTH_PW']; // WPCS: CSRF ok, sanitization ok.
+			$consumer_key    = sanitize_text_field($_SERVER['PHP_AUTH_USER']); // WPCS: CSRF ok, sanitization ok.
+			$consumer_secret = sanitize_text_field($_SERVER['PHP_AUTH_PW']); // WPCS: CSRF ok, sanitization ok.
 		}
 
 		// Stop if don't have any key.
@@ -693,7 +693,7 @@ class WPEM_REST_Authentication {
 		global $wpdb;
 
 		if(isset($_GET['key']) && !empty($_GET['key'])){
-			$app_key = $_GET['key'];
+			$app_key = sanitize_text_field($_GET['key']);
 
 			$app_key =  sanitize_text_field( $app_key );
 			$key_data         = $wpdb->get_row(

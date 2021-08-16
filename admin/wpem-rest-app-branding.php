@@ -136,27 +136,27 @@ class WPEM_Rest_APP_Branding {
 		//dark mode colors
 		if(isset($_POST['wpem_primary_dark_color']))
 		{
-			update_option('wpem_primary_dark_color', $_POST['wpem_primary_dark_color']);
+			update_option('wpem_primary_dark_color', sanitize_hex_color($_POST['wpem_primary_dark_color']));
 		}
 
 		if(isset($_POST['wpem_success_dark_color']))
 		{
-			update_option('wpem_success_dark_color', $_POST['wpem_success_dark_color']);
+			update_option('wpem_success_dark_color', sanitize_hex_color($_POST['wpem_success_dark_color']));
 		}
 
 		if(isset($_POST['wpem_info_dark_color']))
 		{
-			update_option('wpem_info_dark_color', $_POST['wpem_info_dark_color']);
+			update_option('wpem_info_dark_color', sanitize_hex_color($_POST['wpem_info_dark_color']));
 		}
 
 		if(isset($_POST['wpem_warning_dark_color']))
 		{
-			update_option('wpem_warning_dark_color', $_POST['wpem_warning_dark_color']);
+			update_option('wpem_warning_dark_color', sanitize_hex_color($_POST['wpem_warning_dark_color']));
 		}
 
 		if(isset($_POST['wpem_danger_dark_color']))
 		{
-			update_option('wpem_danger_dark_color', $_POST['wpem_danger_dark_color']);
+			update_option('wpem_danger_dark_color', sanitize_hex_color($_POST['wpem_danger_dark_color']));
 		}
 		$primary_dark_color 	= !empty(get_option('wpem_primary_dark_color')) ? get_option('wpem_primary_dark_color') : '#3366FF';
 		$success_dark_color 	= !empty(get_option('wpem_success_dark_color')) ? get_option('wpem_success_dark_color') : '#77DD37';

@@ -113,7 +113,7 @@ class WPEM_Rest_API_Admin {
 			$description = sanitize_text_field( wp_unslash( $_POST['description'] ) );
 			$permissions = ( in_array( wp_unslash( $_POST['permissions'] ), array( 'read', 'write', 'read_write' ), true ) ) ? sanitize_text_field( wp_unslash( $_POST['permissions'] ) ) : 'read';
 			$user_id      = absint( $_POST['user'] );
-			$event_id     = !empty( $_POST['event_id']) ?  $_POST['event_id'] : '' ;
+			$event_id     = !empty( $_POST['event_id']) ?  absint($_POST['event_id']) : '' ;
 			$date_expires = !empty( $_POST['date_expires']) ?  date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $_POST['date_expires']))) : NULL ;
 			
 			
