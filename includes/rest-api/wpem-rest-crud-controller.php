@@ -384,7 +384,13 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	
 		$objects = array();
 		foreach ( $query_results['objects'] as $object ) {
-			if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object->ID ) ) {
+
+			if(!isset($object->ID))
+				$object_id = $object->get_id();
+			else
+				$object_id = $object->ID;
+
+			if ( ! wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object_id ) ) {
 				continue;
 			}
 
