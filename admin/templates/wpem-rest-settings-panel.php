@@ -1,16 +1,17 @@
 <?php
 wp_enqueue_style( 'wp-color-picker' );
 
-$tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
+$tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general';
 $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();?>
 <div class="wpem-admin-bottom-content">
   <?php
   if(isset($tab_settings['type']) &&  $tab_settings['type'] == 'template'){
 
-     if( isset( $_GET['tab'] ) && file_exists (__DIR__. '/wpem-rest-settings-'.$_GET['tab'].'.php') )
-              include('wpem-rest-settings-'.$_GET['tab'].'.php');
-            else
-              _e('Setting template file not exists','wpem-rest-api');
+     if( isset( $tab ) && file_exists (__DIR__. '/wpem-rest-settings-'.$tab.'.php') ){
+      include('wpem-rest-settings-'.$tab.'.php');
+     }
+     else
+        _e('Setting template file not exists','wpem-rest-api');
         
   }
   else if($tab_settings['type'] == 'fields' && isset( $tab_settings['fields'] ) && isset( $tab_settings['sections'] )){
