@@ -78,6 +78,19 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
 		register_rest_route(
 			$this->namespace,
+			'/wpem_addon_info' ,
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_addon_item_info' ),
+					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'args'                => $this->get_collection_params(),
+				),
+			)
+		);
+
+		register_rest_route(
+			$this->namespace,
 			'/' . $this->rest_base . '/(?P<id>[\d]+)',
 			array(
 				'args'   => array(
@@ -311,6 +324,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		foreach ($meta_data as $key => $value) {
 			$meta_data[$key]= get_post_meta($event->ID,$key,true);
 		}
+
+
 		$data = array(
 				'id'                    => $event->ID,
 				'name'                  => $event->post_title,
@@ -1048,6 +1063,40 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 				$data[$term->term_id] = $term->name;
 			}
 		}
+
+		return $data;
+	}
+
+
+	public function get_addon_item_info(){
+
+		$plugins = get_plugins();
+		foreach ($plugins as $filename => $plugin) 
+				{
+					if( $plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename ) && !in_array( $plugin['TextDomain'], ["wp-event-manager", "wp-user-profile-avatar"] ) )
+					{
+						$licence_key = get_option( $plugin['TextDomain'] . '_licence_key' );
+						$email = get_option( $plugin['TextDomain'] . '_email' );
+						if(empty($email))
+						{
+							$email = get_option( 'admin_email' );
+						}
+
+						$disabled = '';
+						if(!empty($licence_key))
+						{
+							$disabled = 'disabled';
+						}
+
+						$data[$plugin['TextDomain']]= array(
+									'name'=> $plugin['Name'],
+									'title'=> $plugin['Title'],
+									'author'=> $plugin['Author'],
+									'version'=> $plugin['Version'],
+								);
+					}
+				}
+
 
 		return $data;
 	}
