@@ -40,33 +40,33 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
 
             $attributes[] = esc_attr( $attribute_name ) . '="' . esc_attr( $attribute_value ) . '"';
 
-        echo '<tr valign="top" class="' . $class . '"><th scope="row"><label for="setting-' . $option['name'] . '">' . $option['label'] . '</a></th><td>';
+        echo '<tr valign="top" class="' . esc_attr($class) . '"><th scope="row"><label for="setting-' . esc_attr($option['name']) . '">' . esc_attr($option['label']) . '</a></th><td>';
 
         switch ( $option['type'] ) {
 
           case "checkbox" :
 
-            ?><label><input id="setting-<?php echo $option['name']; ?>" name="<?php echo $option['name']; ?>" type="checkbox" value="1" <?php echo implode( ' ', $attributes ); ?> <?php checked( '1', $value ); ?> /> <?php echo $option['cb_label']; ?></label><?php
+            ?><label><input id="setting-<?php echo esc_attr($option['name']); ?>" name="<?php echo esc_attr($option['name']); ?>" type="checkbox" value="1" <?php echo implode( ' ', $attributes ); ?> <?php checked( '1', $value ); ?> /> <?php echo esc_html($option['cb_label']); ?></label><?php
 
             if ( $option['desc'] )
 
-              echo ' <p class="description">' . $option['desc'] . '</p>';
+              echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
 
           break;
 
           case "textarea" :
 
-            ?><textarea id="setting-<?php echo $option['name']; ?>" class="large-text" cols="50" rows="3" name="<?php echo $option['name']; ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?>><?php echo esc_textarea( $value ); ?></textarea><?php
+            ?><textarea id="setting-<?php echo esc_attr($option['name']); ?>" class="large-text" cols="50" rows="3" name="<?php echo esc_attr($option['name']); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo esc_html($placeholder); ?>><?php echo esc_textarea( $value ); ?></textarea><?php
 
             if ( $option['desc'] )
 
-              echo ' <p class="description">' . $option['desc'] . '</p>';
+              echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
 
           break;
 
           case "select" :
 
-            ?><select id="setting-<?php echo $option['name']; ?>" class="regular-text" name="<?php echo $option['name']; ?>" <?php echo implode( ' ', $attributes ); ?>><?php
+            ?><select id="setting-<?php echo esc_attr($option['name']); ?>" class="regular-text" name="<?php echo esc_attr($option['name']); ?>" <?php echo implode( ' ', $attributes ); ?>><?php
 
               foreach( $option['options'] as $key => $name )
 
@@ -76,7 +76,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
 
             if ( $option['desc'] ) {
 
-              echo ' <p class="description">' . $option['desc'] . '</p>';
+              echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
 
             }
 
@@ -88,7 +88,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
               </legend><?php
 
             if ( $option['desc'] ) {
-              echo '<p class="description">' . $option['desc'] . '</p>';
+              echo '<p class="description">' . esc_html_e($option['desc']) . '</p>';
             }
 
             foreach( $option['options'] as $key => $name )
@@ -122,7 +122,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
 
             if ( $option['desc'] ) {
 
-              echo ' <p class="description">' . $option['desc'] . '</p>';
+              echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
 
             }
             
@@ -130,11 +130,11 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
 
           case "password" :
 
-            ?><input id="setting-<?php echo $option['name']; ?>" class="regular-text" type="password" name="<?php echo $option['name']; ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
+            ?><input id="setting-<?php echo esc_attr($option['name']); ?>" class="regular-text" type="password" name="<?php echo esc_attr($option['name']); ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
 
             if ( $option['desc'] ) {
 
-              echo ' <p class="description">' . $option['desc'] . '</p>';
+              echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
             }
 
           break;
@@ -145,11 +145,11 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
 
           case "text" :
 
-            ?><input id="setting-<?php echo $option['name']; ?>" class="regular-text" type="text" name="<?php echo $option['name']; ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
+            ?><input id="setting-<?php echo esc_attr($option['name']); ?>" class="regular-text" type="text" name="<?php echo esc_attr($option['name']); ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
 
             if ( $option['desc'] ) {
 
-              echo ' <p class="description">' . $option['desc'] . '</p>';
+              echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
           }
 
           break;    
@@ -158,11 +158,11 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
               $this->create_multi_select_checkbox($option);
             break;
           case "color-picker":
-             ?><input id="setting-<?php echo $option['name']; ?>" class="regular-text wpem-colorpicker" type="text" name="<?php echo $option['name']; ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
+             ?><input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text wpem-colorpicker" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
 
             if ( $option['desc'] ) {
 
-              echo ' <p class="description">' . $option['desc'] . '</p>';
+              echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
           }
             break;
           case "file" :

@@ -664,8 +664,8 @@ class WPEM_REST_Authentication {
 	public function perform_login_authentication($request){
 		$response = [];
 		if(isset($_GET['username']) && isset($_GET['password']) && (!empty($_GET['username']) && !empty($_GET['password'])) ){
-			$username = $_GET['username'];
-			$password = $_GET['password'];
+			$username = sanitize_text_field($_GET['username']);
+			$password = sanitize_text_field($_GET['password']);
 
 			$user = wp_authenticate($username, $password);
 

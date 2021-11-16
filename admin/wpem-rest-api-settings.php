@@ -165,12 +165,12 @@ class WPEM_Rest_API_Settings {
 
 				        	<?php foreach ( $this->settings as $key => $section ) { ?>
 				          <li class="wpem-admin-left-menu-item">
-				            <a class="wpem-icon-<?php echo isset($section['icon']) ? $section['icon'] : 'meter';?> nav-tab <?php if ( isset( $_GET['tab'] ) && ( $_GET['tab'] == $key )  ) echo 'nav-tab-active'; ?>" href="<?php echo  esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab='.$key ) );?>"><?php echo esc_html( $section['label'] ) ;?></a>
+				            <a class="wpem-icon-<?php echo isset($section['icon']) ? esc_attr($section['icon']) : 'meter';?> nav-tab <?php if ( isset( $_GET['tab'] ) && ( $_GET['tab'] == $key )  ) echo 'nav-tab-active'; ?>" href="<?php echo  esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab='.$key ) );?>"><?php echo esc_html( $section['label'] ) ;?></a>
 				          </li>
 				       		<?php } ?>
 				        </ul>
 				      </div>
-				      <div class="wpem-admin-right-container wpem-<?php echo $current_tab; ?> wpem-app-branding-mode wpem-light-mode">
+				      <div class="wpem-admin-right-container wpem-<?php echo esc_html($current_tab); ?> wpem-app-branding-mode wpem-light-mode">
 				      	<div class="metabox-holder wpem-admin-right-container-holder">
 				          <div class="wpem-admin-top-title-section postbox">
 				          	<?php

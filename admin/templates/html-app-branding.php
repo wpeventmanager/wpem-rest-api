@@ -73,7 +73,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($primary_color).'">'.esc_html($code).'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($primary_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -96,7 +96,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($success_color).'">'.esc_html($code).'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($success_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -161,7 +161,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'.esc_html( $brightness ).'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($danger_color).'">'.esc_html($code).'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'.esc_html( $brightness ).'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($danger_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -249,7 +249,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($success_dark_color).'">'.esc_html($code).'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($success_dark_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
@@ -271,7 +271,7 @@ defined( 'ABSPATH' ) || exit;
 						}
 						else
 						{
-							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.$code.'"><span style="color:'.esc_html($info_dark_color).'">'.esc_html($code).'</span></div></div>';	
+							echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:'.esc_html($info_dark_color).'">'.esc_html($code).'</span></div></div>';	
 						}
 					}
 					?>
