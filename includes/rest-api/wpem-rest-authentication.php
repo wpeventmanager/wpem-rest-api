@@ -695,7 +695,6 @@ class WPEM_REST_Authentication {
 		if(isset($_GET['key']) && !empty($_GET['key'])){
 			$app_key = sanitize_text_field($_GET['key']);
 
-			$app_key =  sanitize_text_field( $app_key );
 			$key_data         = $wpdb->get_row(
 				$wpdb->prepare(
 					"

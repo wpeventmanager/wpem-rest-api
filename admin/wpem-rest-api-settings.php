@@ -139,7 +139,7 @@ class WPEM_Rest_API_Settings {
 		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.min.css' );
 		wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
-		$current_tab = isset($_REQUEST['tab']) ? $_REQUEST['tab'] : 'general';
+		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field($_REQUEST['tab']) : 'general';
 
 		$action = '';
 		if(in_array($current_tab, ['general']))
