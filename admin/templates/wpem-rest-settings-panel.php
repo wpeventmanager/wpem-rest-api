@@ -18,7 +18,7 @@ $tab_settings =  isset($this->settings[$tab]) ? $this->settings[$tab] : array();
     else if($tab_settings['type'] == 'fields' && isset($tab_settings['fields']) && isset($tab_settings['sections'])) {
         foreach ( $tab_settings['sections'] as $section_key => $section ) {
       
-            echo '<h3 class="wpem-admin-tab-title">'. $section.'</h3>';
+            echo '<h3 class="wpem-admin-tab-title">'. esc_html($section).'</h3>';
             echo '<div class="wpem-admin-body">';
             echo '<table class="form-table">';
 
@@ -154,10 +154,10 @@ if ($option['desc'] ) {
 
                         ?><input id="setting-<?php echo esc_attr($option['name']); ?>" class="regular-text" type="text" name="<?php echo esc_attr($option['name']); ?>" value="<?php esc_attr_e($value); ?>" <?php echo implode(' ', $attributes); ?> <?php echo $placeholder; ?> /><?php
 
-if ($option['desc'] ) {
+                        if ($option['desc'] ) {
 
-    echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
-}
+                            echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
+                        }
 
                         break;    
           

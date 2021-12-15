@@ -148,7 +148,7 @@ if (is_plugin_active('wp-event-manager/wp-event-manager.php') ) {
  *
  * @since 1.0.0
  */
-function wpem_rest_api_pre_check_before_installing_rest_api() 
+function wpem_rest_api_pre_check_before_installing_event_rest_api() 
 {
     /*
     * Check weather WP Event Manager is installed or not
@@ -163,4 +163,4 @@ function wpem_rest_api_pre_check_before_installing_rest_api()
             return false;              
     }    
 }
-add_action('admin_notices', 'wpem_rest_api_pre_check_before_installing_rest_api');
+add_action('admin_notices', 'wpem_rest_api_pre_check_before_installing_event_rest_api');
