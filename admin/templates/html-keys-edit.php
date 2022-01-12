@@ -8,7 +8,7 @@ defined( 'ABSPATH' ) || exit;
 ?>
 
 <div id="key-fields" class="settings-panel">
-	<h3 class="wpem-admin-tab-title"><?php esc_html_e( 'Key details', 'wp-event-manager-organizer-app-access' ); ?></h3>
+	<h3 class="wpem-admin-tab-title"><?php esc_html_e( 'Key details', 'wpem-rest-api' ); ?></h3>
 
 	<input type="hidden" id="key_id" value="<?php echo esc_attr( $key_id ); ?>" />
 	<div class="wpem-admin-body">
@@ -17,8 +17,8 @@ defined( 'ABSPATH' ) || exit;
 			<tr valign="top">
 				<th scope="row" class="titledesc">
 					<label for="key_description">
-						<?php esc_html_e( 'Description', 'wp-event-manager-organizer-app-access' ); ?>
-						<?php  _e( 'Friendly name for identifying this key.', 'wp-event-manager-organizer-app-access' ); ?>
+						<?php esc_html_e( 'Description', 'wpem-rest-api' ); ?>
+						<?php  _e( 'Friendly name for identifying this key.', 'wpem-rest-api' ); ?>
 					</label>
 				</th>
 				<td class="forminp">
@@ -61,8 +61,8 @@ defined( 'ABSPATH' ) || exit;
 			<tr valign="top">
 				<th scope="row" class="titledesc">
 					<label for="key_user">
-						<?php esc_html_e( 'User', 'wp-event-manager-organizer-app-access' ); ?>
-						<?php  _e( 'Owner of these keys.', 'wp-event-manager-organizer-app-access' ); ?>
+						<?php esc_html_e( 'User', 'wpem-rest-api' ); ?>
+						<?php  _e( 'Owner of these keys.', 'wpem-rest-api' ); ?>
 					</label>
 				</th>
 				<td class="forminp">
@@ -158,7 +158,7 @@ defined( 'ABSPATH' ) || exit;
 
 							echo esc_html( apply_filters( 'wpem_api_key_last_access_datetime', $date, $key_data['last_access'] ) );
 						} else {
-							esc_html_e( 'Unknown', 'wp-event-manager-organizer-app-access' );
+							esc_html_e( 'Unknown', 'wpem-rest-api' );
 						}
 						?>
 						</span>
@@ -178,7 +178,7 @@ defined( 'ABSPATH' ) || exit;
 		?>
 		<p class="submit">
 			<?php submit_button( __( 'Save changes', 'wp-event-manager-organizer-app-access' ), 'primary wpem-backend-theme-button', 'update_api_key', false ); ?>
-			<a class="wpem-backend-theme-button wpem-revoke-button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wp-event-manager-organizer-app-access' ); ?></a>
+			<a class="wpem-backend-theme-button wpem-revoke-button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wpem-rest-api' ); ?></a>
 		</p>
 		<?php
 	}

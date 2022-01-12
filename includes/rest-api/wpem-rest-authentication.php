@@ -180,7 +180,7 @@ class WPEM_REST_Authentication {
 
 		// Validate user secret.
 		if ( ! hash_equals( $this->user->consumer_secret, $consumer_secret ) ) { // @codingStandardsIgnoreLine
-			$this->set_error( new WP_Error( 'wpem_rest_authentication_error', __( 'Consumer secret is invalid.', 'wp-event-manager' ), array( 'status' => 401 ) ) );
+			$this->set_error( new WP_Error( 'wpem_rest_authentication_error', __( 'Consumer secret is invalid.', 'wpem-rest-api' ), array( 'status' => 401 ) ) );
 
 			return false;
 		}
@@ -189,7 +189,7 @@ class WPEM_REST_Authentication {
 		//Check for key expiry
 		if ( isset($this->user->date_expires) && $current_date>$this->user->date_expires) { 
 			//@codingStandardsIgnoreLine
-			$this->set_error( new WP_Error( 'wpem_rest_authentication_expiry_error', __( 'Consumer key is expired.', 'wp-event-manager' ), array( 'status' => 401 ) ) );
+			$this->set_error( new WP_Error( 'wpem_rest_authentication_expiry_error', __( 'Consumer key is expired.', 'wpem-rest-api' ), array( 'status' => 401 ) ) );
 
 			return false;
 		}
@@ -347,7 +347,7 @@ class WPEM_REST_Authentication {
 		$this->user = $this->get_user_data_by_consumer_key( $params['oauth_consumer_key'] );
 
 		if ( empty( $this->user ) ) {
-			$this->set_error( new WP_Error( 'wpem_rest_authentication_error', __( 'Consumer key is invalid.', 'wp-event-manager' ), array( 'status' => 401 ) ) );
+			$this->set_error( new WP_Error( 'wpem_rest_authentication_error', __( 'Consumer key is invalid.', 'wpem-rest-api' ), array( 'status' => 401 ) ) );
 
 			return false;
 		}
@@ -409,7 +409,7 @@ class WPEM_REST_Authentication {
 		$signature      = base64_encode( hash_hmac( $hash_algorithm, $string_to_sign, $secret, true ) );
 
 		if ( ! hash_equals( $signature, $consumer_signature ) ) { // @codingStandardsIgnoreLine
-			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - provided signature does not match.', 'wp-event-manager' ), array( 'status' => 401 ) );
+			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - provided signature does not match.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
 		return true;
@@ -558,7 +558,7 @@ class WPEM_REST_Authentication {
 			case 'HEAD':
 			case 'GET':
 				if ( 'read' !== $permissions && 'read_write' !== $permissions ) {
-					return new WP_Error( 'wpem_rest_authentication_error', __( 'The API key provided does not have read permissions.', 'wp-event-manager' ), array( 'status' => 401 ) );
+					return new WP_Error( 'wpem_rest_authentication_error', __( 'The API key provided does not have read permissions.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 				}
 				break;
 			case 'POST':

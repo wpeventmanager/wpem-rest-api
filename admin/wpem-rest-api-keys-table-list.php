@@ -177,7 +177,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
     public function column_event_id( $key )
     {
         if(!empty($key['event_id'])) {
-            return '<a href="'.admin_url('post.php?post=' . $key['event_id']) . '&action=edit'.'" />'.get_the_title($key['event_id']).'</a>';
+            return '<a href="'.esc_url(admin_url('post.php?post=' . $key['event_id']) . '&action=edit').'" />'.get_the_title($key['event_id']).'</a>';
         }
         return;
     }

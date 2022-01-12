@@ -178,14 +178,14 @@ if ($option['desc'] ) {
                         <?php
                         if (! empty($option['multiple']) ) {
                             foreach ( (array) $option['value'] as $value ) {
-                                ?><span class="file_url"><input type="text" name="<?php echo esc_attr($option['name']); ?>[]" placeholder="<?php echo esc_attr($option['cb_label']); ?>" value="<?php echo esc_attr($value); ?>" /><button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e('Use file', 'wp-event-manager'); ?>"><?php _e('Upload', 'wp-event-manager'); ?></button></span><?php
+                                ?><span class="file_url"><input type="text" name="<?php echo esc_attr($option['name']); ?>[]" placeholder="<?php echo esc_attr($option['cb_label']); ?>" value="<?php echo esc_attr($value); ?>" /><button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e('Use file', 'wpem-rest-api'); ?>"><?php _e('Upload', 'wpem-rest-api'); ?></button></span><?php
                             }
                         } else {
                             if(isset($option['value']) && is_array($option['value']) ) {
-                            }                ?><span class="file_url"><input type="text" name="<?php echo esc_attr($option['name']); ?>" id="<?php echo esc_attr($option['name']); ?>" placeholder="<?php echo esc_attr($option['cb_label']); ?>" value="<?php echo esc_attr($value); ?>" /><button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e('Use file', 'wp-event-manager'); ?>"><?php _e('Upload', 'wp-event-manager'); ?></button></span><?php
+                            }                ?><span class="file_url"><input type="text" name="<?php echo esc_attr($option['name']); ?>" id="<?php echo esc_attr($option['name']); ?>" placeholder="<?php echo esc_attr($option['cb_label']); ?>" value="<?php echo esc_attr($value); ?>" /><button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e('Use file', 'wpem-rest-api'); ?>"><?php _e('Upload', 'wpem-rest-api'); ?></button></span><?php
                         }
                         if (! empty($option['multiple']) ) {
-                            ?><button class="button button-small wp_event_manager_add_another_file_button" data-field_name="<?php echo esc_attr($key); ?>" data-field_placeholder="<?php echo esc_attr($option['cb_label']); ?>" data-uploader_button_text="<?php _e('Use file', 'wp-event-manager'); ?>" data-uploader_button="<?php _e('Upload', 'wp-event-manager'); ?>"><?php _e('Add file', 'wp-event-manager'); ?></button><?php
+                            ?><button class="button button-small wp_event_manager_add_another_file_button" data-field_name="<?php echo esc_attr($key); ?>" data-field_placeholder="<?php echo esc_attr($option['cb_label']); ?>" data-uploader_button_text="<?php _e('Use file', 'wpem-rest-api'); ?>" data-uploader_button="<?php _e('Upload', 'wpem-rest-api'); ?>"><?php _e('Add file', 'wpem-rest-api'); ?></button><?php
                         }
                         ?>
             </p>

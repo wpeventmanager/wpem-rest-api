@@ -28,11 +28,11 @@ class WPEM_Rest_API_Dashboard
     public function wpem_dashboard_menu_add($menus) 
     {
         $menus['rest_api'] = [
-         'title' => __('Rest API', 'wp-event-manager'),
+         'title' => __('Rest API', 'wpem-rest-api'),
          'icon' => 'wpem-icon-loop',
          'submenu' => [
           'wpem_rest_api_setting' => [
-                                'title' => __('Settings', 'wp-event-manager'),
+                                'title' => __('Settings', 'wpem-rest-api'),
                                 'query_arg' => ['action' => 'wpem_rest_api_setting'],
           ],
          ]

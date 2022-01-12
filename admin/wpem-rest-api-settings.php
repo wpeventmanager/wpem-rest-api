@@ -41,7 +41,7 @@ class WPEM_Rest_API_Settings {
 
 			array(
 					'general' => array(
-							'label'			=>	__( 'General', 'wp-event-manager' ),
+							'label'			=>	__( 'General', 'wpem-rest-api' ),
 							'icon'			=>	'meter',
 							'type'       => 'fields',
 							'sections'		=> array(
@@ -53,7 +53,7 @@ class WPEM_Rest_API_Settings {
 												'name'       => 'enable_wpem_rest_api',
 												'std'        => '1',
 												'label'      => __( 'Enable Rest API', 'wpem-rest-api' ),
-												'cb_label'   => __( 'Disable to remove the API functionality from your event website.', 'wp-event-manager' ),
+												'cb_label'   => __( 'Disable to remove the API functionality from your event website.', 'wpem-rest-api' ),
 												'desc'       => '',
 												'type'       => 'checkbox',
 												'attributes' => array(),
@@ -62,7 +62,7 @@ class WPEM_Rest_API_Settings {
 											array(
 												'name'       => 'wpem_rest_api_app_logo',
 												'std'        => '',
-												'cb_label'   => __( 'Upload  the logo of your own brand.', 'wp-event-manager' ),
+												'cb_label'   => __( 'Upload  the logo of your own brand.', 'wpem-rest-api' ),
 												'label'      => __( 'App Logo', 'wpem-rest-api' ),
 												'desc'       => '',
 												'type'       => 'file',
@@ -84,12 +84,12 @@ class WPEM_Rest_API_Settings {
 							)	
 					),
 					'api-access' => array(
-							'label'			=>	__( 'API Access', 'wp-event-manager' ),
+							'label'			=>	__( 'API Access', 'wpem-rest-api' ),
 							'icon'			=>	'loop',
 							'type'       => 'template',	
 					),
 					'app-branding' => array(							
-							'label'			=>	__( 'APP Branding', 'wp-event-manager' ),
+							'label'			=>	__( 'APP Branding', 'wpem-rest-api' ),
 							'icon'			=>	'mobile',
 							'type'       	=> 'template',
 					),
@@ -149,7 +149,7 @@ class WPEM_Rest_API_Settings {
 
 		?>
 		<div class="wrap">
-        	<h1><?php _e( 'Rest API Settings', 'textdomain' ); ?></h1>
+        	<h1><?php _e( 'Rest API Settings', 'wpem-rest-api' ); ?></h1>
     	</div>
 
 		<div id="wpbody" role="main">
@@ -176,7 +176,7 @@ class WPEM_Rest_API_Settings {
 				          	<?php
 				          	if ( ! empty( $_GET['wpem-rest-api-settings-updated'] ) ) {
 								flush_rewrite_rules();
-								echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wp-event-manager' ) . '</p></div>';
+								echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
 							}
 				          	?>
 				            <?php 
@@ -186,7 +186,7 @@ class WPEM_Rest_API_Settings {
 				             ?>
 						  </div>
 						  <p class="submit">
-								<input type="submit" class="button-primary wpem-backend-theme-button" id="save-changes" value="<?php _e( 'Save Changes', 'wp-event-manager' ); ?>" />
+								<input type="submit" class="button-primary wpem-backend-theme-button" id="save-changes" value="<?php _e( 'Save Changes', 'wpem-rest-api' ); ?>" />
 						  </p>
 						</div>
 						
