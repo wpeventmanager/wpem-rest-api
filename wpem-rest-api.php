@@ -37,13 +37,13 @@ class WPEM_Rest_API
     /**
      * __construct function.
      */
-    public function __construct() 
+    public function __construct()
     {
         //if wp event manager not active return from the plugin
         if (! in_array('wp-event-manager/wp-event-manager.php', apply_filters('active_plugins', get_option('active_plugins'))) ) {
             return;
         }
-        
+
         // Define constants
         define('WPEM_REST_API_VERSION', '1.0.0');
         define('WPEM_REST_API_FILE', __FILE__);
@@ -56,7 +56,7 @@ class WPEM_Rest_API
 
         include 'wpem-rest-api-functions.php';
 
-        //include 
+        //include
         include 'includes/wpem-rest-api-dashboard.php';
 
         include 'includes/rest-api/wpem-rest-authentication.php';
@@ -64,8 +64,8 @@ class WPEM_Rest_API
         include 'includes/rest-api/wpem-rest-posts-conroller.php';
         include 'includes/rest-api/wpem-rest-crud-controller.php';
         include 'includes/rest-api/wpem-rest-events-controller.php';
-
         include 'includes/rest-api/wpem-rest-app-branding.php';
+        include 'includes/rest-api/wpem-rest-ecosystem-controller.php';
 
         // Activate
         register_activation_hook(__FILE__, array( $this, 'install' ));
@@ -73,15 +73,15 @@ class WPEM_Rest_API
         // Add actions
         add_action('init', array( $this, 'load_plugin_textdomain' ), 12);
 
-        
+
     }
-    
+
     /**
      * Localisation
      **/
     public function load_plugin_textdomain()
     {
-        $domain = 'wpem-rest-api'; 
+        $domain = 'wpem-rest-api';
         $locale = apply_filters('plugin_locale', get_locale(), $domain);
         load_textdomain($domain, WP_LANG_DIR . "/wpem-rest-api/".$domain."-" .$locale. ".mo");
         load_plugin_textdomain($domain, false, dirname(plugin_basename(__FILE__)) . '/languages/');
@@ -134,21 +134,21 @@ CREATE TABLE {$wpdb->prefix}wpem_rest_api_keys (
 
         update_option('wpem_rest_api_version', WPEM_REST_API_VERSION);
     }
-    
-      
+
+
 }
 
 // check for WP Event Manager is active
 if (is_plugin_active('wp-event-manager/wp-event-manager.php') ) {
     $GLOBALS['wpem_rest_api'] = new WPEM_Rest_API();
-} 
+}
 
 /**
  * Check if WP Event Manager is not active then show notice at admin
  *
  * @since 1.0.0
  */
-function wpem_rest_api_pre_check_before_installing_event_rest_api() 
+function wpem_rest_api_pre_check_before_installing_event_rest_api()
 {
     /*
     * Check weather WP Event Manager is installed or not
@@ -158,9 +158,9 @@ function wpem_rest_api_pre_check_before_installing_event_rest_api()
         if($pagenow == 'plugins.php' ) {
                echo '<div id="error" class="error notice is-dismissible"><p>';
                echo __('WP Event Manager is require to use WP Event Manager Rest API ', 'wpem-rest-api');
-               echo '</p></div>';        
+               echo '</p></div>';
         }
-            return false;              
-    }    
+            return false;
+    }
 }
 add_action('admin_notices', 'wpem_rest_api_pre_check_before_installing_event_rest_api');
