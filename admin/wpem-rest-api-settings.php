@@ -66,7 +66,7 @@ class WPEM_Rest_API_Settings {
 												'label'      => __( 'App Logo', 'wpem-rest-api' ),
 												'desc'       => __( 'Upload smallest file possible to ensure lesser loading time', 'wpem-rest-api' ),
 												'type'       => 'file',
-												
+
 												'attributes' => array(),
 											),
 
@@ -81,14 +81,14 @@ class WPEM_Rest_API_Settings {
 											// 	'attributes' => array(),
 											// ),
 									),
-							)	
+							)
 					),
 					'api-access' => array(
 							'label'			=>	__( 'API Access', 'wpem-rest-api' ),
 							'icon'			=>	'loop',
-							'type'       => 'template',	
+							'type'       => 'template',
 					),
-					'app-branding' => array(							
+					'app-branding' => array(
 							'label'			=>	__( 'APP Branding', 'wpem-rest-api' ),
 							'icon'			=>	'mobile',
 							'type'       	=> 'template',
@@ -111,10 +111,10 @@ class WPEM_Rest_API_Settings {
 		foreach($this->settings as $settings ){
 		if(isset($settings['sections'] ))
 			foreach ( $settings['sections'] as $section_key => $section ) {
-				
+
 	      		if(isset($settings['fields'][$section_key]))
 		      	foreach ( $settings['fields'][$section_key] as $option ) {
-		      		
+
 		      		if(isset($option['name']) && isset($option['std']) )
 		      			add_option( $option['name'], $option['std'] );
 
@@ -144,7 +144,7 @@ class WPEM_Rest_API_Settings {
 		$action = '';
 		if(in_array($current_tab, ['general']))
 		{
-			$action = 'action="options.php"';
+			$action = 'action=options.php';
 		}
 
 		?>
@@ -154,9 +154,9 @@ class WPEM_Rest_API_Settings {
 
 		<div id="wpbody" role="main">
 		  <div id="wpbody-content" class="wpem-admin-container">
-		    
+
 		    <div class="wpem-wrap">
-				<form method="post" name="wpem-rest-settings-form" <?php echo esc_attr($action); ?> >	
+				<form method="post" name="wpem-rest-settings-form" <?php echo esc_attr($action); ?> >
 
 					<?php settings_fields( $this->settings_group ); ?>
 
@@ -179,25 +179,25 @@ class WPEM_Rest_API_Settings {
 								echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
 							}
 				          	?>
-				            <?php 
-				              
+				            <?php
+
 				                  include('templates/wpem-rest-settings-panel.php');
-				              
+
 				             ?>
 						  </div>
 						  <p class="submit">
 								<input type="submit" class="button-primary wpem-backend-theme-button" id="save-changes" value="<?php _e( 'Save Changes', 'wpem-rest-api' ); ?>" />
 						  </p>
 						</div>
-						
+
 				      </div>
-				      
+
 			    </form>
 		    </div>
 		 </div>
 		</div>
 		<?php  wp_enqueue_script( 'wp-event-manager-admin-settings');
 	}
-	
-	
+
+
 }
