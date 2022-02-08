@@ -397,13 +397,9 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_items( $request )
-    {
+    public function get_items( $request ) {
         $query_args    = $this->prepare_objects_query($request);
         $query_results = $this->get_objects($query_args);
-
-        error_log(print_r($query_args, true));
-
 
         $objects = array();
         foreach ( $query_results['objects'] as $object ) {
