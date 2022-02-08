@@ -174,15 +174,13 @@ class WPEM_Rest_API_Settings {
 				      	<div class="metabox-holder wpem-admin-right-container-holder">
 				          <div class="wpem-admin-top-title-section postbox">
 				          	<?php
-				          	if ( ! empty( $_GET['wpem-rest-api-settings-updated'] ) ) {
-								flush_rewrite_rules();
-								echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
-							}
+                                if (!empty($_GET['settings-updated'])) {
+                                    flush_rewrite_rules();
+                                    echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
+                                }
 				          	?>
 				            <?php
-
 				                  include('templates/wpem-rest-settings-panel.php');
-
 				             ?>
 						  </div>
 						  <p class="submit">
