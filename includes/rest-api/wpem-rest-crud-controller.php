@@ -345,7 +345,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
                 $query_args[ $var ] = apply_filters("wpem_rest_query_var-{$var}", $prepared_args[ $var ]);
             }
         }
-
         $query_args['ignore_sticky_posts'] = true;
 
         if ('include' === $query_args['orderby'] ) {
@@ -397,6 +396,9 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
     {
         $query_args    = $this->prepare_objects_query($request);
         $query_results = $this->get_objects($query_args);
+
+        error_log(print_r($query_args, true));
+
     
         $objects = array();
         foreach ( $query_results['objects'] as $object ) {

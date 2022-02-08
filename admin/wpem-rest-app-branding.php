@@ -85,8 +85,7 @@ class WPEM_Rest_APP_Branding
             }
         }
 
-        echo esc_attr($output);
-
+        echo $output;
         wp_die();
     }
 

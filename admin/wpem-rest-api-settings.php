@@ -64,7 +64,7 @@ class WPEM_Rest_API_Settings {
 												'std'        => '',
 												'cb_label'   => __( 'Upload  the logo of your own brand.', 'wpem-rest-api' ),
 												'label'      => __( 'App Logo', 'wpem-rest-api' ),
-												'desc'       => '',
+												'desc'       => __( 'Upload smallest file possible to ensure lesser loading time', 'wpem-rest-api' ),
 												'type'       => 'file',
 												
 												'attributes' => array(),
