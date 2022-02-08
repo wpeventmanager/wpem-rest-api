@@ -1,12 +1,12 @@
 var WPEMRestAPIAdmin = function () {
     /// <summary>Constructor function of the event settings class.</summary>
-    /// <returns type="Settings" />   
+    /// <returns type="Settings" />
     return {
         ///<summary>
-        ///Initializes the AdminSettings.  
-        ///</summary>     
-        ///<returns type="initialization AdminSettings" />   
-        /// <since>1.0.0</since> 
+        ///Initializes the AdminSettings.
+        ///</summary>
+        ///<returns type="initialization AdminSettings" />
+        /// <since>1.0.0</since>
         init: function () {
             //Bind on click event of the settings section
             jQuery("#update_api_key").on('click', WPEMRestAPIAdmin.actions.saveApiKey);
@@ -58,11 +58,11 @@ var WPEMRestAPIAdmin = function () {
         actions:
         {
             /// <summary>
-            /// 
+            ///
             /// </summary>
-            /// <param name="parent" type="Event"></param>    
+            /// <param name="parent" type="Event"></param>
             /// <returns type="actions" />
-            /// <since>1.0.0</since>    
+            /// <since>1.0.0</since>
             saveApiKey: function (event) {
                 event.preventDefault();
                 var self = this;
@@ -133,11 +133,11 @@ var WPEMRestAPIAdmin = function () {
             },
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
-            /// <param name="parent" type="Event"></param>    
+            /// <param name="parent" type="Event"></param>
             /// <returns type="actions" />
-            /// <since>1.0.0</since>    
+            /// <since>1.0.0</since>
             saveAppBranding: function (event) {
                 event.preventDefault();
                 var self = this;
@@ -173,7 +173,7 @@ var WPEMRestAPIAdmin = function () {
                              jQuery('.wpem-branding-status').html('<div class="wpem-api-message error"><p>' + errorThrown + '</p></div>');
                         },
                         complete: function (jqXHR, textStatus) {
-                             //jQuery('#key-fields').find('.status-message').addClass('notice notice notice-success');                                    
+                             //jQuery('#key-fields').find('.status-message').addClass('notice notice notice-success');
                         }
                     }
                 );
@@ -194,7 +194,8 @@ var WPEMRestAPIAdmin = function () {
                             color: color,
                         },
                         success: function (response) {
-                             jQuery('#' + tableid + ' tbody tr td#' + name).html(response);
+                            const html = response.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+                            jQuery('#' + tableid + ' tbody tr td#' + name).html(html);
                         }
                     }
                 );

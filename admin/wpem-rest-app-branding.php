@@ -16,7 +16,7 @@ class WPEM_Rest_APP_Branding
     /**
      * Initialize the API Keys admin actions.
      */
-    public function __construct() 
+    public function __construct()
     {
         // Ajax
         add_action('wp_ajax_change_brighness_color', array( $this, 'change_brighness_color' ));
@@ -48,7 +48,7 @@ class WPEM_Rest_APP_Branding
 
         include dirname(__FILE__) . '/templates/html-app-branding.php';
     }
-    
+
 
     /**
      * change brighness color
@@ -56,22 +56,21 @@ class WPEM_Rest_APP_Branding
      * @param  int $key_id API Key ID.
      * @return bool
      */
-    public function change_brighness_color() 
-    {
+    public function change_brighness_color() {
         $output = '';
         if(isset($_REQUEST['color']) && !empty($_REQUEST['color']) ) {
             $color_code = sanitize_hex_color($_REQUEST['color']);
 
             for($i=1;$i<10;$i++)
             {
-                
+
                 $brightness = (1000 - $i*100) ;
                 $adjust_percentage = $i/10;
 
                 if($brightness == 500) {
                     $adjust_percentage = 0;
                 }
-                
+
 
                 $code = wpem_rest_api_color_brightness($color_code, $adjust_percentage);
 
@@ -85,7 +84,7 @@ class WPEM_Rest_APP_Branding
             }
         }
 
-        echo $output;
+        echo esc_attr($output);
         wp_die();
     }
 
@@ -154,7 +153,7 @@ class WPEM_Rest_APP_Branding
         $warning_dark_color     = !empty(get_option('wpem_warning_dark_color')) ? get_option('wpem_warning_dark_color') : '#FCD837';
         $danger_dark_color     = !empty(get_option('wpem_danger_dark_color')) ? get_option('wpem_danger_dark_color') : '#FC4C20';
 
-        
+
 
         $wpem_colors = $this->generate_scheme_formatted_colorcodes($primary_color, $success_color, $info_color, $warning_color, $danger_color);
 
@@ -163,13 +162,13 @@ class WPEM_Rest_APP_Branding
         if(!empty($wpem_colors)) {
             ksort($wpem_colors);
 
-            update_option('wpem_app_branding_settings', $wpem_colors);    
+            update_option('wpem_app_branding_settings', $wpem_colors);
         }
 
         if(!empty($wpem_dark_colors)) {
             ksort($wpem_dark_colors);
-            
-            update_option('wpem_app_branding_dark_settings', $wpem_dark_colors);    
+
+            update_option('wpem_app_branding_dark_settings', $wpem_dark_colors);
         }
 
         $response = [];
@@ -196,7 +195,7 @@ class WPEM_Rest_APP_Branding
 
         $data_color = [];
         for($i=1;$i<10;$i++)
-        {    
+        {
             $brightness = $i*100;
             $adjust_percentage = $i/10;
 
@@ -212,19 +211,19 @@ class WPEM_Rest_APP_Branding
 
 
             if($brightness <= 600) {
-                $wpem_colors['color-primary-transparent-'.$brightness] = 'rgba('.$rgb_primary_color['red'].', '.$rgb_primary_color['green'].', '.$rgb_primary_color['blue'].', '. $i*$default_rgb .')';    
+                $wpem_colors['color-primary-transparent-'.$brightness] = 'rgba('.$rgb_primary_color['red'].', '.$rgb_primary_color['green'].', '.$rgb_primary_color['blue'].', '. $i*$default_rgb .')';
 
-                $wpem_colors['color-success-transparent-'.$brightness] = 'rgba('.$rgb_success_color['red'].', '.$rgb_success_color['green'].', '.$rgb_success_color['blue'].', '. $i*$default_rgb .')';    
+                $wpem_colors['color-success-transparent-'.$brightness] = 'rgba('.$rgb_success_color['red'].', '.$rgb_success_color['green'].', '.$rgb_success_color['blue'].', '. $i*$default_rgb .')';
 
-                $wpem_colors['color-info-transparent-'.$brightness] = 'rgba('.$rgb_info_color['red'].', '.$rgb_info_color['green'].', '.$rgb_info_color['blue'].', '. $i*$default_rgb .')';    
+                $wpem_colors['color-info-transparent-'.$brightness] = 'rgba('.$rgb_info_color['red'].', '.$rgb_info_color['green'].', '.$rgb_info_color['blue'].', '. $i*$default_rgb .')';
 
-                $wpem_colors['color-warning-transparent-'.$brightness] = 'rgba('.$rgb_warning_color['red'].', '.$rgb_warning_color['green'].', '.$rgb_warning_color['blue'].', '. $i*$default_rgb .')';    
+                $wpem_colors['color-warning-transparent-'.$brightness] = 'rgba('.$rgb_warning_color['red'].', '.$rgb_warning_color['green'].', '.$rgb_warning_color['blue'].', '. $i*$default_rgb .')';
 
-                $wpem_colors['color-danger-transparent-'.$brightness] = 'rgba('.$rgb_danger_color['red'].', '.$rgb_danger_color['green'].', '.$rgb_danger_color['blue'].', '. $i*$default_rgb .')';    
+                $wpem_colors['color-danger-transparent-'.$brightness] = 'rgba('.$rgb_danger_color['red'].', '.$rgb_danger_color['green'].', '.$rgb_danger_color['blue'].', '. $i*$default_rgb .')';
             }
-            
+
         }
-        
+
         return $wpem_colors;
     }
 }
