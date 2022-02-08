@@ -44,7 +44,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         return new WP_Error('invalid-method', sprintf(__("Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api'), __METHOD__), array( 'status' => 405 ));
     }
 
-    
+
 
     /**
      * Check if a given request has access to read an item.
@@ -52,14 +52,19 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function get_item_permissions_check( $request )
-    {
+    public function get_item_permissions_check( $request ) {
         $object = $this->get_object((int) $request['id']);
 
-        if ($object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions($this->post_type, 'read', $object->ID) ) {
-            return new WP_Error('wpem_rest_cannot_view', __('Sorry, you cannot view this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
-        }
-        
+		if ($object) {
+			$object_id = $object->ID;
+			if ($object->post_type === 'product') {
+				$object_id = $object->get_id();
+			}
+
+			if (0 !== $object_id && ! wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id) ) {
+				return new WP_Error('wpem_rest_cannot_view', __('Sorry, you cannot view this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
+			}
+		}
         return true;
     }
 
@@ -142,11 +147,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_item( $request )
-    {
+    public function get_item( $request ) {
         $object = $this->get_object((int) $request['id']);
 
-        if (! $object || 0 === $object->ID ) {
+	    if (! $object || 0 === $object->ID ) {
             return new WP_Error("wpem_rest_{$this->post_type}_invalid_id", __('Invalid ID.', 'wpem-rest-api'), array( 'status' => 404 ));
         }
 
@@ -370,7 +374,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
     {
         $query  = new WP_Query();
         $result = $query->query($query_args);
-        
+
         $total_posts = $query->found_posts;
         if ($total_posts < 1 ) {
             // Out-of-bounds, run the query again without LIMIT for total count.
@@ -400,7 +404,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 
         error_log(print_r($query_args, true));
 
-    
+
         $objects = array();
         foreach ( $query_results['objects'] as $object ) {
 
