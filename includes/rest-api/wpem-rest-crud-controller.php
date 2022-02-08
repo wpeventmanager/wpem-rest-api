@@ -248,6 +248,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         try {
             $this->update_additional_fields_for_object($object, $request);
 
+
             /**
              * Fires after a single object is created or updated via the REST API.
              *
