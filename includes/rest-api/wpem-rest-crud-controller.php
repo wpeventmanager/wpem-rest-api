@@ -172,10 +172,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  bool            $creating If is creating a new object.
      * @return Post Data|WP_Error
      */
-    protected function save_object( $request, $creating = false )
-    {
+    protected function save_object( $request, $creating = false ) {
         try {
             $object = $this->prepare_object_for_database($request, $creating);
+			//error_log(print_r($object, true));
 
             if (is_wp_error($object) ) {
                 return $object;

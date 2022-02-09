@@ -322,7 +322,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @param $post    Event instance.
      * @param string $context Request context.
      *                        Options: 'view'
-     *                        and 'edit'.     
+     *                        and 'edit'.
      *
      * @return array
      */
@@ -345,9 +345,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         'date_modified'         => get_the_modified_date('', $event),
         'status'                => $event->post_status,
         'featured'              => $event->_featured,
-                
+
         'description'           => 'view' === $context ? wpautop(do_shortcode(get_the_content('', false, $event))) : get_the_content('', false, $event),
-                
+
         'event_categories'            => taxonomy_exists('event_listing_category') ? get_the_terms($event->ID, 'event_listing_category') : ''   ,
         'event_types'            => taxonomy_exists('event_listing_type') ? get_the_terms($event->ID, 'event_listing_type') : '',
         'event_tags'                  => taxonomy_exists('event_listing_tag') ? get_the_terms($event->ID, 'event_listing_tag') : '',
@@ -355,10 +355,10 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         //'menu_order'            => '',
         'meta_data'             => $meta_data,
         );
-        
+
         return apply_filters("wpem_rest_get_{$this->post_type}_data", $data, $event, $context);
     }
-    
+
     /**
      * Prepare a single event output for response.
      *
@@ -370,16 +370,16 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
     {
         $event = get_post($post);
         $data    = $this->get_event_data($event);
-        
+
         $context = ! empty($request['context']) ? $request['context'] : 'view';
         $data    = $this->add_additional_fields_to_object($data, $request);
         $data    = $this->filter_response_by_context($data, $context);
-        
+
         // Wrap the data in a response object.
         $response = rest_ensure_response($data);
-        
+
         $response->add_links($this->prepare_links($event, $request));
-        
+
         /**
          * Filter the data for a response.
          *
@@ -429,8 +429,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return WP_Error | Post
      */
-    protected function prepare_object_for_database( $request, $creating = false )
-    {
+    protected function prepare_object_for_database( $request, $creating = false ) {
         $id = isset($request['id']) ? absint($request['id']) : 0;
 
         if (isset($request['id']) ) {
@@ -449,15 +448,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
             //final response after update
             $event = get_post($id);
-        }
-        else{
+        } else {
             if(!empty($request['event_title']) && isset($request['event_id'])  && $request['event_id'] == 0 ) {
                 $_POST = $request;
 
                 //we are inserting new event means if there is any already created event cookies we need to remvoe it
                 if(isset($_COOKIE['wp-event-manager-submitting-event-id']) ) {
                        unset($_COOKIE['wp-event-manager-submitting-event-id']);
-                }                
+                }
                 if(isset($_COOKIE['wp-event-manager-submitting-event-key']) ) {
                         unset($_COOKIE['wp-event-manager-submitting-event-key']);
                 }
@@ -610,7 +608,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         return $event;
     }
 
-    
+
 
     /**
      * Clear caches here so in sync with any new variations/children.
@@ -646,7 +644,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             );
         }
 
-        
+
 
         $supports_trash = EMPTY_TRASH_DAYS > 0 && is_callable(array( $object, 'get_status' ));
 
@@ -675,7 +673,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         $response = $this->prepare_object_for_response($object, $request);
 
         // If we're forcing, then delete permanently.
-        if ($force ) {    
+        if ($force ) {
 
             wp_delete_post($object->ID, true);
             //$result = 0 === $object->ID;
@@ -802,7 +800,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                     'context'     => array( 'view', 'edit' ),
                     'readonly'    => true,
         ),
-            
+
         'status'                => array(
                     'description' => __('Event status (post status).', 'wpem-rest-api'),
                     'type'        => 'string',
@@ -826,7 +824,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                     'type'        => 'string',
                     'context'     => array( 'view', 'edit' ),
         ),
-                
+
         'categories'            => array(
                     'description' => __('List of categories.', 'wpem-rest-api'),
                     'type'        => 'array',
@@ -941,7 +939,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                         ),
         ),
         ),
-                
+
         'meta_data'             => array(
                     'description' => __('Meta data.', 'wpem-rest-api'),
                     'type'        => 'array',
@@ -998,7 +996,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         'sanitize_callback' => 'sanitize_key',
         'validate_callback' => 'rest_validate_request_arg',
         );
-    
+
         $params['featured']       = array(
         'description'       => __('Limit result set to featured events.', 'wpem-rest-api'),
         'type'              => 'boolean',
@@ -1017,11 +1015,11 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         'sanitize_callback' => 'wp_parse_id_list',
         'validate_callback' => 'rest_validate_request_arg',
         );
-        
+
 
         return $params;
     }
-    
+
     /**
      * Get the query params and check if user has the event permission.
      *
@@ -1029,7 +1027,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     public function check_event_permissions($request)
     {
-        
+
     }
 
     /**
@@ -1042,30 +1040,30 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
         if(!class_exists('WP_Event_Manager_Form_Submit_Event') ) {
             include_once EVENT_MANAGER_PLUGIN_DIR . '/forms/wp-event-manager-form-abstract.php';
-            include_once EVENT_MANAGER_PLUGIN_DIR . '/forms/wp-event-manager-form-submit-event.php';    
+            include_once EVENT_MANAGER_PLUGIN_DIR . '/forms/wp-event-manager-form-submit-event.php';
         }
         $form_submit_event_instance = call_user_func(array( 'WP_Event_Manager_Form_Submit_Event', 'instance' ));
         $fields = $form_submit_event_instance->merge_with_custom_fields('frontend');
 
         $event_fields = [];
 
-        foreach ($fields as $group_key => $group_fields) 
+        foreach ($fields as $group_key => $group_fields)
         {
-            foreach ($group_fields as $key => $field) 
+            foreach ($group_fields as $key => $field)
             {
                 if($field['type'] === 'term-select' || $field['type'] === 'term-multiselect' ) {
                     $field['options'] = $this->get_event_texonomy($field['taxonomy']);
                 }
 
                 $event_fields[$group_key][$key] = $field;
-            }    
+            }
         }
 
         return $event_fields;
     }
 
 
-    
+
     /**
      * Get the query params and return event fields
      *
@@ -1077,7 +1075,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             array(
             'taxonomy' => $texonomy,
             'hide_empty' => false,
-            ) 
+            )
         );
 
         $data = [];
@@ -1096,7 +1094,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
     {
 
         $plugins = get_plugins();
-        foreach ($plugins as $filename => $plugin) 
+        foreach ($plugins as $filename => $plugin)
         {
             if($plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active($filename) && !in_array($plugin['TextDomain'], ["wp-event-manager", "wp-user-profile-avatar"]) ) {
                 $licence_key = get_option($plugin['TextDomain'] . '_licence_key');
