@@ -172,9 +172,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @since  3.0.0
      * @return Post Data object
      */
-    protected function get_object( $id )
-    {
-        return get_post($id);
+    protected function get_object( $id ) {
+		$event = get_post($id);
+		if ($event && $event->post_type === $this->post_type) {
+			return $event;
+		} else {
+			return new WP_Error("wpem_rest_{$this->post_type}_invalid_id", __('Invalid ID.', 'wpem-rest-api'), array( 'status' => 404 ));
+		}
     }
 
     /**

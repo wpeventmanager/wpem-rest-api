@@ -1,5 +1,5 @@
 <?php
-if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+if (!defined( 'WP_UNINSTALL_PLUGIN')) {
 	exit();
 }
 
@@ -19,6 +19,6 @@ $options = array(
 	'wpem_app_branding_dark_settings',
 );
 
-foreach ( $options as $option ) {
-	delete_option( $option );
+foreach ($options as $option) {
+	delete_option($option);
 }

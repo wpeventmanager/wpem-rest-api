@@ -40,14 +40,14 @@ class WPEM_REST_Authentication {
 	public function __construct() {
 		add_filter( 'determine_current_user', array( $this, 'authenticate' ), 15 );
 		add_filter( 'rest_authentication_errors', array( $this, 'check_authentication_error' ), 15 );
-		
+
 		//rest pre and post allows to authorize the user request
 		add_filter( 'rest_post_dispatch', array( $this, 'send_unauthorized_headers' ), 50 );
 		add_filter( 'rest_pre_dispatch', array( $this, 'check_user_permissions' ), 10, 3 );
 
 		//register rout here for app key and login
 		add_action( 'rest_api_init', array( $this, 'register_routes' ), 10 );
-		
+
 	}
 
 
@@ -187,7 +187,7 @@ class WPEM_REST_Authentication {
 		$current_date = date('Y-m-d H:i:s');
 
 		//Check for key expiry
-		if ( isset($this->user->date_expires) && $current_date>$this->user->date_expires) { 
+		if ( isset($this->user->date_expires) && $current_date>$this->user->date_expires) {
 			//@codingStandardsIgnoreLine
 			$this->set_error( new WP_Error( 'wpem_rest_authentication_expiry_error', __( 'Consumer key is expired.', 'wpem-rest-api' ), array( 'status' => 401 ) ) );
 
@@ -629,7 +629,7 @@ class WPEM_REST_Authentication {
 			if ( is_wp_error( $allowed ) ) {
 				return $allowed;
 			}
-			
+
 			// Register last access.
 			$this->update_last_access();
 		}
@@ -658,7 +658,7 @@ class WPEM_REST_Authentication {
 	 * Login authentication.
 	 *  We will not user this for now in future we will improve and approve.
 	 * Using username and password it is not easy to manage all API using consumer key and secret key. Sometime user created several key and it is difficult to provide exact key using this process.
-	 * 
+	 *
 	 * @since 1.0.0
 	 */
 	public function perform_login_authentication($request){
@@ -686,7 +686,7 @@ class WPEM_REST_Authentication {
 
 	/**
 	 * Appkey authentication.
-	 * 
+	 *
 	 * @since 1.0.0
 	 */
 	public function perform_app_key_authentication($request){

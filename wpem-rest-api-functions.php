@@ -38,8 +38,7 @@ if(!function_exists('wpem_rest_api_check_post_permissions')) {
      * @param  int    $object_id Post ID.
      * @return bool
      */
-    function wpem_rest_api_check_post_permissions( $post_type, $context = 'read', $object_id = 0 )
-    {
+    function wpem_rest_api_check_post_permissions( $post_type, $context = 'read', $object_id = 0 ) {
         global $wpdb;
         $contexts = array(
         'read'   => 'read',
@@ -52,13 +51,13 @@ if(!function_exists('wpem_rest_api_check_post_permissions')) {
         if ('revision' === $post_type ) {
             $permission = false;
         } else {
-        
+
             $cap              = $contexts[ $context ];
-        
+
             $post_type_object = get_post_type_object($post_type);
             $permission       = current_user_can($post_type_object->cap->$cap, $object_id);
 
-            //check each and every post id 
+            //check each and every post id
             if($object_id != 0) {
 
                   $author_id = get_post_field('post_author', $object_id);
@@ -68,7 +67,7 @@ if(!function_exists('wpem_rest_api_check_post_permissions')) {
                 }
 
             }
-        
+
         }
 
         return apply_filters('wpem_rest_api_check_permissions', $permission, $context, $object_id, $post_type);

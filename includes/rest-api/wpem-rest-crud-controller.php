@@ -38,8 +38,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  int $id Object ID.
      * @return object Post Data object or WP_Error object.
      */
-    protected function get_object( $id )
-    {
+    protected function get_object( $id ) {
         // translators: %s: Class method name.
         return new WP_Error('invalid-method', sprintf(__("Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api'), __METHOD__), array( 'status' => 405 ));
     }
@@ -54,8 +53,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      */
     public function get_item_permissions_check( $request ) {
         $object = $this->get_object((int) $request['id']);
-
-		if ($object) {
+		if (!is_wp_error($object) && $object) {
 			$object_id = $object->ID;
 			if ($object->post_type === 'product') {
 				$object_id = $object->get_id();
@@ -64,8 +62,11 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 			if (0 !== $object_id && ! wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id) ) {
 				return new WP_Error('wpem_rest_cannot_view', __('Sorry, you cannot view this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
 			}
+			return true;
+		} else {
+			// pass actual error to response
+			return $object;
 		}
-        return true;
     }
 
     /**
@@ -74,15 +75,17 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function update_item_permissions_check( $request )
-    {
+    public function update_item_permissions_check( $request ) {
         $object = $this->get_object((int) $request['id']);
-
-        if ($object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions($this->post_type, 'edit', $object->ID) ) {
-            return new WP_Error('wpem_rest_cannot_edit', __('Sorry, you are not allowed to edit this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
+	    if (!is_wp_error($object) && $object) {
+	        if ($object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions($this->post_type, 'edit', $object->ID) ) {
+		        return new WP_Error('wpem_rest_cannot_edit', __('Sorry, you are not allowed to edit this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
+	        }
+	        return true;
+        } else {
+			// pass actual error to response
+		    return $object;
         }
-
-        return true;
     }
 
     /**
@@ -91,15 +94,17 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return bool|WP_Error
      */
-    public function delete_item_permissions_check( $request )
-    {
+    public function delete_item_permissions_check( $request ) {
         $object = $this->get_object((int) $request['id']);
-
-        if ($object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions($this->post_type, 'delete', $object->ID) ) {
-            return new WP_Error('wpem_rest_cannot_delete', __('Sorry, you are not allowed to delete this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
-        }
-
-        return true;
+	    if (!is_wp_error($object) && $object) {
+		    if ($object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions($this->post_type, 'delete', $object->ID) ) {
+			    return new WP_Error('wpem_rest_cannot_delete', __('Sorry, you are not allowed to delete this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
+		    }
+		    return true;
+	    } else {
+		    // pass actual error to response
+		    return $object;
+	    }
     }
 
     /**
@@ -465,8 +470,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_REST_Response|WP_Error
      */
-    public function delete_item( $request )
-    {
+    public function delete_item( $request ) {
         $force  = (bool) $request['force'];
 
         $object = $this->get_object((int) $request['id']);
