@@ -154,7 +154,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      */
     public function get_item( $request ) {
         $object = $this->get_object((int) $request['id']);
-
 	    if (! $object || 0 === $object->ID ) {
             return new WP_Error("wpem_rest_{$this->post_type}_invalid_id", __('Invalid ID.', 'wpem-rest-api'), array( 'status' => 404 ));
         }
@@ -468,10 +467,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * Delete a single item.
      *
      * @param  WP_REST_Request $request Full details about the request.
-     * @return WP_REST_Response|WP_Error
+     * @return WP_REST_Response|WP_Error|Array
      */
     public function delete_item( $request ) {
-        $force  = (bool) $request['force'];
+        $force  = isset( $request["force"] ) && (bool) $request['force'];
 
         $object = $this->get_object((int) $request['id']);
         $result = false;
@@ -480,7 +479,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             return new WP_Error("wpem_rest_{$this->post_type}_invalid_id", __('Invalid ID.', 'wpem-rest-api'), array( 'status' => 404 ));
         }
 
-        $supports_trash = EMPTY_TRASH_DAYS > 0 && is_callable(array( $object, 'get_status' ));
+        $supports_trash = EMPTY_TRASH_DAYS > 0;
 
         /**
          * Filter whether an object is trashable.
@@ -501,30 +500,27 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         $response = $this->prepare_object_for_response($object, $request);
 
         // If we're forcing, then delete permanently.
-        if ($force ) {
+        if ($force) {
             wp_delete_post($object->ID, true);
             //$result = 0 === $object->ID;
             $result = 1;
         } else {
             // If we don't support trashing for this type, error out.
-            if (! $supports_trash ) {
+            if (!$supports_trash ) {
                 /* translators: %s: post type */
                 return new WP_Error('wpem_rest_trash_not_supported', sprintf(__('The %s does not support trashing.', 'wpem-rest-api'), $this->post_type), array( 'status' => 501 ));
-            }
-
-            // Otherwise, only trash if we haven't already.
-            if (is_callable(array( $object, 'get_status' )) ) {
-                if ('trash' === $object->get_status() ) {
-                    /* translators: %s: post type */
-                    return new WP_Error('wpem_rest_already_trashed', sprintf(__('The %s has already been deleted.', 'wpem-rest-api'), $this->post_type), array( 'status' => 410 ));
-                }
-
-                wp_delete_post($object->ID);
-                $result = 'trash' === $object->get_status();
+            } else {
+	            if ($object->post_status === 'trash') {
+		            /* translators: %s: post type */
+		            return new WP_Error('wpem_rest_already_trashed', sprintf(__('The %s has already been deleted.', 'wpem-rest-api'), $this->post_type), array( 'status' => 410 ));
+	            }
+	            wp_trash_post($object->ID);
+	            $result = 1;
             }
         }
 
-        if (! $result ) {
+
+        if (!$result ) {
             /* translators: %s: post type */
             return new WP_Error('wpem_rest_cannot_delete', sprintf(__('The %s cannot be deleted.', 'wpem-rest-api'), $this->post_type), array( 'status' => 500 ));
         }
@@ -537,8 +533,11 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
          * @param WP_REST_Request  $request  The request sent to the API.
          */
         do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
-
-        return $response;
+        return array(
+			"code" => "wpem_rest_item_deleted",
+	        "message" => sprintf(__('The %s deleted successfully.', 'wpem-rest-api'), $this->post_type),
+	        "data" => array( 'status' => 200 )
+	    );
     }
 
     /**
