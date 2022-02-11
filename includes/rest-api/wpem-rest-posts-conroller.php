@@ -52,14 +52,10 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function get_items_permissions_check( $request )
-    {
-
+    public function get_items_permissions_check( $request ) {
         if (! wpem_rest_api_check_post_permissions($this->post_type, 'read') ) {
             return new WP_Error('wpem_rest_cannot_view', __('Sorry, you cannot list resources.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
         }
-
-
         return true;
     }
 
@@ -166,7 +162,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
         if ($this->public ) {
             $response->link_header('alternate', get_permalink($id), array( 'type' => 'text/html' ));
         }
-        
+
         /**
          * Fires before a single item returned via the REST API.
          *
@@ -174,7 +170,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
          * @param WP_REST_Request $request   Request object.
          */
         do_action("wpem_rest_single_{$this->post_type}", $post, $request);
-        
+
 
         return $response;
     }
@@ -393,7 +389,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
             $count_query->query($query_args);
             $total_posts = $count_query->found_posts;
 
-            
+
         }
 
         $max_pages = ceil($total_posts / (int) $query_args['posts_per_page']);

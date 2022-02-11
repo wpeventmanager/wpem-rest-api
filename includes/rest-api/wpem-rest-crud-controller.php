@@ -75,7 +75,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function update_item_permissions_check( $request ) {
+    public function update_item_permissions_check($request) {
         $object = $this->get_object((int) $request['id']);
 	    if (!is_wp_error($object) && $object) {
 	        if ($object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions($this->post_type, 'edit', $object->ID) ) {
@@ -179,7 +179,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
     protected function save_object( $request, $creating = false ) {
         try {
             $object = $this->prepare_object_for_database($request, $creating);
-			//error_log(print_r($object, true));
 
             if (is_wp_error($object) ) {
                 return $object;
