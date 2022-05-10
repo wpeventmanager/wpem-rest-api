@@ -214,7 +214,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
         // Set post_status.
 
-        if (isset($request['post_status'])) {
+        if (isset($request['status'])) {
             $args['post_status'] = $request['status'];
         }
 
