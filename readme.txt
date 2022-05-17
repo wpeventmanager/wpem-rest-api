@@ -14,7 +14,7 @@ WP Event Manager Rest API
 
 == Changelog ==
 
-= 1.0.2 [ May 17th, 2022 ] =
+= 1.0.1 [ May 17th, 2022 ] =
 
 Fixed - Past events search.
 Fixed - Message and status code improvements.
