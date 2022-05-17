@@ -45,7 +45,7 @@ class WPEM_Rest_API
         }
 
         // Define constants
-        define('WPEM_REST_API_VERSION', '1.0.0');
+        define('WPEM_REST_API_VERSION', '1.0.2');
         define('WPEM_REST_API_FILE', __FILE__);
         define('WPEM_REST_API_PLUGIN_DIR', untrailingslashit(plugin_dir_path(__FILE__)));
         define('WPEM_REST_API_PLUGIN_URL', untrailingslashit(plugins_url(basename(plugin_dir_path(__FILE__)), basename(__FILE__))));
