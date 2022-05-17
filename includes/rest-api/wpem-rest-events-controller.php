@@ -213,7 +213,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         $args = parent::prepare_objects_query($request);
 
         // Set post_status.
-        $args['post_status'] = $request['status'];
+
+        if (isset($request['status']) && $request['status'] !== 'any') {
+            $args['post_status'] = $request['status'];
+        } else {
+            unset($args['post_status']);
+        }
+
 
         // Taxonomy query to filter events by type, category,
         // tag
