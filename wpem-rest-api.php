@@ -9,7 +9,7 @@ Author URI: http://www.wp-eventmanager.com
 
 Text Domain: wpem-rest-api
 Domain Path: /languages
-Version: 1.0.0
+Version: 1.0.2
 Since: 1.0.0
 
 Requires WordPress Version at least: 4.1
@@ -45,7 +45,7 @@ class WPEM_Rest_API
         }
 
         // Define constants
-        define('WPEM_REST_API_VERSION', '1.0.1');
+        define('WPEM_REST_API_VERSION', '1.0.2');
         define('WPEM_REST_API_FILE', __FILE__);
         define('WPEM_REST_API_PLUGIN_DIR', untrailingslashit(plugin_dir_path(__FILE__)));
         define('WPEM_REST_API_PLUGIN_URL', untrailingslashit(plugins_url(basename(plugin_dir_path(__FILE__)), basename(__FILE__))));
