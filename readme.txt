@@ -5,7 +5,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 4.1
 Tested up to: 5.9
-Stable tag: 1.0.0
+Stable tag: 1.0.2
 Requires PHP: 5.6
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -13,6 +13,10 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 WP Event Manager Rest API
 
 == Changelog ==
+
+= 1.0.2 [ May 18th, 2022 ] =
+
+Fixed - Ecosystem Controller file.
 
 = 1.0.1 [ May 17th, 2022 ] =
 
