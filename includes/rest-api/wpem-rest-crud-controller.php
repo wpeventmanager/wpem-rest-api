@@ -59,7 +59,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 				$object_id = $object->get_id();
 			}
 
-			if (0 !== $object_id && ! wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id) ) {
+			if (0 == $object_id && ! wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id) ) {
 				return new WP_Error('wpem_rest_cannot_view', __('Sorry, you cannot view this resource.', 'wpem-rest-api'), array( 'status' => rest_authorization_required_code() ));
 			}
 			return true;
