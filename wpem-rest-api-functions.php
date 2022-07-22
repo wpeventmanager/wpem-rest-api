@@ -51,9 +51,7 @@ if(!function_exists('wpem_rest_api_check_post_permissions')) {
         // if ('revision' === $post_type ) {
         //     $permission = false;
         // } else {
-
         //     $cap              = $contexts[ $context ];
-
         //     $post_type_object = get_post_type_object($post_type);
         //     print_r($post_type_object->cap->$cap);
         //     echo $permission       = current_user_can($post_type_object->cap->$cap, $object_id);
@@ -66,9 +64,7 @@ if(!function_exists('wpem_rest_api_check_post_permissions')) {
         //         if($author_id != $current_user_id) {
         //             return false;
         //         }
-
         //     }
-
         // }
 
         return apply_filters('wpem_rest_api_check_permissions', $permission, $context, $object_id, $post_type);
