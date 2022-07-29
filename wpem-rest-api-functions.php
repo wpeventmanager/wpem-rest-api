@@ -140,10 +140,7 @@ if(!function_exists('wpem_rest_api_check_manager_permissions')) {
     function wpem_rest_api_check_manager_permissions( $object, $context = 'read' )
     {
 
-        $objects = array(
-        'reports'          => 'read_private_posts',
-        );
-        $permission = current_user_can($objects[ $object ]);
+        $permission = true;
 
         return apply_filters('wpem_rest_api_check_permissions', $permission, $context, 0, $object);
     }
