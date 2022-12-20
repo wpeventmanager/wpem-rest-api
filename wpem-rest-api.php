@@ -1,22 +1,22 @@
 <?php
 /*
-Plugin Name: WPEM - REST API
-Plugin URI: http://www.wp-eventmanager.com/plugins/
-
-Description: WP Event Manager rest API.
-Author: WP Event Manager
-Author URI: http://www.wp-eventmanager.com
-
-Text Domain: wpem-rest-api
-Domain Path: /languages
-Version: 1.0.2
-Since: 1.0.0
-
-Requires WordPress Version at least: 4.1
-Copyright: 2019 WP Event Manager
-License: GNU General Public License v3.0
-License URI: http://www.gnu.org/licenses/gpl-3.0.html
-
+* Plugin Name: WPEM - REST API
+* Plugin URI: http://www.wp-eventmanager.com/plugins/
+* 
+* Description: WP Event Manager rest API.
+* Author: WP Event Manager
+* Author URI: http://www.wp-eventmanager.com
+* 
+* Text Domain: wpem-rest-api
+* Domain Path: /languages
+* Version: 1.0.3
+* Since: 1.0.0
+* 
+* Requires WordPress Version at least: 4.1
+* Copyright: 2019 WP Event Manager
+* License: GNU General Public License v3.0
+* License URI: http://www.gnu.org/licenses/gpl-3.0.html
+* 
 */
 
 // Exit if accessed directly
@@ -26,26 +26,22 @@ if (! defined('ABSPATH') ) {
 
 require_once ABSPATH.'wp-admin/includes/plugin.php';
 
-
-
 /**
  * WP_Event_Manager_Rest_API class.
  */
-class WPEM_Rest_API
-{
+class WPEM_Rest_API{
 
     /**
      * __construct function.
      */
-    public function __construct()
-    {
+    public function __construct()    {
         //if wp event manager not active return from the plugin
         if (! in_array('wp-event-manager/wp-event-manager.php', apply_filters('active_plugins', get_option('active_plugins'))) ) {
             return;
         }
 
         // Define constants
-        define('WPEM_REST_API_VERSION', '1.0.2');
+        define('WPEM_REST_API_VERSION', '1.0.3');
         define('WPEM_REST_API_FILE', __FILE__);
         define('WPEM_REST_API_PLUGIN_DIR', untrailingslashit(plugin_dir_path(__FILE__)));
         define('WPEM_REST_API_PLUGIN_URL', untrailingslashit(plugins_url(basename(plugin_dir_path(__FILE__)), basename(__FILE__))));
@@ -72,15 +68,12 @@ class WPEM_Rest_API
 
         // Add actions
         add_action('init', array( $this, 'load_plugin_textdomain' ), 12);
-
-
     }
 
     /**
      * Localisation
      **/
-    public function load_plugin_textdomain()
-    {
+    public function load_plugin_textdomain(){
         $domain = 'wpem-rest-api';
         $locale = apply_filters('plugin_locale', get_locale(), $domain);
         load_textdomain($domain, WP_LANG_DIR . "/wpem-rest-api/".$domain."-" .$locale. ".mo");
@@ -90,8 +83,7 @@ class WPEM_Rest_API
     /**
      * Install
      */
-    public function install()
-    {
+    public function install(){
         global $wpdb;
 
         $wpdb->hide_errors();
@@ -148,8 +140,7 @@ if (is_plugin_active('wp-event-manager/wp-event-manager.php') ) {
  *
  * @since 1.0.0
  */
-function wpem_rest_api_pre_check_before_installing_event_rest_api()
-{
+function wpem_rest_api_pre_check_before_installing_event_rest_api(){
     /*
     * Check weather WP Event Manager is installed or not
     */

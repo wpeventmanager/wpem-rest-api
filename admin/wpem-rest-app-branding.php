@@ -10,14 +10,12 @@ defined('ABSPATH') || exit;
 /**
  * WPEM_Rest_APP_Branding.
  */
-class WPEM_Rest_APP_Branding
-{
+class WPEM_Rest_APP_Branding{
 
     /**
      * Initialize the API Keys admin actions.
      */
-    public function __construct()
-    {
+    public function __construct(){
         // Ajax
         add_action('wp_ajax_change_brighness_color', array( $this, 'change_brighness_color' ));
 
@@ -27,8 +25,7 @@ class WPEM_Rest_APP_Branding
     /**
      * Page output.
      */
-    public static function page_output()
-    {
+    public static function page_output(){
         // Hide the save button.
         $GLOBALS['hide_save_button'] = true;
         wp_enqueue_script('wpem-rest-api-admin-js');
@@ -61,8 +58,7 @@ class WPEM_Rest_APP_Branding
         if(isset($_REQUEST['color']) && !empty($_REQUEST['color']) ) {
             $color_code = sanitize_hex_color($_REQUEST['color']);
 
-            for($i=1;$i<10;$i++)
-            {
+            for($i=1;$i<10;$i++){
 
                 $brightness = (1000 - $i*100) ;
                 $adjust_percentage = $i/10;
@@ -71,14 +67,11 @@ class WPEM_Rest_APP_Branding
                     $adjust_percentage = 0;
                 }
 
-
                 $code = wpem_rest_api_color_brightness($color_code, $adjust_percentage);
 
                 if($i < 5) {
                     $output .= '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:#fff">'.$code.'</span></div></div>';
-                }
-                else
-                {
+                }else{
                     $output .= '<div class="wpem-color-pallet-wrapper"><div>'. $brightness .'</div> <div class="wpem-color-pallet" style="background-color:'.$code.'" data-color-code="'.$code.'"><span style="color:'.$code.'">'.$code.'</span></div></div>';
                 }
             }
@@ -94,8 +87,7 @@ class WPEM_Rest_APP_Branding
      * @param  int $key_id API Key ID.
      * @return bool
      */
-    public function save_app_branding()
-    {
+    public function save_app_branding(){
 
         check_ajax_referer('save-api-branding', 'security');
 
@@ -126,7 +118,6 @@ class WPEM_Rest_APP_Branding
         $warning_color     = !empty(get_option('wpem_warning_color')) ? get_option('wpem_warning_color') : '#FCD837';
         $danger_color     = !empty(get_option('wpem_danger_color')) ? get_option('wpem_danger_color') : '#FC4C20';
 
-
         //dark mode colors
         if(isset($_POST['wpem_primary_dark_color'])) {
             update_option('wpem_primary_dark_color', sanitize_hex_color($_POST['wpem_primary_dark_color']));
@@ -153,8 +144,6 @@ class WPEM_Rest_APP_Branding
         $warning_dark_color     = !empty(get_option('wpem_warning_dark_color')) ? get_option('wpem_warning_dark_color') : '#FCD837';
         $danger_dark_color     = !empty(get_option('wpem_danger_dark_color')) ? get_option('wpem_danger_dark_color') : '#FC4C20';
 
-
-
         $wpem_colors = $this->generate_scheme_formatted_colorcodes($primary_color, $success_color, $info_color, $warning_color, $danger_color);
 
         $wpem_dark_colors = $this->generate_scheme_formatted_colorcodes($primary_dark_color, $success_dark_color, $info_dark_color, $warning_dark_color, $danger_dark_color);
@@ -180,8 +169,7 @@ class WPEM_Rest_APP_Branding
     }
 
 
-    public function generate_scheme_formatted_colorcodes($primary_color = "#3366FF",$success_color="#77DD37",$info_color = "#42BCFF",$warning_color = "#FCD837",$danger_color = "#FC4C20")
-    {
+    public function generate_scheme_formatted_colorcodes($primary_color = "#3366FF",$success_color="#77DD37",$info_color = "#42BCFF",$warning_color = "#FCD837",$danger_color = "#FC4C20"){
 
         $rgb_primary_color     = wpem_rest_api_hex_to_rgb($primary_color);
         $rgb_success_color     = wpem_rest_api_hex_to_rgb($success_color);
@@ -194,8 +182,7 @@ class WPEM_Rest_APP_Branding
         $wpem_colors = [];
 
         $data_color = [];
-        for($i=1;$i<10;$i++)
-        {
+        for($i=1;$i<10;$i++){
             $brightness = $i*100;
             $adjust_percentage = $i/10;
 

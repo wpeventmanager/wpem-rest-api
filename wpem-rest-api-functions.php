@@ -1,11 +1,9 @@
 <?php
-
 /**
  * WPEM Functions
  *
  * @version 1.0.0
  */
-
 defined('ABSPATH') || exit;
 
 if(!function_exists('wpem_rest_api_prepare_date_response')) {
@@ -22,7 +20,6 @@ if(!function_exists('wpem_rest_api_prepare_date_response')) {
      */
     function wpem_rest_api_prepare_date_response( $date, $utc = true )
     {
-
         //need improvements as per wpem date time class
         return $date;
     }
@@ -62,8 +59,7 @@ if(!function_exists('wpem_rest_api_urlencode_rfc3986')) {
      * @param  string|array $value The value to encode.
      * @return string|array       Encoded values.
      */
-    function wpem_rest_api_urlencode_rfc3986( $value )
-    {
+    function wpem_rest_api_urlencode_rfc3986( $value ){
         if (is_array($value) ) {
             return array_map('wpem_rest_api_urlencode_rfc3986', $value);
         }
@@ -81,8 +77,7 @@ if(!function_exists('wpem_rest_api_color_brightness')) {
      * @param  string $data Message to be hashed.
      * @return string
      */
-    function wpem_rest_api_color_brightness($hexCode, $adjustPercent)
-    {
+    function wpem_rest_api_color_brightness($hexCode, $adjustPercent){
         $hexCode = ltrim($hexCode, '#');
 
         if (strlen($hexCode) == 3) {
@@ -110,8 +105,7 @@ if(!function_exists('wpem_rest_api_hex_to_rgb')) {
      * @param  string $data Message to be hashed.
      * @return string
      */
-    function wpem_rest_api_hex_to_rgb( $colour )
-    {
+    function wpem_rest_api_hex_to_rgb( $colour ){
         if ($colour[0] == '#' ) {
             $colour = substr($colour, 1);
         }
@@ -137,9 +131,7 @@ if(!function_exists('wpem_rest_api_check_manager_permissions')) {
      * @param  string $context Request context.
      * @return bool
      */
-    function wpem_rest_api_check_manager_permissions( $object, $context = 'read' )
-    {
-
+    function wpem_rest_api_check_manager_permissions( $object, $context = 'read' ){
         $permission = true;
 
         return apply_filters('wpem_rest_api_check_permissions', $permission, $context, 0, $object);

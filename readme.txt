@@ -5,7 +5,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 4.1
 Tested up to: 5.9
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 Requires PHP: 5.6
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -169,6 +169,14 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
+= 1.0.3 [ 20th Desc 2022 ] =
+
+Fixed - Ticket scan issue
+Fixed - Order tab was not working in mobile app
+Fixed - Permission issues
+Fixed - When write note then will show error after save the note
+Fixed - Ticket sales report was not seen 
+Fixed - Removed licence key for free version
 
 = 1.0.0 [ 9th Apr 2021 ] =
 

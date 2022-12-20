@@ -3,8 +3,7 @@ defined('ABSPATH') || exit;
 /**
  * WPEM_Rest_API_Admin class.
  */
-class WPEM_Rest_API_Admin
-{
+class WPEM_Rest_API_Admin{
     /**
      * __construct function.
      *
@@ -12,8 +11,7 @@ class WPEM_Rest_API_Admin
      * @access public
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct(){
 
         include 'wpem-rest-api-settings.php';
         include 'wpem-rest-api-keys.php';
@@ -38,8 +36,7 @@ class WPEM_Rest_API_Admin
      * @return void
      */
 
-    public function admin_enqueue_scripts()
-    {
+    public function admin_enqueue_scripts(){
 
         if(isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ) {
 
@@ -56,8 +53,6 @@ class WPEM_Rest_API_Admin
             );
 
             wp_enqueue_style('jquery-ui');  
-
-
             wp_enqueue_style('jquery-ui-style', EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array());
         }
 
@@ -70,8 +65,7 @@ class WPEM_Rest_API_Admin
      * @access public
      * @return void
      */
-    public function wpem_rest_api_add_admin_screen($screen_ids)
-    {
+    public function wpem_rest_api_add_admin_screen($screen_ids){
         
         $screen_ids[]='event_listing_page_wpem-rest-api-settings';
         return $screen_ids;
@@ -84,12 +78,8 @@ class WPEM_Rest_API_Admin
      * @access public
      * @return void
      */
-    public function admin_menu()
-    {
-
+    public function admin_menu(){
         add_submenu_page('edit.php?post_type=event_listing', __('Rest API Settings', 'wpem-rest-api'), __('Rest API', 'wpem-rest-api'), 'manage_options', 'wpem-rest-api-settings', array( $this->settings_page, 'output' ));
-
-        
     }
 
     /**
@@ -97,8 +87,7 @@ class WPEM_Rest_API_Admin
      *
      * @throws Exception On invalid or empty description, user, or permissions.
      */
-    public  function update_api_key()
-    {
+    public  function update_api_key(){
         ob_start();
 
         global $wpdb;
@@ -124,8 +113,6 @@ class WPEM_Rest_API_Admin
             $user_id      = absint($_POST['user']);
             $event_id     = !empty($_POST['event_id']) ?  absint($_POST['event_id']) : '' ;
             $date_expires = !empty($_POST['date_expires']) ?  date('Y-m-d H:i:s', strtotime(str_replace('-', '/', $_POST['date_expires']))) : null ;
-            
-            
 
             // Check if current user can edit other users.
             if ($user_id && ! current_user_can('edit_user', $user_id) ) {
@@ -216,5 +203,3 @@ class WPEM_Rest_API_Admin
     
 }
 new WPEM_Rest_API_Admin();
-
-

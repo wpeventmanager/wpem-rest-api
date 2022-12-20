@@ -23,8 +23,6 @@ class WPEM_Rest_API_Settings {
 	public function __construct() {
 
 		$this->settings_group = 'wpem_rest_api';
-
-
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 	}
 
@@ -34,7 +32,6 @@ class WPEM_Rest_API_Settings {
 	 * @access public
 	 * @return void
 	 */
-
 	public function init_settings() {
 
 		$this->settings = apply_filters( 'wpem_rest_api_settings',
@@ -70,16 +67,6 @@ class WPEM_Rest_API_Settings {
 												'attributes' => array(),
 											),
 
-											// array(
-											// 	'name'       => 'wpem_rest_api_app_splash_screen_image',
-											// 	'std'        => '',
-											// 	'label'      => __( 'App Splash Image', 'wpem-rest-api' ),
-											// 	'desc'       => __('','wpem-rest-api'),
-											// 	'cb_label'   => __( 'Splash image is the watermark that will help creating identity of your brand.', 'wp-event-manager' ),
-											// 	'type'       => 'file',
-
-											// 	'attributes' => array(),
-											// ),
 									),
 							)
 					),
@@ -103,7 +90,6 @@ class WPEM_Rest_API_Settings {
 	 * @access public
 	 * @return void
 	 */
-
 	public function register_settings() {
 
 		$this->init_settings();
@@ -124,7 +110,6 @@ class WPEM_Rest_API_Settings {
 		}
 	}
 
-
 	/**
 	 * output function.
 	 *
@@ -142,12 +127,9 @@ class WPEM_Rest_API_Settings {
 		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field($_REQUEST['tab']) : 'general';
 
 		$action = '';
-		if(in_array($current_tab, ['general']))
-		{
+		if(in_array($current_tab, ['general'])){
 			$action = 'action=options.php';
-		}
-
-		?>
+		}?>
 		<div class="wrap">
         	<h1><?php _e( 'Rest API Settings', 'wpem-rest-api' ); ?></h1>
     	</div>
@@ -177,9 +159,7 @@ class WPEM_Rest_API_Settings {
                                 if (!empty($_GET['settings-updated'])) {
                                     flush_rewrite_rules();
                                     echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
-                                }
-				          	?>
-				            <?php
+                                }	
 				                  include('templates/wpem-rest-settings-panel.php');
 				             ?>
 						  </div>
@@ -196,6 +176,4 @@ class WPEM_Rest_API_Settings {
 		</div>
 		<?php  wp_enqueue_script( 'wp-event-manager-admin-settings');
 	}
-
-
 }
