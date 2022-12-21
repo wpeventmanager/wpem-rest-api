@@ -12,18 +12,6 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 WP Event Manager Rest API
 
-== Changelog ==
-
-= 1.0.2 [ May 18th, 2022 ] =
-
-Fixed - Ecosystem Controller file.
-
-= 1.0.1 [ May 17th, 2022 ] =
-
-Fixed - Past events search.
-Fixed - Message and status code improvements.
-Fixed - Data improvements.
-
 
 == Description ==
 
@@ -70,15 +58,10 @@ To stay in touch and get latest update about WP Event Manager's further releases
 - [Youtube](https://www.youtube.com/channel/UCnfYxg-fegS_n9MaPNU61bg).
 
 
-
-
 == Installation ==
 
 
-
 = Automatic installation =
-
-
 
 Automatic installation is the easiest option as WordPress handles the file transfers itself and you don't even need to leave your web browser. To do an automatic install, log in to your WordPress admin panel, navigate to the Plugins menu and click Add New.
 
@@ -160,11 +143,7 @@ If you'd like to learn about WordPress filters, here is a great place to start: 
 If you wish to be notified of new postings on your site you can use a plugin such as [Post Status Notifier](http://wordpress.org/plugins/post-status-notifier-lite/).
 
 
-
 == Screenshots ==
-
-
-
 
 
 == Changelog ==
@@ -177,6 +156,17 @@ Fixed - Permission issues
 Fixed - When write note then will show error after save the note
 Fixed - Ticket sales report was not seen 
 Fixed - Removed licence key for free version
+
+= 1.0.2 [ May 18th, 2022 ] =
+
+Fixed - Ecosystem Controller file.
+
+= 1.0.1 [ May 17th, 2022 ] =
+
+Fixed - Past events search.
+Fixed - Message and status code improvements.
+Fixed - Data improvements.
+
 
 = 1.0.0 [ 9th Apr 2021 ] =
 
