@@ -1,6 +1,6 @@
 === WPEM - REST API ===
 
-Contributors: wpeventmanager,ashokdudhat,hiteshmakvana
+Contributors: wpeventmanager,ashokdudhat,krinay
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 4.1
@@ -29,8 +29,6 @@ WP Event Manager Rest API
 
 
 Documentation for the core plugin and add-ons can be found [on the docs site here](https://wp-eventmanager.com/knowledge-base/). Please take a look before requesting support because it covers all frequently asked questions!
-
-
 
 
 = Be a contributor =
@@ -148,14 +146,14 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
-= 1.0.3 [ 20th Desc 2022 ] =
+= 1.0.3 [ 22nd Dec 2022 ] =
 
-Fixed - Ticket scan issue
-Fixed - Order tab was not working in mobile app
-Fixed - Permission issues
-Fixed - When write note then will show error after save the note
-Fixed - Ticket sales report was not seen 
-Fixed - Removed licence key for free version
+Fixed - Event Ticket scaning issue with mobile app.
+Fixed - Order tab option not working in mobile app.
+Fixed - Event organizer user permission issue.
+Fixed - Organizer add note feature not working correctly.
+Fixed - Ticket sales report visibility issue. 
+Fixed - Removed licence key for Rest API addon.
 
 = 1.0.2 [ May 18th, 2022 ] =
 
