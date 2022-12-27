@@ -14,14 +14,12 @@ if (! class_exists('WP_List_Table') ) {
 /**
  * API Keys table list class.
  */
-class WPEM_API_Keys_Table_List extends WP_List_Table
-{
+class WPEM_API_Keys_Table_List extends WP_List_Table{
 
     /**
      * Initialize the API key table list.
      */
-    public function __construct()
-    {
+    public function __construct(){
         parent::__construct(
             array('ajax'      => false   )
         );
@@ -30,8 +28,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
     /**
      * No items found text.
      */
-    public function no_items()
-    {
+    public function no_items(){
         esc_html_e('No keys found.', 'wpem-rest-api');
     }
 
@@ -41,18 +38,15 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function column_cb( $key )
-    {
+    public function column_cb( $key ){
         return sprintf('<input type="checkbox" name="key[]" value="%1$s" />', $key['key_id']);
     }
 
-    public function column_default($item, $column_name)
-    {
+    public function column_default($item, $column_name){
         return $item[$column_name];
     }
 
-    public function get_hidden_columns()
-    {
+    public function get_hidden_columns(){
         return array();
     }
 
@@ -61,8 +55,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      *
      * @return array
      */
-    public function get_columns()
-    {
+    public function get_columns(){
         return array(
         'cb'            => '<input type="checkbox" />',
         'app_key'          => __('App Key', 'wpem-rest-api'),
@@ -82,8 +75,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function column_title( $key )
-    {
+    public function column_title( $key ){
         $url     =  admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&edit-key=' . $key['key_id']);
         $user_id = intval($key['user_id']);
 
@@ -142,8 +134,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function column_truncated_key( $key )
-    {
+    public function column_truncated_key( $key ){
         return '<code>&hellip;' . esc_html($key['truncated_key']) . '</code>';
     }
 
@@ -153,8 +144,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function column_user_id( $key )
-    {
+    public function column_user_id( $key ){
         $user = get_user_by('id', $key['user_id']);
 
         if (! $user ) {
@@ -174,8 +164,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function column_event_id( $key )
-    {
+    public function column_event_id( $key ){
         if(!empty($key['event_id'])) {
             return '<a href="'.esc_url(admin_url('post.php?post=' . $key['event_id']) . '&action=edit').'" />'.get_the_title($key['event_id']).'</a>';
         }
@@ -187,8 +176,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function column_permissions( $key )
-    {
+    public function column_permissions( $key ){
         $permission_key = $key['permissions'];
         $permissions    = array(
         'read'       => __('Read', 'wpem-rest-api'),
@@ -209,8 +197,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function column_last_access( $key )
-    {
+    public function column_last_access( $key ){
         if (! empty($key['last_access']) ) {
             /* translators: 1: last access date 2: last access time */
             $date = sprintf(__('%1$s at %2$s', 'wpem-rest-api'), date_i18n('Y-m-d', strtotime($key['last_access'])), date_i18n('H:s:i', strtotime($key['last_access'])));
@@ -226,8 +213,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      *
      * @return array
      */
-    public function get_bulk_actions()
-    {
+    public function get_bulk_actions(){
         if (! current_user_can('remove_users') ) {
             return array();
         }
@@ -240,8 +226,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
     /**
      * Prepare table list items.
      */
-    public function prepare_items()
-    {
+    public function prepare_items(){
         global $wpdb;
 
         $per_page     = $this->get_items_per_page('10');
@@ -290,8 +275,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param string $text     Button text.
      * @param string $input_id Input ID.
      */
-    public function search_box( $text, $input_id )
-    {
+    public function search_box( $text, $input_id ){
         if (empty($_REQUEST['s']) && ! $this->has_items() ) { // WPCS: input var okay, CSRF ok.
             return;
         }

@@ -10,14 +10,12 @@ defined('ABSPATH') || exit;
 /**
  * WPEM_Rest_API_Keys.
  */
-class WPEM_Rest_API_Keys
-{
+class WPEM_Rest_API_Keys{
 
     /**
      * Initialize the API Keys admin actions.
      */
-    public function __construct()
-    {
+    public function __construct(){
         add_action('admin_init', array( $this, 'actions' ));
         //add_action( 'wp_event_manager_admin_field_wp-table', array( $this, 'screen_option' ) );
     }
@@ -29,8 +27,7 @@ class WPEM_Rest_API_Keys
      * @param  bool $allow If allow save settings.
      * @return bool
      */
-    public function allow_save_settings( $allow )
-    {
+    public function allow_save_settings( $allow ){
         if (! isset($_GET['create-key'], $_GET['edit-key']) ) { // WPCS: input var okay, CSRF ok.
             return false;
         }
@@ -43,16 +40,14 @@ class WPEM_Rest_API_Keys
      *
      * @return bool
      */
-    private function is_api_keys_settings_page()
-    {
+    private function is_api_keys_settings_page(){
         return isset($_GET['page']) &&  'wpem-rest-api-settings' === $_GET['page'] ; // WPCS: input var okay, CSRF ok.
     }
 
     /**
      * Page output.
      */
-    public static function page_output()
-    {
+    public static function page_output(){
         // Hide the save button.
         $GLOBALS['hide_save_button'] = true;
         wp_enqueue_script('wpem-rest-api-admin-js');
@@ -79,8 +74,7 @@ class WPEM_Rest_API_Keys
     /**
      * Add screen option.
      */
-    public function screen_option()
-    {
+    public function screen_option(){
         global $keys_table_list;
 
         if (! isset($_GET['create-key']) && ! isset($_GET['edit-key']) && $this->is_api_keys_settings_page() ) { // WPCS: input var okay, CSRF ok.
@@ -102,8 +96,7 @@ class WPEM_Rest_API_Keys
     /**
      * Table list output.
      */
-    private static function table_list_output()
-    {
+    private static function table_list_output(){
         global $wpdb, $keys_table_list;
 
         $keys_table_list = new WPEM_API_Keys_Table_List();
@@ -142,8 +135,7 @@ class WPEM_Rest_API_Keys
      * @param  int $key_id API Key ID.
      * @return array
      */
-    private static function get_key_data( $key_id )
-    {
+    private static function get_key_data( $key_id ){
         global $wpdb;
 
         $empty = array(
@@ -181,8 +173,7 @@ class WPEM_Rest_API_Keys
     /**
      * API Keys admin actions.
      */
-    public function actions()
-    {
+    public function actions(){
         if ($this->is_api_keys_settings_page() ) {
             // Revoke key.
             if (isset($_REQUEST['revoke-key']) ) { // WPCS: input var okay, CSRF ok.
@@ -199,8 +190,7 @@ class WPEM_Rest_API_Keys
     /**
      * Notices.
      */
-    public static function notices()
-    {
+    public static function notices(){
         if (isset($_GET['revoked']) ) { // WPCS: input var okay, CSRF ok.
             $revoked = absint($_GET['revoked']); // WPCS: input var okay, CSRF ok.
 
@@ -212,8 +202,7 @@ class WPEM_Rest_API_Keys
     /**
      * Revoke key.
      */
-    private function revoke_key()
-    {
+    private function revoke_key(){
         global $wpdb;
 
         check_admin_referer('revoke');
@@ -236,8 +225,7 @@ class WPEM_Rest_API_Keys
     /**
      * Bulk actions.
      */
-    private function bulk_actions()
-    {
+    private function bulk_actions(){
         if (! current_user_can('manage_options') ) {
             wp_die(esc_html__('You do not have permission to edit API Keys', 'wpem-rest-api'));
         }
@@ -257,8 +245,7 @@ class WPEM_Rest_API_Keys
      *
      * @param array $keys API Keys.
      */
-    private function bulk_revoke_key( $keys )
-    {
+    private function bulk_revoke_key( $keys ){
         if (! current_user_can('remove_users') ) {
             wp_die(esc_html__('You do not have permission to revoke API Keys', 'wpem-rest-api'));
         }
@@ -283,8 +270,7 @@ class WPEM_Rest_API_Keys
      * @param  int $key_id API Key ID.
      * @return bool
      */
-    private function remove_key( $key_id )
-    {
+    private function remove_key( $key_id ){
         global $wpdb;
 
         $delete = $wpdb->delete($wpdb->prefix . 'wpem_rest_api_keys', array( 'key_id' => $key_id ), array( '%d' ));
