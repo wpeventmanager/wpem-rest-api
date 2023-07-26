@@ -78,6 +78,9 @@
   color: #666;
   background: #f5f5f5;
 }
+.wpem-api-message.updated{
+  margin:0;
+}
 .wpem-admin-container .wpem-admin-top-title-section.postbox {
   margin: 0px;
   border: none;
