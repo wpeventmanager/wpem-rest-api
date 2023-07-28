@@ -190,7 +190,7 @@ class WPEM_Rest_API_Admin{
                 $response['consumer_secret'] = $consumer_secret;
                 $response['app_key']          = $app_key;
                 $response['message']         = __('API Key generated successfully. Make sure to copy your new keys now as the secret key will be hidden once you leave this page.', 'wpem-rest-api');
-                $response['revoke_url']      = '<a class="wpem-backend-theme-button wpem-revoke-button" href="' . esc_url(wp_nonce_url(add_query_arg(array( 'revoke-key' => $key_id ), admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access')), 'revoke')) . '">' . __('Revoke key', 'wpem-rest-api') . '</a>';
+                $response['revoke_url']      = '<a class="wpem-backend-theme-button" href="' . esc_url(admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access')) . '">' . __('I have Copied the Keys', 'wpem-rest-api') . '</a> <br/><br/> <a class="wpem-backend-theme-button wpem-revoke-button" href="' . esc_url(wp_nonce_url(add_query_arg(array( 'revoke-key' => $key_id ), admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access')), 'revoke')) . '">' . __('Revoke key', 'wpem-rest-api') . '</a>';
             }
         } catch ( Exception $e ) {
             wp_send_json_error(array( 'message' => $e->getMessage() ));
