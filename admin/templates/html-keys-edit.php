@@ -195,6 +195,7 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td class="forminp">
 					<input id="app_key" type="text" value="{{ data.app_key }}" size="55" readonly="readonly">
+					<button class="wpem-backend-theme-button" type="button" onClick="app_key_copy_fun()" style="cursor:pointer">Copy App Key</button>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -203,6 +204,7 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_key" type="text" value="{{ data.consumer_key }}" size="55" readonly="readonly">
+					<button class="wpem-backend-theme-button" type="button" onClick="consumer_copy_fun()" style="cursor:pointer">Copy Consumer Key</button>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -211,6 +213,7 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_secret" type="text" value="{{ data.consumer_secret }}" size="55" readonly="readonly">
+					<button class="wpem-backend-theme-button" type="button" onClick="secret_copy_fun()" style="cursor:pointer">Copy Consumer Secret</button>
 				</td>
 			</tr>
 			
@@ -219,4 +222,17 @@ defined( 'ABSPATH' ) || exit;
 	</div>
 </script>
 
-
+<script>
+	function app_key_copy_fun() {
+		var app_key_copy = document.getElementById("app_key");
+		navigator.clipboard.writeText(app_key_copy.value);
+	}
+	function consumer_copy_fun() {
+		var consumer_copy = document.getElementById("key_consumer_key");
+		navigator.clipboard.writeText(consumer_copy.value);
+	}
+	function secret_copy_fun() {
+		var secret_copy = document.getElementById("key_consumer_secret");
+		navigator.clipboard.writeText(secret_copy.value);
+	}
+</script>
