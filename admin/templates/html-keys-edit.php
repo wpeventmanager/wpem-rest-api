@@ -225,14 +225,20 @@ defined( 'ABSPATH' ) || exit;
 <script>
 	function app_key_copy_fun() {
 		var app_key_copy = document.getElementById("app_key");
+		var btn_text_app = document.querySelector('#app_key + button');
 		navigator.clipboard.writeText(app_key_copy.value);
+		btn_text_app.innerHTML = 'copied';
 	}
 	function consumer_copy_fun() {
 		var consumer_copy = document.getElementById("key_consumer_key");
+		var btn_text_key = document.querySelector('#key_consumer_key + button');
 		navigator.clipboard.writeText(consumer_copy.value);
+		btn_text_key.innerHTML = 'copied';
 	}
 	function secret_copy_fun() {
 		var secret_copy = document.getElementById("key_consumer_secret");
+		var btn_text_secret = document.querySelector('#key_consumer_secret + button');
 		navigator.clipboard.writeText(secret_copy.value);
+		btn_text_secret.innerHTML = 'copied';
 	}
 </script>
