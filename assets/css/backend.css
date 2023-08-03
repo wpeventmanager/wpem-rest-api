@@ -81,6 +81,21 @@
 .wpem-api-message.updated{
   margin:0;
 }
+.update_app_branding_message {
+  position: absolute;
+  bottom: 30px;
+  left: 100px;
+  transition: all 300ms ease;
+}
+.wpem-app-branding-mode.wpem-dark-mode .update_app_branding_message {
+  color: white;
+}
+.update_app_branding_message i.wpem-icon-checkmark {
+  color: #77dd37;
+}
+.update_app_branding_message i.wpem-icon-cross {
+  color: #FC4C20;
+}
 .wpem-admin-container .wpem-admin-top-title-section.postbox {
   margin: 0px;
   border: none;
