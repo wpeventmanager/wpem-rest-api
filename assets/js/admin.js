@@ -38,14 +38,18 @@ var WPEMRestAPIAdmin = function () {
 
             jQuery("#update_app_branding").on('click', WPEMRestAPIAdmin.actions.saveAppBranding);
 
+            let ajaxTimer;
             jQuery('.wpem-colorpicker').wpColorPicker(
                 {
                     defaultColor: true,
                     change: function (event, ui) {
-                         var element = event.target;
-                         var color = ui.color.toString();
+                        var element = event.target;
+                        var color = ui.color.toString();
 
-                         WPEMRestAPIAdmin.actions.changeBrightness(event, color);
+                        clearTimeout(ajaxTimer);
+                        ajaxTimer = setTimeout(function() {
+                            WPEMRestAPIAdmin.actions.changeBrightness(event, color);
+                        }, 500);
                     },
                 }
             );
