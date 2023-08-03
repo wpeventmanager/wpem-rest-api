@@ -3,7 +3,7 @@
 * Plugin Name: WPEM - REST API
 * Plugin URI: http://www.wp-eventmanager.com/plugins/
 * 
-* Description: WP Event Manager rest API.
+* Description: Lets users connect the Mobile application with their WordPress events website.
 * Author: WP Event Manager
 * Author URI: http://www.wp-eventmanager.com
 * 
