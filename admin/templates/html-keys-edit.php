@@ -18,11 +18,23 @@ defined( 'ABSPATH' ) || exit;
 				<th scope="row" class="titledesc">
 					<label for="key_description">
 						<?php esc_html_e( 'Description', 'wpem-rest-api' ); ?>
-						<?php  _e( 'Friendly name for identifying this key.', 'wpem-rest-api' ); ?>
+						<?php // _e( 'Friendly name for identifying this key.', 'wpem-rest-api' ); ?>
 					</label>
 				</th>
 				<td class="forminp">
 					<input id="key_description" type="text" class="input-text regular-input" value="<?php echo esc_attr( $key_data['description'] ); ?>" />
+					<p class="description"><?php _e('Friendly name for identifying this key.','wpem-rest-api');?></p>
+				</td>
+			</tr>
+			<tr valign="top">
+				<th scope="row" class="titledesc">
+					<label for="app_name">
+						<?php esc_html_e( 'Application Name', 'wpem-rest-api' ); ?>
+					</label>
+				</th>
+				<td class="forminp">
+					<input id="app_name" type="text" class="input-text regular-input" value="<?php echo esc_attr( $key_data['app_name'] ); ?>" />
+					<p class="description"><?php _e('Name of the Application.','wpem-rest-api');?></p> 
 				</td>
 			</tr>
 			<tr valign="top">

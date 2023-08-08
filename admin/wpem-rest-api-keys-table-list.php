@@ -60,6 +60,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table{
         'cb'            => '<input type="checkbox" />',
         'app_key'          => __('App Key', 'wpem-rest-api'),
         'title'         => __('Description', 'wpem-rest-api'),
+        'app_name'         => __('Appliction Name', 'wpem-rest-api'),
         'truncated_key' => __('Consumer key ending in', 'wpem-rest-api'),
         'user_id'          => __('User', 'wpem-rest-api'),
         'event_id'          => __('Event', 'wpem-rest-api'),
@@ -250,7 +251,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table{
 
         // Get the API keys.
         $keys = $wpdb->get_results(
-            "SELECT key_id,app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search}" .
+            "SELECT key_id, app_key, user_id, app_name, event_id, description, permissions, truncated_key, last_access FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search}" .
             $wpdb->prepare('ORDER BY key_id DESC LIMIT %d OFFSET %d;', $per_page, $offset),
             ARRAY_A
         ); // WPCS: unprepared SQL ok.

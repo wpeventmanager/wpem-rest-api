@@ -698,7 +698,7 @@ class WPEM_REST_Authentication {
 			$key_data         = $wpdb->get_row(
 				$wpdb->prepare(
 					"
-				SELECT key_id, app_key,user_id, permissions, consumer_key, consumer_secret, nonces
+				SELECT key_id, app_key, user_id, app_name, permissions, consumer_key, consumer_secret, nonces
 				FROM {$wpdb->prefix}wpem_rest_api_keys
 				WHERE app_key = %s
 			",

@@ -109,6 +109,7 @@ CREATE TABLE {$wpdb->prefix}wpem_rest_api_keys (
   user_id BIGINT UNSIGNED NOT NULL,
   event_id varchar(255) NULL,
   description varchar(200) NULL,
+  app_name varchar(255) NULL,
   permissions varchar(10) NOT NULL,
   consumer_key char(64) NOT NULL,
   consumer_secret char(43) NOT NULL,

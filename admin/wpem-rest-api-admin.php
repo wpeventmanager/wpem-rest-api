@@ -109,6 +109,7 @@ class WPEM_Rest_API_Admin{
 
             $key_id      = isset($_POST['key_id']) ? absint($_POST['key_id']) : 0;
             $description = sanitize_text_field(wp_unslash($_POST['description']));
+            $app_name = sanitize_text_field(wp_unslash($_POST['app_name']));
             $permissions = ( in_array(wp_unslash($_POST['permissions']), array( 'read', 'write', 'read_write' ), true) ) ? sanitize_text_field(wp_unslash($_POST['permissions'])) : 'read';
             $user_id      = absint($_POST['user']);
             $event_id     = !empty($_POST['event_id']) ?  absint($_POST['event_id']) : '' ;
@@ -124,10 +125,11 @@ class WPEM_Rest_API_Admin{
             if (0 < $key_id ) {
                 $data = array(
                 'user_id'             => $user_id,
-                'description'         => $description,
+                'description'         => $description, 
+                'app_name'            => $app_name, 
                 'permissions'         => $permissions,
-                'event_id'               => $event_id,
-                'date_expires'           => $date_expires,
+                'event_id'            => $event_id,
+                'date_expires'        => $date_expires,
                 );
 
                 $wpdb->update(
@@ -136,6 +138,7 @@ class WPEM_Rest_API_Admin{
                     array( 'key_id' => $key_id ),
                     array(
                     '%d',
+                    '%s',
                     '%s',
                     '%s',
                     '%d',
@@ -158,9 +161,10 @@ class WPEM_Rest_API_Admin{
                 'user_id'         => $user_id,
                 'app_key'         => $app_key,
                 'description'     => $description,
+                'app_name'        => $app_name,
                 'permissions'     => $permissions,
-                'event_id'           => $event_id,
-                'consumer_key'    =>  $consumer_key ,
+                'event_id'        => $event_id,
+                'consumer_key'    => $consumer_key ,
                 'consumer_secret' => $consumer_secret,
                 'truncated_key'   => substr($consumer_key, -7),
                 'date_created'    => current_time('mysql') ,
@@ -181,6 +185,7 @@ class WPEM_Rest_API_Admin{
                     '%s',
                     '%s',
                     '%s',
+                    '%s',
                     )
                 );
 
@@ -188,7 +193,8 @@ class WPEM_Rest_API_Admin{
                 $response                    = $data;
                 $response['consumer_key']    = $consumer_key;
                 $response['consumer_secret'] = $consumer_secret;
-                $response['app_key']          = $app_key;
+                $response['app_key']         = $app_key;
+                $response['app_name']        = $app_name;
                 $response['message']         = __('API Key generated successfully. Make sure to copy your new keys now as the secret key will be hidden once you leave this page.', 'wpem-rest-api');
                 $response['revoke_url']      = '<a class="wpem-backend-theme-button" href="' . esc_url(admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access')) . '">' . __('I have Copied the Keys', 'wpem-rest-api') . '</a> <br/><br/> <a class="wpem-backend-theme-button wpem-revoke-button" href="' . esc_url(wp_nonce_url(add_query_arg(array( 'revoke-key' => $key_id ), admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access')), 'revoke')) . '">' . __('Revoke key', 'wpem-rest-api') . '</a>';
             }
