@@ -82,7 +82,6 @@ var WPEMRestAPIAdmin = function () {
                             security: wpem_rest_api_admin.save_api_nonce,
                             key_id: jQuery('#key_id').val(),
                             description: jQuery('#key_description').val(),
-                            app_name: jQuery('#app_name').val(),
                             user: jQuery('#key_user').val(),
                             permissions: jQuery('#key_permissions').val(),
                             event_id: jQuery('#event_id').val(),
@@ -117,7 +116,6 @@ var WPEMRestAPIAdmin = function () {
                                           //self.initTipTip( '.copy-secret' );
                                 } else {
                                     jQuery('#key_description', self.el).val(data.description);
-                                    jQuery('#app_name', self.el).val(data.app_name);
                                     jQuery('#key_user', self.el).val(data.user_id);
                                     jQuery('#key_permissions', self.el).val(data.permissions);
                                 }

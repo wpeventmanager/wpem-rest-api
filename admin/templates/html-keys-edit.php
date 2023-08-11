@@ -28,17 +28,6 @@ defined( 'ABSPATH' ) || exit;
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
-					<label for="app_name">
-						<?php esc_html_e( 'Application Name', 'wpem-rest-api' ); ?>
-					</label>
-				</th>
-				<td class="forminp">
-					<input id="app_name" type="text" class="input-text regular-input" value="<?php echo esc_attr( $key_data['app_name'] ); ?>" />
-					<p class="description"><?php _e('Name of the Application.','wpem-rest-api');?></p> 
-				</td>
-			</tr>
-			<tr valign="top">
-				<th scope="row" class="titledesc">
 					<label for="key_user">
 						<?php //esc_html_e( 'Event', 'wpem-rest-api' ); ?>
 						

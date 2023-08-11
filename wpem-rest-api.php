@@ -109,7 +109,6 @@ CREATE TABLE {$wpdb->prefix}wpem_rest_api_keys (
   user_id BIGINT UNSIGNED NOT NULL,
   event_id varchar(255) NULL,
   description varchar(200) NULL,
-  app_name varchar(255) NULL,
   permissions varchar(10) NOT NULL,
   consumer_key char(64) NOT NULL,
   consumer_secret char(43) NOT NULL,
@@ -126,6 +125,11 @@ CREATE TABLE {$wpdb->prefix}wpem_rest_api_keys (
         dbDelta($sql);
 
         update_option('wpem_rest_api_version', WPEM_REST_API_VERSION);
+        
+        //check for Application Name is already defined
+        if( empty(get_option('wpem_rest_api_app_name')) ) {
+            update_option('wpem_rest_api_app_name', 'WP Event Manager');
+        };
     }
 
 
