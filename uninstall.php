@@ -17,6 +17,8 @@ $options = array(
 	'wpem_danger_dark_color',
 	'wpem_app_branding_settings',
 	'wpem_app_branding_dark_settings',
+	'wpem_rest_api_app_logo',
+	'wpem_rest_api_app_name'
 );
 
 foreach ($options as $option) {

@@ -152,7 +152,16 @@ if ($option['desc'] ) {
 
                     case "text" :
 
-                        ?><input id="setting-<?php echo esc_attr($option['name']); ?>" class="regular-text" type="text" name="<?php echo esc_attr($option['name']); ?>" value="<?php esc_attr_e($value); ?>" <?php echo implode(' ', $attributes); ?> <?php echo $placeholder; ?> /><?php
+                        $default_name = 'WP Event Manager';
+
+                        $current_name = get_option('wpem_rest_api_app_name', $default_name);
+
+                        if (empty($current_name)) {
+                            update_option('wpem_rest_api_app_name', 'WP Event Manager');
+                            $current_name = $default_name;
+                        };
+
+                        ?><input id="setting-<?php echo esc_attr($option['name']); ?>" class="regular-text" type="text" name="<?php echo esc_attr($option['name']); ?>" value="<?php esc_attr_e($current_name); ?>" <?php echo implode(' ', $attributes); ?> <?php echo $placeholder; ?> /><?php
 
                         if ($option['desc'] ) {
 

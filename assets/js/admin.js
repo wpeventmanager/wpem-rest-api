@@ -38,14 +38,18 @@ var WPEMRestAPIAdmin = function () {
 
             jQuery("#update_app_branding").on('click', WPEMRestAPIAdmin.actions.saveAppBranding);
 
+            let ajaxTimer;
             jQuery('.wpem-colorpicker').wpColorPicker(
                 {
                     defaultColor: true,
                     change: function (event, ui) {
-                         var element = event.target;
-                         var color = ui.color.toString();
+                        var element = event.target;
+                        var color = ui.color.toString();
 
-                         WPEMRestAPIAdmin.actions.changeBrightness(event, color);
+                        clearTimeout(ajaxTimer);
+                        ajaxTimer = setTimeout(function() {
+                            WPEMRestAPIAdmin.actions.changeBrightness(event, color);
+                        }, 500);
                     },
                 }
             );
@@ -168,9 +172,11 @@ var WPEMRestAPIAdmin = function () {
                         },
                         success: function (response) {
                              jQuery('.wpem-branding-status').html('<div class="wpem-api-message updated"><p>' + response.data.message + '</p></div>');
+                             jQuery('.update_app_branding_message').html('<div class="update_app_branding_message_update"><i class="wpem-icon-checkmark"></i> Your preferred color for your app branding has been successfully saved.</div>');
                         },
                         error: function (jqXHR, textStatus, errorThrown) {
                              jQuery('.wpem-branding-status').html('<div class="wpem-api-message error"><p>' + errorThrown + '</p></div>');
+                             jQuery('.update_app_branding_message').html('<div class="update_app_branding_message_update"><i class="wpem-icon-cross"></i> Your preferred color for your app branding has not been successfully saved.</div>');
                         },
                         complete: function (jqXHR, textStatus) {
                              //jQuery('#key-fields').find('.status-message').addClass('notice notice notice-success');

@@ -250,7 +250,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table{
 
         // Get the API keys.
         $keys = $wpdb->get_results(
-            "SELECT key_id,app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search}" .
+            "SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search}" .
             $wpdb->prepare('ORDER BY key_id DESC LIMIT %d OFFSET %d;', $per_page, $offset),
             ARRAY_A
         ); // WPCS: unprepared SQL ok.

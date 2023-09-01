@@ -324,5 +324,6 @@ defined('ABSPATH') || exit;
     </table>
 
     <?php submit_button(__('Save', 'wpem-rest-api'), 'primary wpem-backend-theme-button', 'update_app_branding'); ?>
+    <div class="update_app_branding_message"></div>
 
 </div>

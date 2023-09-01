@@ -80,6 +80,7 @@ class WPEM_REST_APP_Branding_Controller extends WPEM_REST_CRUD_Controller
     {
         $wpem_app_branding_settings = [];
 
+        $wpem_app_branding_settings['app_name'] = get_option('wpem_rest_api_app_name') ? update_option('WP Event Manager', 'wpem_rest_api_app_name') : '';
         $wpem_app_branding_settings['app_logo'] = get_option('wpem_rest_api_app_logo');
         $wpem_app_branding_settings['app_splash_screen_image'] = get_option('wpem_rest_api_app_splash_screen_image');
         $wpem_app_branding_settings['color_scheme'] = get_option('wpem_app_branding_settings');

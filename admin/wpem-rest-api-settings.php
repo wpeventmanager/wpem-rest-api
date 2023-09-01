@@ -55,6 +55,17 @@ class WPEM_Rest_API_Settings {
 												'type'       => 'checkbox',
 												'attributes' => array(),
 											),
+											
+											array(
+												'name'       => 'wpem_rest_api_app_name',
+												'std'        => 'WP Event Manager',
+												'cb_label'   => __( 'Add name of your Application.', 'wpem-rest-api' ),
+												'label'      => __( 'Application name', 'wpem-rest-api' ),
+												'desc'       => __( '', 'wpem-rest-api' ),
+												'type'       => 'text',
+
+												'attributes' => array(),
+											),
 
 											array(
 												'name'       => 'wpem_rest_api_app_logo',
