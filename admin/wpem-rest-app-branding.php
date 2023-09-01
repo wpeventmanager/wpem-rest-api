@@ -147,7 +147,7 @@ class WPEM_Rest_APP_Branding {
         }
 
         $response = [];
-        $response['message'] = __( 'Successfully save App Branding.', 'wpem-rest-api' );
+        $response['message'] = __( 'Your preferred color for your app branding has been successfully saved.', 'wpem-rest-api' );
 
         wp_send_json_success($response);
 
