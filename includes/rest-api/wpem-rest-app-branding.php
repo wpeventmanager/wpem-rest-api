@@ -1,5 +1,5 @@
 <?php
-defined('ABSPATH') || exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * REST API APP Branding controller class.
@@ -29,7 +29,7 @@ class WPEM_REST_APP_Branding_Controller extends WPEM_REST_CRUD_Controller {
      * Initialize event actions.
      */
     public function __construct() {
-        add_action('rest_api_init', array( $this, 'register_routes' ), 10);
+        add_action( 'rest_api_init', array( $this, 'register_routes' ), 10 );
 
         if( !class_exists( 'WPEM_Rest_API_Settings' ) ) {
             include_once WPEM_REST_API_PLUGIN_DIR.'/admin/wpem-rest-api-settings.php';
