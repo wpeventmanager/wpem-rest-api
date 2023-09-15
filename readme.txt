@@ -4,8 +4,8 @@ Contributors: wpeventmanager,ashokdudhat,krinay
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 4.1
-Tested up to: 5.9
-Stable tag: 1.0.3
+Tested up to: 6.2.2
+Stable tag: 1.0.4
 Requires PHP: 5.6
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -118,6 +118,15 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 
 == Changelog ==
+
+= 1.0.3 [ 28th Sep 2023 ] =
+
+Fixed : Description is added for REST API addon.
+Fixed : Repeated Ajax requests sending while selecting a color issue is fixed.
+Fixed : Display the save message while saving App Branding.
+Fixed : Show the notice in proper alignment.
+Added : A copied key button is added on the key generate page.
+Added : Application name feature added to the add-on.
 
 = 1.0.3 [ 22nd Dec 2022 ] =
 
