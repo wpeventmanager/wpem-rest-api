@@ -119,7 +119,7 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
-= 1.0.3 [ 28th Sep 2023 ] =
+= 1.0.3 [ 17th Oct 2023 ] =
 
 Fixed : Description is added for REST API addon.
 Fixed : Repeated Ajax requests sending while selecting a color issue is fixed.
