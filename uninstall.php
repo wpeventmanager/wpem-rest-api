@@ -1,8 +1,9 @@
 <?php
-if (!defined( 'WP_UNINSTALL_PLUGIN')) {
+if( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit();
 }
 
+// Delete options of rest api plugin
 $options = array(
 	'wpem_rest_api_version',
 	'wpem_primary_color',
@@ -17,8 +18,10 @@ $options = array(
 	'wpem_danger_dark_color',
 	'wpem_app_branding_settings',
 	'wpem_app_branding_dark_settings',
+	'wpem_rest_api_app_logo',
+	'wpem_rest_api_app_name'
 );
 
-foreach ($options as $option) {
-	delete_option($option);
+foreach ( $options as $option ) {
+	delete_option( $option );
 }

@@ -1,10 +1,4 @@
 <?php
-/**
- * REST API Authentication
- *
- * @since    1.0.0
- */
-
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -47,10 +41,7 @@ class WPEM_REST_Authentication {
 
 		//register rout here for app key and login
 		add_action( 'rest_api_init', array( $this, 'register_routes' ), 10 );
-
 	}
-
-
 
 	/**
 	 * Check if is request to our REST API.
@@ -84,14 +75,12 @@ class WPEM_REST_Authentication {
 	 */
 	public function authenticate( $user_id ) {
 		// Do not authenticate twice and check if is a request to our endpoint in the WP REST API.
-		if ( ! empty( $user_id ) || ! $this->is_request_to_rest_api() ) {
+		if ( !empty( $user_id ) || !$this->is_request_to_rest_api() ) {
 			return $user_id;
 		}
-
 		if ( is_ssl() ) {
 			$user_id = $this->perform_basic_authentication();
 		}
-
 		if ( $user_id ) {
 			return $user_id;
 		}
@@ -108,7 +97,7 @@ class WPEM_REST_Authentication {
 	 */
 	public function check_authentication_error( $error ) {
 		// Pass through other errors.
-		if ( ! empty( $error ) ) {
+		if ( !empty( $error ) ) {
 			return $error;
 		}
 
@@ -117,20 +106,17 @@ class WPEM_REST_Authentication {
 
 	/**
 	 * Set authentication error.
-	 *
 	 * @since    1.0.0
 	 * @param WP_Error $error Authentication error data.
 	 */
 	protected function set_error( $error ) {
 		// Reset user.
 		$this->user = null;
-
 		$this->error = $error;
 	}
 
 	/**
 	 * Get authentication error.
-	 *
 	 * @since    1.0.0
 	 * @return WP_Error|null.
 	 */
@@ -155,19 +141,19 @@ class WPEM_REST_Authentication {
 		$consumer_secret   = '';
 
 		// If the $_GET parameters are present, use those first.
-		if ( ! empty( $_GET['consumer_key'] ) && ! empty( $_GET['consumer_secret'] ) ) { // WPCS: CSRF ok.
+		if ( !empty( $_GET['consumer_key'] ) && !empty( $_GET['consumer_secret'] ) ) { // WPCS: CSRF ok.
 			$consumer_key    = sanitize_text_field($_GET['consumer_key']); // WPCS: CSRF ok, sanitization ok.
 			$consumer_secret = sanitize_text_field($_GET['consumer_secret']); // WPCS: CSRF ok, sanitization ok.
 		}
 
 		// If the above is not present, we will do full basic auth.
-		if ( ! $consumer_key && ! empty( $_SERVER['PHP_AUTH_USER'] ) && ! empty( $_SERVER['PHP_AUTH_PW'] ) ) {
+		if ( !$consumer_key && !empty( $_SERVER['PHP_AUTH_USER'] ) && !empty( $_SERVER['PHP_AUTH_PW'] ) ) {
 			$consumer_key    = sanitize_text_field($_SERVER['PHP_AUTH_USER']); // WPCS: CSRF ok, sanitization ok.
 			$consumer_secret = sanitize_text_field($_SERVER['PHP_AUTH_PW']); // WPCS: CSRF ok, sanitization ok.
 		}
 
 		// Stop if don't have any key.
-		if ( ! $consumer_key || ! $consumer_secret ) {
+		if ( !$consumer_key || ! $consumer_secret ) {
 			return false;
 		}
 
@@ -177,9 +163,8 @@ class WPEM_REST_Authentication {
 			return false;
 		}
 
-
 		// Validate user secret.
-		if ( ! hash_equals( $this->user->consumer_secret, $consumer_secret ) ) { // @codingStandardsIgnoreLine
+		if ( !hash_equals( $this->user->consumer_secret, $consumer_secret ) ) { // @codingStandardsIgnoreLine
 			$this->set_error( new WP_Error( 'wpem_rest_authentication_error', __( 'Consumer secret is invalid.', 'wpem-rest-api' ), array( 'status' => 401 ) ) );
 
 			return false;
@@ -193,8 +178,6 @@ class WPEM_REST_Authentication {
 
 			return false;
 		}
-
-
 		return $this->user->user_id;
 	}
 
@@ -210,7 +193,6 @@ class WPEM_REST_Authentication {
 		if ( 'OAuth ' !== substr( $header, 0, 6 ) ) {
 			return array();
 		}
-
 		// From OAuth PHP library, used under MIT license.
 		$params = array();
 		if ( preg_match_all( '/(oauth_[a-z_-]*)=(:?"([^"]*)"|([^,]*))/', $header, $matches ) ) {
@@ -238,10 +220,9 @@ class WPEM_REST_Authentication {
 	 * @return string Authorization header if set.
 	 */
 	public function get_authorization_header() {
-		if ( ! empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
+		if ( !empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
 			return wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ); // WPCS: sanitization ok.
 		}
-
 		if ( function_exists( 'getallheaders' ) ) {
 			$headers = getallheaders();
 			// Check for the authoization header case-insensitively.
@@ -251,7 +232,6 @@ class WPEM_REST_Authentication {
 				}
 			}
 		}
-
 		return '';
 	}
 
@@ -267,16 +247,14 @@ class WPEM_REST_Authentication {
 		$params = wp_unslash( $params );
 		$header = $this->get_authorization_header();
 
-		if ( ! empty( $header ) ) {
+		if ( !empty( $header ) ) {
 			// Trim leading spaces.
 			$header        = trim( $header );
 			$header_params = $this->parse_header( $header );
-
-			if ( ! empty( $header_params ) ) {
+			if ( !empty( $header_params ) ) {
 				$params = array_merge( $params, $header_params );
 			}
 		}
-
 		$param_names = array(
 			'oauth_consumer_key',
 			'oauth_timestamp',
@@ -298,24 +276,21 @@ class WPEM_REST_Authentication {
 		}
 
 		// All keys are missing, so we're probably not even trying to use OAuth.
-		if ( ! $have_one ) {
+		if ( !$have_one ) {
 			return array();
 		}
 
 		// If we have at least one supplied piece of data, and we have an error,
 		// then it's a failed authentication.
-		if ( ! empty( $errors ) ) {
+		if ( !empty( $errors ) ) {
 			$message = sprintf(
 				/* translators: %s: amount of errors */
 				_n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wpem-rest-api' ),
 				implode( ', ', $errors )
 			);
-
 			$this->set_error( new WP_Error( 'wpem_rest_authentication_missing_parameter', $message, array( 'status' => 401 ) ) );
-
 			return array();
 		}
-
 		return $params;
 	}
 
@@ -391,7 +366,7 @@ class WPEM_REST_Authentication {
 		unset( $params['oauth_signature'] );
 
 		// Sort parameters.
-		if ( ! uksort( $params, 'strcmp' ) ) {
+		if ( !uksort( $params, 'strcmp' ) ) {
 			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - failed to sort parameters.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
@@ -408,7 +383,7 @@ class WPEM_REST_Authentication {
 		$secret         = $user->consumer_secret . '&';
 		$signature      = base64_encode( hash_hmac( $hash_algorithm, $string_to_sign, $secret, true ) );
 
-		if ( ! hash_equals( $signature, $consumer_signature ) ) { // @codingStandardsIgnoreLine
+		if ( !hash_equals( $signature, $consumer_signature ) ) { // @codingStandardsIgnoreLine
 			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid signature - provided signature does not match.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
@@ -429,7 +404,6 @@ class WPEM_REST_Authentication {
 			if ( $key ) {
 				$param_key = $key . '%5B' . $param_key . '%5D'; // Handle multi-dimensional array.
 			}
-
 			if ( is_array( $param_value ) ) {
 				$query_params = $this->join_with_equals_sign( $param_value, $query_params, $param_key );
 			} else {
@@ -437,7 +411,6 @@ class WPEM_REST_Authentication {
 				$query_params[] = wpem_rest_api_urlencode_rfc3986( $string );
 			}
 		}
-
 		return $query_params;
 	}
 
@@ -464,7 +437,6 @@ class WPEM_REST_Authentication {
 		$keys       = wpem_rest_api_urlencode_rfc3986( array_keys( $parameters ) );
 		$values     = wpem_rest_api_urlencode_rfc3986( array_values( $parameters ) );
 		$parameters = array_combine( $keys, $values );
-
 		return $parameters;
 	}
 
@@ -488,7 +460,6 @@ class WPEM_REST_Authentication {
 		if ( ( $timestamp < time() - $valid_window ) || ( $timestamp > time() + $valid_window ) ) {
 			return new WP_Error( 'wpem_rest_authentication_error', __( 'Invalid timestamp.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
-
 		$used_nonces = maybe_unserialize( $user->nonces );
 
 		if ( empty( $used_nonces ) ) {
@@ -507,7 +478,6 @@ class WPEM_REST_Authentication {
 				unset( $used_nonces[ $nonce_timestamp ] );
 			}
 		}
-
 		$used_nonces = maybe_serialize( $used_nonces );
 
 		$wpdb->update(
@@ -517,7 +487,6 @@ class WPEM_REST_Authentication {
 			array( '%s' ),
 			array( '%d' )
 		);
-
 		return true;
 	}
 
@@ -529,17 +498,15 @@ class WPEM_REST_Authentication {
 	 */
 	private function get_user_data_by_consumer_key( $consumer_key ) {
 		global $wpdb;
-
 		$consumer_key = sanitize_text_field( $consumer_key ); //NEED TO IMPROVE LATER WITH GLOBAL API
 
-		//$consumer_key = sanitize_text_field( $consumer_key );
 		$user         = $wpdb->get_row(
 			$wpdb->prepare(
 				"
-			SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created`
-			FROM {$wpdb->prefix}wpem_rest_api_keys
-			WHERE consumer_key = %s
-		",
+					SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created`
+					FROM {$wpdb->prefix}wpem_rest_api_keys
+					WHERE consumer_key = %s
+				",
 				$consumer_key
 			)
 		);
@@ -575,10 +542,6 @@ class WPEM_REST_Authentication {
 			default:
 				return new WP_Error( 'wpem_rest_authentication_error', __( 'Unknown request method.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
-
-
-
-
 		return true;
 	}
 
@@ -610,7 +573,6 @@ class WPEM_REST_Authentication {
 			$auth_message = __( 'WPEM API. Use a consumer key in the username field and a consumer secret in the password field.', 'wpem-rest-api' );
 			$response->header( 'WWW-Authenticate', 'Basic realm="' . $auth_message . '"', true );
 		}
-
 		return $response;
 	}
 
@@ -629,11 +591,9 @@ class WPEM_REST_Authentication {
 			if ( is_wp_error( $allowed ) ) {
 				return $allowed;
 			}
-
 			// Register last access.
 			$this->update_last_access();
 		}
-
 		return $result;
 	}
 
@@ -663,23 +623,21 @@ class WPEM_REST_Authentication {
 	 */
 	public function perform_login_authentication($request){
 		$response = [];
-		if(isset($_GET['username']) && isset($_GET['password']) && (!empty($_GET['username']) && !empty($_GET['password'])) ){
-			$username = sanitize_text_field($_GET['username']);
-			$password = sanitize_text_field($_GET['password']);
+		if( isset( $_GET['username'] ) && isset( $_GET['password'] ) && ( !empty( $_GET['username'] ) && !empty( $_GET['password'] ) ) ){
+			$username = sanitize_text_field( $_GET['username'] );
+			$password = sanitize_text_field( $_GET['password'] );
 
-			$user = wp_authenticate($username, $password);
+			$user = wp_authenticate( $username, $password) ;
 
-			if(!is_wp_error($user)){
-				$response =  array('success' => true,'message' => __('You are logged in successfully.','wpem-rest-api') );
-			}
-			else
-			{
-				$response =  array('success' => false,'message' => __('Username or password wrong.','wpem-rest-api') );
+			if( !is_wp_error( $user ) ){
+				$response =  array( 'success' => true,'message' => __( 'You are logged in successfully.','wpem-rest-api' ) );
+			} else {
+				$response =  array('success' => false,'message' => __( 'Username or password wrong.','wpem-rest-api' ) );
 			}
 		}
 
-		if(empty($response))
-			$response =  array('success' => false,'message' => __('Somethign went wrong.','wpem-rest-api') );
+		if( empty( $response ) )
+			$response =  array( 'success' => false, 'message' => __( 'Somethign went wrong.','wpem-rest-api' ) );
 
 		return $response;
 	}
@@ -689,30 +647,27 @@ class WPEM_REST_Authentication {
 	 *
 	 * @since 1.0.0
 	 */
-	public function perform_app_key_authentication($request){
+	public function perform_app_key_authentication( $request ){
 		global $wpdb;
 
-		if(isset($_GET['key']) && !empty($_GET['key'])){
-			$app_key = sanitize_text_field($_GET['key']);
+		if( isset( $_GET['key'] ) && !empty( $_GET['key'] ) ){
+			$app_key = sanitize_text_field( $_GET['key'] );
 
-			$key_data         = $wpdb->get_row(
+			$key_data = $wpdb->get_row(
 				$wpdb->prepare(
 					"
-				SELECT key_id, app_key,user_id, permissions, consumer_key, consumer_secret, nonces
-				FROM {$wpdb->prefix}wpem_rest_api_keys
-				WHERE app_key = %s
-			",
+						SELECT key_id, app_key, user_id, permissions, consumer_key, consumer_secret, nonces
+						FROM {$wpdb->prefix}wpem_rest_api_keys
+						WHERE app_key = %s
+					",
 					$app_key
 				)
 			);
-
-			if(empty($key_data))
+			if( empty( $key_data ) )
 				$key_data = array( 'wpem_rest_authentication_error', __( 'Invalid APP ID.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 
 			return $key_data;
-
 		}
 	}
 }
-
 new WPEM_REST_Authentication();

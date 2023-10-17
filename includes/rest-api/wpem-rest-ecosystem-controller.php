@@ -43,8 +43,7 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 	 * Initialize Ecosystem actions.
 	 */
 	public function __construct() {
-		//add_action( "wpem_rest_insert_{$this->post_type}_object", array( $this, 'clear_transients' ) );
-		add_action('rest_api_init', array( $this, 'register_routes' ), 10);
+		add_action( 'rest_api_init', array( $this, 'register_routes' ), 10 );
 	}
 	/**
 	 * Register the routes for ecosystem.
@@ -55,17 +54,15 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_echosystem_overview' ),
 				'permission_callback' => array( $this, 'get_items_permissions_check' ),
-				//'args'                => $this->get_collection_params(),
 			)
-			//'schema' => array( $this, 'get_public_item_schema' ),
 		));
 	}
 
 	public function get_echosystem_overview() {
 		$plugins = get_plugins();
 		$items = array();
-		foreach ($plugins as $filename => $plugin) {
-			if($plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename )) {
+		foreach( $plugins as $filename => $plugin ) {
+			if( $plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename ) ) {
 				$licence_key = get_option( $plugin['TextDomain'] . '_licence_key' );
 				$items[$plugin["TextDomain"]] = array(
 					"version" => $plugin["Version"],
@@ -76,5 +73,4 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 		return $items;
 	}
 }
-
 new WPEM_REST_Ecosystem_Controller();
