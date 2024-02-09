@@ -5,7 +5,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 4.1
 Tested up to: 6.2.2
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 Requires PHP: 5.6
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -118,6 +118,12 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 
 == Changelog ==
+
+
+= 1.0.5 [ 9th Feb 2023 ] =
+
+Fixed : Remove a message from the App branding page.
+Added : API key expiry status is added.
 
 = 1.0.4 [ 17th Oct 2023 ] =
 
