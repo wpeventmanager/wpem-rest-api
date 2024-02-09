@@ -656,13 +656,18 @@ class WPEM_REST_Authentication {
 			$key_data = $wpdb->get_row(
 				$wpdb->prepare(
 					"
-						SELECT key_id, app_key, user_id, permissions, consumer_key, consumer_secret, nonces
+						SELECT key_id, app_key, user_id, permissions, consumer_key, consumer_secret, nonces, date_expires
 						FROM {$wpdb->prefix}wpem_rest_api_keys
 						WHERE app_key = %s
 					",
 					$app_key
 				)
 			);
+			if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
+				$key_data->expiry  = false;
+			}else{
+				$key_data->expiry  = true;
+			}
 			if( empty( $key_data ) )
 				$key_data = array( 'wpem_rest_authentication_error', __( 'Invalid APP ID.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 
