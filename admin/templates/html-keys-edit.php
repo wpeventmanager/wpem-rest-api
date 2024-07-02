@@ -134,6 +134,7 @@ defined( 'ABSPATH' ) || exit; ?>
 
 	if ( 0 === intval( $key_id ) ) {
 		submit_button( __( 'Generate API key', 'wp-event-manager-organizer-app-access' ), 'primary wpem-backend-theme-button', 'update_api_key' );
+		echo '<div id="api_key_loader" class="loader" style="display:none;margin-left: 20px;"></div>';
 	} else { ?>
 		<p class="submit">
 			<?php submit_button( __( 'Save changes', 'wp-event-manager-organizer-app-access' ), 'primary wpem-backend-theme-button', 'update_api_key', false ); ?>

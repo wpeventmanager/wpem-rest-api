@@ -57,6 +57,9 @@ var WPEMRestAPIAdmin = function () {
             saveApiKey: function (event) {
                 event.preventDefault();
                 var self = this;
+                
+                jQuery("#api_key_loader").show();
+                jQuery("#update_api_key").attr("disabled", true);
 
                 //self.block();
                 jQuery.ajax({
@@ -102,7 +105,10 @@ var WPEMRestAPIAdmin = function () {
                     error: function (jqXHR, textStatus, errorThrown) {
                         jQuery('h2, h3', self.el).first().append('<div class="wpem-api-message error"><p>' + errorThrown + '</p></div>');
                     },
-                    complete: function (jqXHR, textStatus) {}
+                    complete: function (jqXHR, textStatus) {
+                        jQuery("#api_key_loader").hide();
+                        jQuery("#update_api_key").attr("disabled", false);
+                    }
                 });
             },
 
@@ -172,4 +178,4 @@ var WPEMRestAPIAdmin = function () {
 WPEMRestAPIAdmin = WPEMRestAPIAdmin();
 jQuery(document).ready(function ($) {
     WPEMRestAPIAdmin.init();
-});
+}); 
