@@ -138,7 +138,15 @@ class WPEM_Rest_API_Settings {
 								<?php } ?>
 							</ul>
 						</div>
-						<div class="wpem-admin-right-container wpem-<?php echo esc_html($current_tab); ?> wpem-app-branding-mode wpem-light-mode">
+						<?php 
+							$mode = get_option('wpem_active_mode');
+							if( $mode == 'dark' ){
+								$class = "wpem-dark-mode";
+							}else if( $mode == 'light' ){
+								$class = "wpem-light-mode";
+							}
+						?>
+						<div class="wpem-admin-right-container wpem-<?php echo esc_html( $current_tab ); ?> wpem-app-branding-mode <?php echo esc_attr( $class ); ?>">
 							<div class="metabox-holder wpem-admin-right-container-holder">
 								<div class="wpem-admin-top-title-section postbox">
 									<?php

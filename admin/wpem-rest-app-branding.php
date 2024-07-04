@@ -1,4 +1,4 @@
-<?php
+<?php 
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -146,8 +146,13 @@ class WPEM_Rest_APP_Branding {
             update_option( 'wpem_app_branding_dark_settings', $wpem_dark_colors );
         }
 
+        if (isset($_POST['active_mode'])) {
+            update_option('wpem_active_mode', sanitize_text_field($_POST['active_mode']));
+        }
+
         $response = [];
         $response['message'] = __( 'Your preferred color for your app branding has been successfully saved.', 'wpem-rest-api' );
+        $response['mode'] = sanitize_text_field( $_POST['active_mode'] );
 
         wp_send_json_success($response);
 

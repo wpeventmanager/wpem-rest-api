@@ -1,4 +1,4 @@
-var WPEMRestAPIAdmin = function () {
+var WPEMRestAPIAdmin = function () { 
     /// <summary>Constructor function of the event settings class.</summary>
     /// <returns type="Settings" />
     return {
@@ -122,6 +122,18 @@ var WPEMRestAPIAdmin = function () {
                 event.preventDefault();
                 var self = this;
 
+                var lightModeTableVisible = jQuery( '#app-branding-color' ).is(':visible' );
+                var darkModeTableVisible = jQuery( '#app-branding-color-dark' ).is( ':visible' );
+                var activeMode = '';
+				
+                if ( lightModeTableVisible ) {
+                    activeMode = 'light';
+                } else if ( darkModeTableVisible ) {
+                    activeMode = 'dark';
+                } else {
+                    return;
+                }
+
                 jQuery.ajax({
                     type: 'POST',
                     url: wpem_rest_api_admin.ajaxUrl,
@@ -139,6 +151,7 @@ var WPEMRestAPIAdmin = function () {
                         wpem_info_dark_color: jQuery('input[name="wpem_info_dark_color"]').val(),
                         wpem_warning_dark_color: jQuery('input[name="wpem_warning_dark_color"]').val(),
                         wpem_danger_dark_color: jQuery('input[name="wpem_danger_dark_color"]').val(),
+                        active_mode: activeMode,
                     },
                     beforeSend: function (jqXHR, settings) {},
                     success: function (response) {
