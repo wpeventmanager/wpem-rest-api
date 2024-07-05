@@ -24,6 +24,7 @@ if( !defined( 'ABSPATH' ) ) {
  * @extends WP_REST_Controller
  * @version 1.0.0
  */
+#[AllowDynamicProperties]
 abstract class WPEM_REST_Controller extends WP_REST_Controller {
 
     /**

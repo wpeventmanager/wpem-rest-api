@@ -6,6 +6,7 @@ if( !defined( 'ABSPATH' ) ) {
 /**
  * WPEM_Rest_API_Dashboard class to show rest api data at front-end.
  */
+#[AllowDynamicProperties]
 class WPEM_Rest_API_Dashboard {
 
     /**

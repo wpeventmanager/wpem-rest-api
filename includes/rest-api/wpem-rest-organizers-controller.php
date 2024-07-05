@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @extends WPEM_REST_CRUD_Controller
  */
+#[AllowDynamicProperties]
 class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
     /**

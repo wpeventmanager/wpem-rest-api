@@ -8,6 +8,7 @@ if ( !class_exists( 'WP_List_Table' ) ) {
 /**
  * API Keys table list class for wp rest api.
  */
+#[AllowDynamicProperties]
 class WPEM_API_Keys_Table_List extends WP_List_Table {
 
     /**

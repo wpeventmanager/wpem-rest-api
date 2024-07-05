@@ -4,6 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 /**
  * WPEM_Rest_API_Settings class used to create settings fields and save settings.
  */
+#[AllowDynamicProperties]
 class WPEM_Rest_API_Settings {
 
 	public $settings;
