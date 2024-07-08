@@ -14,7 +14,6 @@ defined('ABSPATH') || exit;
  * REST API Ecosystem controller class.
  * @extends WPEM_REST_CRUD_Controller
  */
-#[AllowDynamicProperties]
 class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 	/**
 	 * Endpoint namespace.

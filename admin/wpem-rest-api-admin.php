@@ -3,8 +3,10 @@ defined('ABSPATH') || exit;
 /**
  * WPEM_Rest_API_Admin class used to create rest api tab in wp event manager plugin.
  */
-#[AllowDynamicProperties]
 class WPEM_Rest_API_Admin{
+    
+    public $settings_page;
+
     /**
      * __construct function.
      *

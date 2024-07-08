@@ -4,7 +4,6 @@ defined( 'ABSPATH' ) || exit;
 /**
  * WPEM_Rest_APP_Branding class would be used for set app branding parameters like colors of app.
  */
-#[AllowDynamicProperties]
 class WPEM_Rest_APP_Branding {
 
     /**

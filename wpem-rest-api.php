@@ -28,7 +28,6 @@ require_once ABSPATH.'wp-admin/includes/plugin.php';
 /**
  * WP_Event_Manager_Rest_API class.
  */
-#[AllowDynamicProperties]
 class WPEM_Rest_API{
 
     /**

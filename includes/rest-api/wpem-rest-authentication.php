@@ -4,7 +4,6 @@ defined( 'ABSPATH' ) || exit;
 /**
  * REST API authentication class.
  */
-#[AllowDynamicProperties]
 class WPEM_REST_Authentication {
 
 	/**

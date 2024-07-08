@@ -4,7 +4,6 @@ defined('ABSPATH') || exit;
 /**
  * WPEM_Rest_API_Keys class used to show rest api key list table.
  */
-#[AllowDynamicProperties]
 class WPEM_Rest_API_Keys {
 
     /**
