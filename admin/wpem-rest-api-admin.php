@@ -110,6 +110,7 @@ class WPEM_Rest_API_Admin{
             $user_id      = absint( $_POST['user'] );
             $event_id     = !empty( $_POST['event_id'] ) ?  absint( $_POST['event_id'] ) : '' ;
             $date_expires = !empty( $_POST['date_expires'] ) ?  date( 'Y-m-d H:i:s', strtotime( str_replace( '-', '/', $_POST['date_expires'] ) ) ) : null ;
+            $restrict_check_in = isset( $_POST['restrict_check_in'] ) ? sanitize_text_field( $_POST['restrict_check_in'] ) : '';
 
             // Check if current user can edit other users.
             if( $user_id && ! current_user_can( 'edit_user', $user_id ) ) {
@@ -140,6 +141,7 @@ class WPEM_Rest_API_Admin{
                         ),
                     array( '%d' )
                 );
+                update_user_meta( $user_id, '_restrict_check_in', $restrict_check_in );
                 $response                    = $data;
                 $response['consumer_key']    = '';
                 $response['consumer_secret'] = '';

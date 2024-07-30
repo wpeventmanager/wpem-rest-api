@@ -125,6 +125,16 @@ defined( 'ABSPATH' ) || exit; ?>
 							</span>
 						</td>
 					</tr>
+					<tr valign="top">
+						<th scope="row" class="titledesc">
+							<?php esc_html_e( 'Restrict Check-in', 'wpem-rest-api' ); ?>
+						</th>
+						<?php $restrict = get_user_meta( $key_data["user_id"], '_restrict_check_in',true );
+						 ?>
+						<td class="forminp" id="js-restrict-check-in" >
+							<input id="js-restrict-check-in" type="checkbox" name="restrict_check_in"   <?php echo ($restrict === '1') ? 'checked="checked"' : ''; ?> value="1" >
+						</td>
+					</tr>
 				<?php endif ?>
 			</tbody>
 		</table>	
