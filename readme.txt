@@ -119,7 +119,7 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
-= 1.0.6 [ 10th July 2024 ] =
+= 1.0.6 [ 26th September 2024 ] =
 
 Fixed : Change light mode to dark mode is not save.
 Fixed : Generates multiple API keys.
