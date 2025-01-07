@@ -9,7 +9,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
         if(isset( $tab ) && file_exists( __DIR__. '/wpem-rest-settings-'.$tab.'.php' ) ) {
             include 'wpem-rest-settings-'.$tab.'.php';
         } else {
-            _e( 'Setting template file not exists', 'wpem-rest-api' );
+            esc_html_e( 'Setting template file not exists', 'wpem-rest-api' );
         }
     }
     else if( $tab_settings['type'] == 'fields' && isset( $tab_settings['fields'] ) && isset( $tab_settings['sections'] ) ) {
@@ -135,8 +135,8 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                                 foreach ( (array) $option['value'] as $value ) { ?>
                                     <span class="file_url">
                                         <input type="text" name="<?php echo esc_attr( $option['name'] ); ?>[]" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
-                                        <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e( 'Use file', 'wpem-rest-api'); ?>">
-                                            <?php _e( 'Upload', 'wpem-rest-api' ); ?>
+                                        <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
+                                            <?php esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
                                         </button>
                                     </span>
                                 <?php
@@ -146,15 +146,15 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                                 }  ?>
                                 <span class="file_url">
                                     <input type="text" name="<?php echo esc_attr( $option['name'] ); ?>" id="<?php echo esc_attr( $option['name'] ); ?>" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
-                                    <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php _e( 'Use file', 'wpem-rest-api' ); ?>">
-                                        <?php _e( 'Upload', 'wpem-rest-api' ); ?>
+                                    <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api' ); ?>">
+                                        <?php esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
                                     </button>
                                 </span>
                                 <?php
                             }
                             if( !empty( $option['multiple'] ) ) { ?>
-                                <button class="button button-small wp_event_manager_add_another_file_button" data-field_name="<?php echo esc_attr($key); ?>" data-field_placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" data-uploader_button_text="<?php _e( 'Use file', 'wpem-rest-api' ); ?>" data-uploader_button="<?php _e( 'Upload', 'wpem-rest-api' ); ?>">
-                                    <?php _e( 'Add file', 'wpem-rest-api' ); ?>
+                                <button class="button button-small wp_event_manager_add_another_file_button" data-field_name="<?php echo esc_attr($key); ?>" data-field_placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api' ); ?>" data-uploader_button="<?php esc_html_e( 'Upload', 'wpem-rest-api' ); ?>">
+                                    <?php esc_html_e( 'Add file', 'wpem-rest-api' ); ?>
                                 </button>
                             <?php
                             } ?>

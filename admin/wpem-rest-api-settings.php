@@ -120,7 +120,7 @@ class WPEM_Rest_API_Settings {
 			$action = 'action=options.php';
 		} ?>
 		<div class="wrap">
-        	<h1><?php _e( 'Rest API Settings', 'wpem-rest-api' ); ?></h1>
+        	<h1><?php esc_html_e( 'Rest API Settings', 'wpem-rest-api' ); ?></h1>
     	</div>
 
 		<div id="wpbody" role="main">
@@ -157,7 +157,7 @@ class WPEM_Rest_API_Settings {
 										include('templates/wpem-rest-settings-panel.php'); ?>
 								</div>
 								<p class="submit">
-										<input type="submit" class="button-primary wpem-backend-theme-button" id="save-changes" value="<?php _e( 'Save Changes', 'wpem-rest-api' ); ?>" />
+										<input type="submit" class="button-primary wpem-backend-theme-button" id="save-changes" value="<?php esc_html_e( 'Save Changes', 'wpem-rest-api' ); ?>" />
 								</p>
 							</div>
 						</div>

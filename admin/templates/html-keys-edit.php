@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit; ?>
 					</th>
 					<td class="forminp">
 						<input id="key_description" type="text" class="input-text regular-input" value="<?php echo esc_attr( $key_data['description'] ); ?>" />
-						<p class="description"><?php _e( 'Friendly name for identifying this key.', 'wpem-rest-api' );?></p>
+						<p class="description"><?php esc_html_e( 'Friendly name for identifying this key.', 'wpem-rest-api' );?></p>
 					</td>
 				</tr>
 				<tr valign="top">
@@ -33,7 +33,7 @@ defined( 'ABSPATH' ) || exit; ?>
 					<th scope="row" class="titledesc">
 						<label for="key_user">
 							<?php esc_html_e( 'User', 'wpem-rest-api' ); ?>
-							<?php  _e( 'Owner of these keys.', 'wpem-rest-api' ); ?>
+							<?php  esc_html_e( 'Owner of these keys.', 'wpem-rest-api' ); ?>
 						</label>
 					</th>
 					<td class="forminp">
@@ -46,13 +46,17 @@ defined( 'ABSPATH' ) || exit; ?>
 							foreach ( $all_users as $user ) { ?>
 							<option value="<?php echo esc_attr( $user->ID ); ?>"  <?php if($user->ID == $user_id )  echo 'selected="selected"';?>><?php 
 							echo '#'; 
-							printf(__('%d','wpem-rest-api'),$user->ID);
+							printf(
+							// Translators: %d is replaced with user id.
+							__('%d','wpem-rest-api'),$user->ID);
 							echo ' ';
-								printf(__('%s','wpem-rest-api'),$user->user_login); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
+								printf(
+								// Translators: %s is replaced with user login.
+								__('%s','wpem-rest-api'),$user->user_login); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
 							<?php
 							} ?>
 						</select>
-						<p class="description"><?php _e( 'Name of the owner of the Key.', 'wpem-rest-api' );?></p> 
+						<p class="description"><?php esc_html_e( 'Name of the owner of the Key.', 'wpem-rest-api' );?></p> 
 					</td>
 				</tr>
 				<tr valign="top">
@@ -71,7 +75,7 @@ defined( 'ABSPATH' ) || exit; ?>
 						} ?>
 						<input id="date_expires" type="text" class="input-text regular-input" value="<?php echo esc_attr($expiry_date ); ?>" />
 						<p class="description">
-							<?php _e( 'Set an expiry date till which the key should be activated.','wpem-rest-api' );?>
+							<?php esc_html_e( 'Set an expiry date till which the key should be activated.','wpem-rest-api' );?>
 						</p>
 					</td>
 				</tr>
@@ -94,7 +98,7 @@ defined( 'ABSPATH' ) || exit; ?>
 							<?php endforeach; ?>
 						</select>
 						<p class="description">
-						<?php   _e( 'Select the access type of these keys.', 'wpem-rest-api' ); ?></p>
+						<?php  esc_html_e( 'Select the access type of these keys.', 'wpem-rest-api' ); ?></p>
 					</td>
 				</tr>
 

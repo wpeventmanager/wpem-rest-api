@@ -39,23 +39,23 @@ defined('ABSPATH') || exit; ?>
         <tbody>
             <tr valign="top">
                 <td scope="row" class="title-primary-color"> 
-                    <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                    <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_primary_color" class="wpem-colorpicker" value="<?php echo esc_html($primary_color); ?>" data-default-color="#3366FF">
                 </td>
                 <td scope="row" class="title-success-color"> 
-                    <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                    <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_success_color" class="wpem-colorpicker" value="<?php echo esc_html($success_color); ?>" data-default-color="#77DD37">
                 </td>
                 <td scope="row" class="title-info-color"> 
-                    <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                    <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_info_color" class="wpem-colorpicker" value="<?php echo esc_html($info_color); ?>" data-default-color="#42BCFF">
                 </td>
                 <td scope="row" class="title-warning-color"> 
-                    <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                    <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_warning_color" class="wpem-colorpicker" value="<?php echo esc_html($warning_color); ?>" data-default-color="#FCD837">
                 </td>
                 <td scope="row" class="title-danger-color"> 
-                    <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                    <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_danger_color" class="wpem-colorpicker" value="<?php echo esc_html($danger_color); ?>" data-default-color="#FC4C20">
                 </td>
             </tr>
@@ -171,19 +171,19 @@ defined('ABSPATH') || exit; ?>
         </thead>
         <tbody>
             <tr valign="top">
-                <td scope="row" class="title-primary-color"> <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                <td scope="row" class="title-primary-color"> <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_primary_dark_color" class="wpem-colorpicker" value="<?php echo esc_attr($primary_dark_color); ?>" data-default-color="#3366FF">
                 </td>
-                <td scope="row" class="title-success-color"> <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                <td scope="row" class="title-success-color"> <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_success_dark_color" class="wpem-colorpicker" value="<?php echo esc_attr($success_dark_color); ?>" data-default-color="#77DD37">
                 </td>
-                <td scope="row" class="title-info-color"> <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                <td scope="row" class="title-info-color"> <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_info_dark_color" class="wpem-colorpicker" value="<?php echo esc_attr($info_dark_color); ?>" data-default-color="#42BCFF">
                 </td>
-                <td scope="row" class="title-warning-color"> <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                <td scope="row" class="title-warning-color"> <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_warning_dark_color" class="wpem-colorpicker" value="<?php echo esc_attr($warning_dark_color); ?>" data-default-color="#FCD837">
                 </td>
-                <td scope="row" class="title-danger-color"> <p><?php _e('Select color', 'wpem-rest-api'); ?></p>
+                <td scope="row" class="title-danger-color"> <p><?php esc_html_e('Select color', 'wpem-rest-api'); ?></p>
                     <input type="text" name="wpem_danger_dark_color" class="wpem-colorpicker" value="<?php echo esc_attr($danger_dark_color); ?>" data-default-color="#FC4C20">
                 </td>
             </tr>
