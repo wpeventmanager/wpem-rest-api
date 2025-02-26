@@ -58,15 +58,18 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 		));
 	}
 
+	/**
+	 * This function is used to get all required plugin with activation status
+	 */
 	public function get_echosystem_overview() {
 		// Create required plugin list for wpem rest api
 		$required_plugins = apply_filters( 'wpem_rest_api_required_plugin_list', array(
-			'woocommerce',
-			'wp-event-manager',
-			'wpem-rest-api',
-			'wp-event-manager-sell-tickets',
-			'wp-event-manager-registrations',
-			'wpem-guests',
+			'woocommerce' => 'Woocommerce',
+			'wp-event-manager' => 'WP Event Manager',
+			'wpem-rest-api' => 'WPEM Rest API',
+			'wp-event-manager-sell-tickets' => 'WP Event Manager Sell Tickets',
+			'wp-event-manager-registrations' => 'WP Event Manager Registrations',
+			'wpem-guests' => 'WP Event Manager Guests',
 		) );
 
 		// Get ecosystem data
@@ -104,67 +107,27 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 				}
 			}
 		}
+
+		$plugin_list = array();
 		// Check id required plugin is not in list
-		foreach( $required_plugins as $plugin_key){
-			if( !array_key_exists( $plugin_key, $ecosystem_info ) ) {
-			   foreach( $plugins as $filename => $plugin ) {
-				   if (isset($plugin['TextDomain']) && $plugin['TextDomain'] === $plugin_key) {
-					   return $plugin['Name'];
-				   }
-			   }
+		foreach( $required_plugins as $plugin_key => $plugin_name){
+
+			if( array_key_exists( $plugin_key, $ecosystem_info ) ) {
+				array_push($plugin_list, $ecosystem_info[$plugin_key]);
+			} else {
+				$plugin_list[$plugin_key] = array(
+					'version' => '',
+					'activated' => false,
+					'plugin_name' => $plugin_name
+				);
 			}
 		}
-		return $ecosystem_info;
-
-		// $plugins = get_plugins();
-		// $items = array();
-
-		// foreach( $plugins as $filename => $plugin ) {
-		// 	if( $plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename ) && !in_array( $plugin['TextDomain'], ["wp-event-manager", "wpem-rest-api", "wp-user-profile-avatar", "wpem-divi-elements", "wp-event-manager-migration"] ) ){
-		// 		$response = array();
-		// 		$licence_key = get_option( $plugin['TextDomain'] . '_licence_key' );
-		// 		if( !empty($licence_key) ) {
-		// 			$args = array();
-		// 			$defaults = array(
-		// 				'request'        => 'check_expire_key',
-		// 				'licence_key'    => $licence_key,
-		// 			);
-			
-		// 			$args    = wp_parse_args($args, $defaults);
-		// 			$request = wp_remote_get($api_url . '&' . http_build_query($args, '', '&'));
-			
-		// 			if(is_wp_error($request) || wp_remote_retrieve_response_code($request) != 200) {
-		// 				return false;
-		// 			}
-			
-		// 			$response = json_decode(wp_remote_retrieve_body($request),true);
-		// 			$response = (object)$response;
-	
-		// 			if ( isset( $response->errors ) ) {
-		// 				$items[$plugin["TextDomain"]] = array(
-		// 					"version" => $plugin["Version"],
-		// 					'activated' => false
-		// 				);
-		// 			}
-	
-		// 			// Set version variables
-		// 			if ( isset( $response ) && is_object( $response ) && $response !== false ) {
-		// 				$items[$plugin["TextDomain"]] = array(
-		// 					"version" => $plugin["Version"],
-		// 					'activated' => true
-		// 				);
-		// 			}
-		// 		} else {
-		// 			$items[$plugin["TextDomain"]] = array(
-		// 				"version" => $plugin["Version"],
-		// 				'activated' => false
-		// 			);
-		// 		}
-		// 	}
-		// }
-		// return $items;
+		return $plugin_list;
 	}
 
+	/**
+	 * This function is used to check plugin license key is expired or not
+	 */
 	public function check_wpem_license_expire_date($licence_key, $api_url) {
 		
 		$args = array();
