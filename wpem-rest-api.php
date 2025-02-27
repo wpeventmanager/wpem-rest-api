@@ -50,12 +50,12 @@ class WPEM_Rest_API{
         }
         //include
         include 'wpem-rest-api-functions.php';
-        include 'includes/wpem-rest-api-dashboard.php';
 
-        include 'includes/rest-api/wpem-rest-authentication.php';
+        include 'includes/wpem-rest-api-dashboard.php';
         include 'includes/rest-api/wpem-rest-conroller.php';
         include 'includes/rest-api/wpem-rest-posts-conroller.php';
         include 'includes/rest-api/wpem-rest-crud-controller.php';
+        include 'includes/rest-api/wpem-rest-authentication.php';        
         include 'includes/rest-api/wpem-rest-events-controller.php';
         include 'includes/rest-api/wpem-rest-app-branding.php';
         include 'includes/rest-api/wpem-rest-ecosystem-controller.php';

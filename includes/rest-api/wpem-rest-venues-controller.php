@@ -435,7 +435,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
                     if( is_wp_error( $upload ) ) {
                         if( !apply_filters( 'wpem_rest_suppress_image_upload_error', false, $upload, $event->get_id(), $images ) ) {
-                            throw new Exception( 'wpem_event_image_upload_error', $upload->get_error_message(), 400 );
+                            return parent::prepare_error_for_response(400);
                         } else {
                             continue;
                         }
@@ -445,7 +445,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
                 if( !wp_attachment_is_image( $attachment_id ) ) {
                     /* translators: %s: attachment id */
-                    throw new Exception( 'wpem_event_invalid_image_id', sprintf( __( '#%s is an invalid image ID.', 'wpem-rest-api' ), $attachment_id ), 400 );
+                    return parent::prepare_error_for_response(400);
                 }
 
                 $gallery_positions[ $attachment_id ] = absint(isset( $image['position'] ) ? $image['position'] : $index );
@@ -532,14 +532,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         $force  = (bool) $request['force'];
         $object = $this->get_object((int) $request['id']);
         $result = false;
-        if( !$object || 0 === $object->ID ) {
-            return new WP_Error(
-                "wpem_rest_{$this->post_type}_invalid_id",
-                __( 'Invalid ID.', 'wpem-rest-api' ),
-                array(
-                    'status' => 404,
-                )
-            );
+        if( !$object || 0 === $object->ID ) {            
+            return parent::prepare_error_for_response(404);
         }
         $supports_trash = EMPTY_TRASH_DAYS > 0 && is_callable( array( $object, 'get_status' ) );
 
@@ -587,28 +581,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             // Otherwise, only trash if we haven't already.
             if( is_callable( array( $object, 'get_status' ) ) ) {
                 if( 'trash' === $object->get_status() ) {
-                    return new WP_Error(
-                        'wpem_rest_already_trashed',
-                        /* translators: %s: post type */
-                        sprintf( __( 'The %s has already been deleted.', 'wpem-rest-api' ), $this->post_type ),
-                        array(
-                            'status' => 410,
-                        )
-                    );
+                    return self::prepare_error_for_response(410);
                 }
                 wp_delete_post( $object->ID );
                 $result = 'trash' === $object->get_status();
             }
         }
         if( !$result ) {
-            return new WP_Error(
-                'wpem_rest_cannot_delete',
-                /* translators: %s: post type */
-                sprintf( __( 'The %s cannot be deleted.', 'wpem-rest-api' ), $this->post_type ),
-                array(
-                 'status' => 500,
-                )
-            );
+            return parent::prepare_error_for_response(500);
         }
 
         /**

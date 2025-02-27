@@ -38,7 +38,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      */
     protected function get_object( $id ) {
         // translators: %s: Class method name.
-        return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
+        return self::prepare_error_for_response(405);
     }
 
     /**
@@ -56,7 +56,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 			}
 
 			if( 0 == $object_id && !wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object_id ) ) {
-				return new WP_Error( 'wpem_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
+                return self::prepare_error_for_response(203);
 			}
 			return true;
 		} else {
@@ -75,7 +75,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $object = $this->get_object( (int) $request['id'] );
 	    if( !is_wp_error( $object ) && $object ) {
 	        if( $object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions( $this->post_type, 'edit', $object->ID ) ) {
-		        return new WP_Error( 'wpem_rest_cannot_edit', __( 'Sorry, you are not allowed to edit this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
+                return self::prepare_error_for_response(504);
 	        }
 	        return true;
         } else {
@@ -94,7 +94,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $object = $this->get_object( (int) $request['id'] );
 	    if( !is_wp_error( $object ) && $object ) {
 		    if( $object && 0 !== $object->ID && ! wpem_rest_api_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
-			    return new WP_Error( 'wpem_rest_cannot_delete', __( 'Sorry, you are not allowed to delete this resource.', 'wpem-rest-api' ), array( 'status' => rest_authorization_required_code() ) );
+                return self::prepare_error_for_response(412);
 		    }
 		    return true;
 	    } else {
@@ -123,7 +123,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      */
     protected function prepare_object_for_response( $object, $request ) {
         // translators: %s: Class method name.
-        return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
+        return self::prepare_error_for_response(405);
     }
 
     /**
@@ -136,7 +136,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      */
     protected function prepare_object_for_database( $request, $creating = false ) {
         // translators: %s: Class method name.
-        return new WP_Error( 'invalid-method', sprintf( __( "Method '%s' not implemented. Must be overridden in subclass.", 'wpem-rest-api' ), __METHOD__ ), array( 'status' => 405 ) );
+        return self::prepare_error_for_response(405);
     }
 
     /**
@@ -148,7 +148,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
     public function get_item( $request ) {
         $object = $this->get_object( (int) $request['id'] );
 	    if( !$object || 0 === $object->ID ) {
-            return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 404 ) );
+            return parent::prepare_error_for_response(404);
         }
 
         $data     = $this->prepare_object_for_response($object, $request);
@@ -191,7 +191,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
     public function create_item( $request ) {
         if( !empty( $request['id'] ) ) {
             /* translators: %s: post type */
-            return new WP_Error( "wpem_rest_{$this->post_type}_exists", sprintf( __( 'Cannot create existing %s.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 400 ) );
+            return parent::prepare_error_for_response(400);
         }
 
         $object = $this->save_object($request, true);
@@ -233,7 +233,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $object = $this->get_object( (int) $request['id'] );
 
         if( !$object || 0 === $object->ID ) {
-            return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 400 ) );
+            return parent::prepare_error_for_response(400);
         }
 
         $object = $this->save_object($request, false);
@@ -385,63 +385,43 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      * @return WP_Error|WP_REST_Response
      */
     public function get_items( $request ) {
-        $query_args    = $this->prepare_objects_query( $request );
-        $query_results = $this->get_objects( $query_args );
+        $auth_check = $this->wpem_check_authorized_user();
+        if($auth_check){
+            return self::prepare_error_for_response(405);
+        } else {
+            $query_args    = $this->prepare_objects_query( $request );
+            $query_results = $this->get_objects( $query_args );
 
-        $objects = array();
-        foreach ( $query_results['objects'] as $object ) {
+            $objects = array();
+            foreach ( $query_results['objects'] as $object ) {
 
-            if( !isset( $object->ID ) ) {
-                $object_id = $object->get_id();
-            } else {
-                $object_id = $object->ID;
-            }
-
-            if( !wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object_id ) ) {
-                continue;
-            }
-
-            $data = $this->prepare_object_for_response( $object, $request );
-            $objects[] = $this->prepare_response_for_collection( $data );
-        }
-
-        $page      = (int) $query_args['paged'];
-        $max_pages = $query_results['pages'];
-
-        $response = rest_ensure_response( $objects );
-        $response->header( 'X-WP-Total', $query_results['total'] );
-        $response->header( 'X-WP-TotalPages', (int) $max_pages );
-
-        $base          = $this->rest_base;
-        $attrib_prefix = '(?P<';
-        if( strpos( $base, $attrib_prefix ) !== false ) {
-            $attrib_names = array();
-            preg_match('/\(\?P<[^>]+>.*\)/', $base, $attrib_names, PREG_OFFSET_CAPTURE );
-            foreach ( $attrib_names as $attrib_name_match ) {
-                $beginning_offset = strlen( $attrib_prefix );
-                $attrib_name_end  = strpos( $attrib_name_match[0], '>', $attrib_name_match[1] );
-                $attrib_name      = substr( $attrib_name_match[0], $beginning_offset, $attrib_name_end - $beginning_offset );
-                if( isset( $request[ $attrib_name ] ) ) {
-                    $base  = str_replace( "(?P<$attrib_name>[\d]+)", $request[ $attrib_name ], $base );
+                if( !isset( $object->ID ) ) {
+                    $object_id = $object->get_id();
+                } else {
+                    $object_id = $object->ID;
                 }
-            }
-        }
-        $base = add_query_arg( $request->get_query_params(), rest_url( sprintf( '/%s/%s', $this->namespace, $base ) ) );
 
-        if( $page > 1 ) {
-            $prev_page = $page - 1;
-            if( $prev_page > $max_pages ) {
-                $prev_page = $max_pages;
+                if( !wpem_rest_api_check_post_permissions( $this->post_type, 'read', $object_id ) ) {
+                    continue;
+                }
+
+                $data = $this->prepare_object_for_response( $object, $request );
+                $objects[] = $this->prepare_response_for_collection( $data );
             }
-            $prev_link = add_query_arg( 'page', $prev_page, $base );
-            $response->link_header( 'prev', $prev_link );
+
+            $page = isset($query_args['paged']) ? (int) $query_args['paged']: 1;
+                
+            $total_pages = ceil($query_results['total'] / $query_args['posts_per_page']);
+            $response_data = self::prepare_error_for_response( 200 );
+            $response_data['data'] = array(
+                'total_post_count' => isset($query_results['total']) ? $query_results['total'] : null,
+                'current_page' => $page,
+                'last_page' => max(1, $total_pages),
+                'total_pages' => $total_pages,
+                $this->rest_base => $objects,
+            );
+            return wp_send_json($response_data);
         }
-        if( $max_pages > $page ) {
-            $next_page = $page + 1;
-            $next_link = add_query_arg( 'page', $next_page, $base );
-            $response->link_header( 'next', $next_link );
-        }
-        return $response;
     }
 
     /**
@@ -457,7 +437,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $result = false;
 
         if( !$object || 0 === $object->ID ) {
-            return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 404 ) );
+            return parent::prepare_error_for_response(404);
         }
 
         $supports_trash = EMPTY_TRASH_DAYS > 0;
@@ -473,8 +453,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $supports_trash = apply_filters( "wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object );
 
         if( !wpem_rest_api_check_post_permissions( $this->post_type, 'delete', $object->ID ) ) {
-            /* translators: %s: post type */
-            return new WP_Error( "wpem_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => rest_authorization_required_code() ) );
+			return parent::prepare_error_for_response(412);
         }
 
         $request->set_param( 'context', 'edit' );
@@ -488,13 +467,11 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         } else {
             // If we don't support trashing for this type, error out.
             if( !$supports_trash ) {
-                /* translators: %s: post type */
-                return new WP_Error( 'wpem_rest_trash_not_supported', sprintf( __( 'The %s does not support trashing.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 501 ) );
+			    return parent::prepare_error_for_response(412);
             } else {
 	            if ($object->post_status === 'trash') {
-		            /* translators: %s: post type */
-		            return new WP_Error( 'wpem_rest_already_trashed', sprintf( __( 'The %s has already been deleted.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 410 ) );
-	            }
+                    return self::prepare_error_for_response(410);
+                }
 	            wp_trash_post($object->ID);
 	            $result = 1;
             }
@@ -502,8 +479,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
 
         if( !$result ) {
-            /* translators: %s: post type */
-            return new WP_Error( 'wpem_rest_cannot_delete', sprintf( __( 'The %s cannot be deleted.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 500 ) );
+            return parent::prepare_error_for_response(500);
         }
 
         /**
@@ -514,11 +490,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
          * @param WP_REST_Request  $request  The request sent to the API.
          */
         do_action( "wpem_rest_delete_{$this->post_type}_object", $object, $response, $request );
-        return array(
-			"code" => "wpem_rest_item_deleted",
-	        "message" => sprintf( __( 'The %s deleted successfully.', 'wpem-rest-api' ), $this->post_type ),
-	        "data" => array( 'status' => 200 )
-	    );
+        return parent::prepare_error_for_response(200);
     }
 
     /**
@@ -666,5 +638,83 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
          * @param WP_Post_Type $post_type    Post type object.
          */
         return apply_filters( "rest_{$this->post_type}_collection_params", $params, $this->post_type );
+    }
+
+    /**
+     * Function to check authorization and return user data
+     * @since 1.0.1
+     */
+    public function wpem_check_authorized_user() {
+        // Get the authorization header
+        global $wpdb;
+        $headers = getallheaders();
+        $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+
+        // Check if authorization header is provided
+        if (!$auth_header) {
+            return self::prepare_error_for_response(405);
+        }
+
+        // Handle Basic Auth
+        if (strpos($auth_header, 'Basic ') === 0) {
+            $auth = base64_decode(substr($auth_header, 6));
+            list($consumer_key, $consumer_secret) = explode(':', $auth);
+            // Validate the credentials
+            if ($consumer_key && $consumer_secret) {
+                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE consumer_key = '$consumer_key' AND consumer_secret = '$consumer_secret'"));
+                if($user_info){ 
+                    $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
+                    if( $user_info->permissions == 'write'){
+                        return self::prepare_error_for_response(203);
+                    } else if( $date_expires < date('Y-m-d') ){
+                        return self::prepare_error_for_response(503);
+                    } else {
+                        // Get ecosystem data
+                        $ecosystem_info = get_wpem_rest_api_ecosystem_info();
+                        if( !is_array( $ecosystem_info ) ) {
+                            return self::prepare_error_for_response(403, array("Plugin Name"=>$ecosystem_info));
+                        }
+                        return false;
+                    }
+                } else {
+                    return self::prepare_error_for_response(405);
+                }
+            } else {
+                return self::prepare_error_for_response(405);
+            }
+        } else {
+            return self::prepare_error_for_response(405);
+        }
+    }
+
+    /**
+     * Prepares the error for the REST response.
+     *
+     * @since  1.0.1
+     * @param  Post data       $object  Object data.
+     * @param  WP_REST_Request $request Request object.
+     * @return WP_Error|WP_REST_Response Response object on success, or WP_Error object on failure.
+     */
+    public function prepare_error_for_response( $code, $data = array()) {
+        $error_info = wpem_response_default_status();
+
+        // Filter the array to find the element where 'code' matches the provided $code
+        $filtered_error = array_filter($error_info, function($error) use ($code) {
+            return (string) $error['code'] === (string) $code;
+        });
+
+        // If $filtered_error is not empty, return the first matched array
+        if (!empty($filtered_error)) {
+            $error = array_shift($filtered_error);  // Get the first matched array
+            if( $code == 200 )
+                return $error;
+            else
+                if (!empty($data)){
+                    $error['data'] = $data;
+                }
+                return wp_send_json($error);
+        } else {
+            return null;  // Or handle the case where code 400 is not found
+        }
     }
 }

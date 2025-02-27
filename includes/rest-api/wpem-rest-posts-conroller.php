@@ -135,7 +135,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
         $post = get_post( $id );
 
         if ( empty( $id ) || empty( $post->ID ) || $post->post_type !== $this->post_type ) {
-            return new WP_Error( "wpem_rest_invalid_{$this->post_type}_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 404 ) );
+            return parent::prepare_error_for_response(404);
         }
 
         $data = $this->prepare_item_for_response( $post, $request );
@@ -163,7 +163,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
      */
     public function create_item( $request ){
         if( !empty($request['id'] ) ) {
-            return new WP_Error( "wpem_rest_{$this->post_type}_exists", sprintf( __( 'Cannot create existing %s.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 400 ) );
+            return parent::prepare_error_for_response(400);
         }
 
         $post = $this->prepare_item_for_database( $request );
@@ -245,7 +245,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
         $post = get_post( $id );
 
         if( empty( $id ) || empty( $post->ID ) || $post->post_type !== $this->post_type ) {
-            return new WP_Error("wpem_rest_{$this->post_type}_invalid_id", __( 'ID is invalid.', 'wpem-rest-api' ), array( 'status' => 400 ) );
+            return parent::prepare_error_for_response(400);
         }
 
         $post = $this->prepare_item_for_database( $request );
@@ -406,7 +406,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
         $post  = get_post( $id );
 
         if(empty( $id ) || empty( $post->ID ) || $post->post_type !== $this->post_type ) {
-            return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'ID is invalid.', 'wpem-rest-api' ), array( 'status' => 404 ) );
+            return parent::prepare_error_for_response(404);
         }
         $supports_trash = EMPTY_TRASH_DAYS > 0;
 
@@ -440,8 +440,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
 
             // Otherwise, only trash if we haven't already.
             if( 'trash' === $post->post_status ) {
-                /* translators: %s: post type */
-                return new WP_Error('wpem_rest_already_trashed', sprintf( __( 'The %s has already been deleted.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 410 ) );
+                return self::prepare_error_for_response(410);
             }
 
             // (Note that internally this falls through to `wp_delete_post` if
@@ -449,8 +448,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
             $result = wp_trash_post( $id );
         }
         if( !$result ) {
-            /* translators: %s: post type */
-            return new WP_Error( 'wpem_rest_cannot_delete', sprintf( __( 'The %s cannot be deleted.', 'wpem-rest-api' ), $this->post_type ), array( 'status' => 500 ) );
+            return parent::prepare_error_for_response(500);
         }
 
         /**

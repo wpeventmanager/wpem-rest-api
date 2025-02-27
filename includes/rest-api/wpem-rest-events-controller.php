@@ -160,7 +160,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 		if( $event && $event->post_type === $this->post_type ) {
 			return $event;
 		} else {
-			return new WP_Error( "wpem_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'wpem-rest-api' ), array( 'status' => 404 ) );
+            return parent::prepare_error_for_response(404);
 		}
     }
 
@@ -303,8 +303,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
      * @return array
      */
     protected function get_event_data( $event, $context = 'view' ) {
-
-
         $meta_data    = get_post_meta( $event->ID );
         foreach( $meta_data as $key => $value ) {
             $meta_data[$key]= get_post_meta( $event->ID, $key, true );
@@ -487,7 +485,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
                     if( is_wp_error( $upload ) ) {
                         if( !apply_filters( 'wpem_rest_suppress_image_upload_error', false, $upload, $event->get_id(), $images ) ) {
-                            throw new Exception( 'wpem_event_image_upload_error', $upload->get_error_message(), 400 );
+                            return parent::prepare_error_for_response(400);
                         } else {
                             continue;
                         }
@@ -497,7 +495,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
                 if( !wp_attachment_is_image( $attachment_id ) ) {
                     /* translators: %s: attachment id */
-                    throw new Exception( 'wpem_event_invalid_image_id', sprintf( __( '#%s is an invalid image ID.', 'wpem-rest-api' ), $attachment_id ), 400 );
+                    return parent::prepare_error_for_response(400);
                 }
 
                 $gallery_positions[ $attachment_id ] = absint( isset( $image['position'] ) ? $image['position'] : $index );
@@ -536,7 +534,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         }
         return $event;
     }
-
 
     /**
      * Save taxonomy terms.
@@ -893,32 +890,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         if( !empty( $terms ) ) {
             foreach( $terms as $term ) {
                 $data[$term->term_id] = $term->name;
-            }
-        }
-        return $data;
-    }
-    public function get_addon_item_info(){
-
-        $plugins = get_plugins();
-        foreach( $plugins as $filename => $plugin ) {
-            if( $plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename ) && !in_array( $plugin['TextDomain'], ["wp-event-manager", "wp-user-profile-avatar"] ) ) {
-                $licence_key = get_option( $plugin['TextDomain'] . '_licence_key' );
-                $email = get_option( $plugin['TextDomain'] . '_email' );
-                if( empty( $email ) ) {
-                      $email = get_option(' admin_email' );
-                }
-
-                $disabled = '';
-                if( !empty( $licence_key ) ) {
-                    $disabled = 'disabled';
-                }
-
-                $data[$plugin['TextDomain']]= array(
-                    'name'=> $plugin['Name'],
-                    'title'=> $plugin['Title'],
-                    'author'=> $plugin['Author'],
-                    'version'=> $plugin['Version'],
-                );
             }
         }
         return $data;
