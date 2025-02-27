@@ -606,6 +606,66 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				),
 			)
 		);
+		register_rest_route(
+			'wpem',
+			'/login' ,
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'perform_login_authentication' ),
+					'permission_callback' => '__return_true'
+				),
+			)
+		);
+	}
+
+	/**
+	 * Logout authentication.
+	 *
+	 * @since 1.0.1
+	 */
+	public function perform_login_authentication($request){
+		$parameters = $request->get_params();
+
+		$username = isset($parameters['username']) ? sanitize_text_field($parameters['username']) : '';
+		$password = isset($parameters['password']) ? sanitize_text_field($parameters['password']) : '';
+		
+		$response = array();
+		if( !empty( $username ) && !empty($password)){
+			$user = wp_authenticate($username, $password);
+			if (is_wp_error($user)) {
+				return parent::prepare_error_for_response(401);
+			} else {
+				global $wpdb;
+
+				$user_id = $user->ID;
+				$key_data = $wpdb->get_row(
+					$wpdb->prepare(
+						"
+							SELECT *
+							FROM {$wpdb->prefix}wpem_rest_api_keys
+							WHERE user_id = %s
+						",
+						$user_id
+					)
+				);
+		
+				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
+					$key_data->expiry  = false;
+				}else{
+					$key_data->expiry  = true;
+				}
+				if( empty( $key_data ) )
+					return parent::prepare_error_for_response(401);
+				$response_data = self::prepare_error_for_response( 200 );
+				$response_data['data'] = array(
+					'user_info' => $key_data,
+				);
+				return wp_send_json($response_data);
+			}
+		} else{
+			return parent::prepare_error_for_response(400);
+		}
 	}
 
 	/**
