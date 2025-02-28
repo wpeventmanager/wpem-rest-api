@@ -38,25 +38,27 @@ defined( 'ABSPATH' ) || exit; ?>
 					</th>
 					<td class="forminp">
 						<?php
-
-						$all_users = get_users( );
-						$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : ''; ?>
-						<select class="event-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wpem-rest-api' ); ?>" data-allow_clear="true">
+						$disabled = "";
+						$all_users = get_wpem_restaurant_users();
+						global $wpdb;
+						$app_user = $wpdb->get_col("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys");
+						$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
+						if($user_id > 0) 
+							$disabled = "disabled"; ?>
+						<select class="food-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wpem-rest-api' ); ?>" data-allow_clear="true" <?php echo $disabled;?>>
 							<?php
-							foreach ( $all_users as $user ) { ?>
-							<option value="<?php echo esc_attr( $user->ID ); ?>"  <?php if($user->ID == $user_id )  echo 'selected="selected"';?>><?php 
-							echo '#'; 
-							printf(
-							// Translators: %d is replaced with user id.
-							__('%d','wpem-rest-api'),$user->ID);
-							echo ' ';
-								printf(
-								// Translators: %s is replaced with user login.
-								__('%s','wpem-rest-api'),$user->user_login); // htmlspecialchars to prevent XSS when rendered by chosen. ?></option>
-							<?php
+							foreach ( $all_users as $user ) { 
+								if(!in_array($user['ID'], $app_user) || $user_id == $user['ID']) { ?>
+								<option value="<?php echo esc_attr( $user['ID'] ); ?>"  <?php if($user['ID'] == $user_id )  echo 'selected="selected"';?>><?php 
+								echo '#'; 
+								printf(__('%d','wpem-rest-api'),$user['ID']);
+								echo ' ';
+									printf(__('%s','wpem-rest-api'),$user['username']); // htmlspecialchars to prfood XSS when rendered by chosen. ?></option>
+								<?php
+								}
 							} ?>
 						</select>
-						<p class="description"><?php esc_html_e( 'Name of the owner of the Key.', 'wpem-rest-api' );?></p> 
+						<p class="description"><?php _e( 'Name of the owner of the Key.', 'wpem-rest-api' );?></p> 
 					</td>
 				</tr>
 				<tr valign="top">

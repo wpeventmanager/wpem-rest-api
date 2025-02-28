@@ -349,3 +349,34 @@ if( !function_exists( 'check_wpem_license_expire_date' ) ) {
         }
     }
 }
+
+if( !function_exists( 'get_wpem_restaurant_users' ) ) {
+
+    /**
+     * This function used to get all event users
+     * 
+     * @since 1.0.1
+     */
+    function get_wpem_restaurant_users() {
+        $args = array(
+            'role__not_in' => array('customer'), // Exclude customers
+        );
+
+        $users = get_users($args);
+        $filtered_users = array();
+
+        foreach ($users as $user) {
+            if(isset($user->roles)) {
+                foreach ($user->roles as $role) {
+                    $filtered_users[] = array(
+                        'ID'       => $user->ID,
+                        'username' => $user->user_login,
+                        'email'    => $user->user_email,
+                        'roles'    => $user->roles,
+                    );
+                }
+            }
+        }
+        return $filtered_users;
+    }
+}
