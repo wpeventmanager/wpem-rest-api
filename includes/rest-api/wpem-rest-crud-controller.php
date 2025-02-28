@@ -662,19 +662,24 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             // Validate the credentials
             if ($consumer_key && $consumer_secret) {
                 $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE consumer_key = '$consumer_key' AND consumer_secret = '$consumer_secret'"));
+                $user = get_userdata($user_info->user_id);
                 if($user_info){ 
-                    $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
-                    if( $user_info->permissions == 'write'){
-                        return self::prepare_error_for_response(203);
-                    } else if( $date_expires < date('Y-m-d') ){
-                        return self::prepare_error_for_response(503);
-                    } else {
-                        // Get ecosystem data
-                        $ecosystem_info = get_wpem_rest_api_ecosystem_info();
-                        if( !is_array( $ecosystem_info ) ) {
-                            return self::prepare_error_for_response(403, array("Plugin Name"=>$ecosystem_info));
+                    if($user_info){ 
+                        $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
+                        if( $user_info->permissions == 'write'){
+                            return self::prepare_error_for_response(203);
+                        } else if( $date_expires < date('Y-m-d') ){
+                            return self::prepare_error_for_response(503);
+                        } else {
+                            // Get ecosystem data
+                            $ecosystem_info = get_wpem_rest_api_ecosystem_info();
+                            if( !is_array( $ecosystem_info ) ) {
+                                return self::prepare_error_for_response(403, array("Plugin Name"=>$ecosystem_info));
+                            }
+                            return false;
                         }
-                        return false;
+                    } else {
+                        return self::prepare_error_for_response(405);
                     }
                 } else {
                     return self::prepare_error_for_response(405);
