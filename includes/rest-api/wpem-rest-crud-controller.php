@@ -158,7 +158,11 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             $response->link_header( 'alternate', $this->get_permalink( $object ), array( 'type' => 'text/html' ) );
         }
 
-        return $response;
+        $response_data = self::prepare_error_for_response( 200 );
+        $response_data['data'] = array(
+            $this->rest_base => $response,
+        );
+        return wp_send_json($response_data);
     }
 
     /**
