@@ -214,6 +214,16 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
                 'message' => __( 'The item already deleted.', 'wpfm-rest-api' )
             ),
             array(
+                'code' => 418,
+                'status' => 'Error',
+                'message' => __( 'Already Checkin.', 'wpfm-rest-api' )
+            ),
+            array(
+                'code' => 416,
+                'status' => 'Error',
+                'message' => __( 'You can Checkin only for confirmed ticket.', 'wpfm-rest-api' )
+            ),
+            array(
                 'code' => 412,
                 'status' => 'Error',
                 'message' => __( 'You Do Not Have Permission to Delete Resource.', 'wpfm-rest-api' )
