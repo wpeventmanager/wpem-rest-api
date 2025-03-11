@@ -652,9 +652,9 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		
 				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
 					$key_data->expiry  = false;
-				}else{
-					$key_data->expiry  = true;
-				}
+				} else {
+					return parent::prepare_error_for_response(503);
+				} 
 				if( empty( $key_data ) )
 					return parent::prepare_error_for_response(401);
 				$response_data = self::prepare_error_for_response( 200 );
