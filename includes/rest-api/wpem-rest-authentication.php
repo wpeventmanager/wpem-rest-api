@@ -171,7 +171,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 		//Check for key expiry
 		if ( isset($this->user->date_expires) && $current_date>$this->user->date_expires) {
-			return parent::prepare_error_for_response(401);
+			return parent::prepare_error_for_response(503);
 
 			return false;
 		}
