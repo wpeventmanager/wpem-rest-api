@@ -244,6 +244,11 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
                 'message' => __( 'You do not have permission to edit this resource.', 'wpfm-rest-api' )
             ),
             array(
+                'code' => 505,
+                'status' => 'Checkin Denied',
+                'message' => __( 'You do not have permission to checkin yet.', 'wpfm-rest-api' )
+            ),
+            array(
                 'code' => 203,
                 'status' => 'Non-Authorative Information',
                 'message' => __( 'You does not have read permissions.', 'wpfm-rest-api' )
