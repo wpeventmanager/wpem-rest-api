@@ -146,117 +146,117 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
             array(
                 'code' => 200,
                 'status' => 'OK',
-                'message' => __( 'Request is successfully completed.', 'wpfm-rest-api' )
+                'message' => __( 'Request is successfully completed.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 201,
                 'status' => 'Created',
-                'message' => __( 'Resource was successfully created.', 'wpfm-rest-api' )
+                'message' => __( 'Resource was successfully created.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 202,
                 'status' => 'Updated',
-                'message' => __( 'Resource was successfully updated.', 'wpfm-rest-api' )
+                'message' => __( 'Resource was successfully updated.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 204,
                 'status' => 'No Content',
-                'message' => __( 'Request was successfully processed and there is no content to return.', 'wpfm-rest-api' )
+                'message' => __( 'Request was successfully processed and there is no content to return.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 400,
                 'status' => 'Bad request',
-                'message' => __( 'Invalid syntax, incorrectly formatted JSON, or data violating a database constraint.', 'wpfm-rest-api' )
+                'message' => __( 'Invalid syntax, incorrectly formatted JSON, or data violating a database constraint.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 401,
                 'status' => 'Unauthorized',
-                'message' => __( 'Username or Password Wrong, Please try again.', 'wpfm-rest-api' )
+                'message' => __( 'Username or Password Wrong, Please try again.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 403,
                 'status' => 'Forbidden',
-                'message' => __( 'Does not have permissions to access the requested resource.', 'wpfm-rest-api' )
+                'message' => __( 'Does not have permissions to access the requested resource.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 404,
                 'status' => 'Not found',
-                'message' => __( 'Data not found.', 'wpfm-rest-api' )
+                'message' => __( 'Data not found.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 406,
                 'status' => 'Unauthorized',
-                'message' => __( 'Username already exists.', 'wpfm-rest-api' )
+                'message' => __( 'Username already exists.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 407,
                 'status' => 'Unauthorized',
-                'message' => __( 'Email already exists.', 'wpfm-rest-api' )
+                'message' => __( 'Email already exists.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 413,
                 'status' => 'Error',
-                'message' => __( 'Unable to accept items for this request.', 'wpfm-rest-api' )
+                'message' => __( 'Unable to accept items for this request.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 408,
                 'status' => 'Error',
-                'message' => __( 'Failed to create Resource.', 'wpfm-rest-api' )
+                'message' => __( 'Failed to create Resource.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 409,
                 'status' => 'Error',
-                'message' => __( 'Failed to update Resource.', 'wpfm-rest-api' )
+                'message' => __( 'Failed to update Resource.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 410,
                 'status' => 'Error',
-                'message' => __( 'The item already deleted.', 'wpfm-rest-api' )
+                'message' => __( 'The item already deleted.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 418,
                 'status' => 'Error',
-                'message' => __( 'Already Checkin.', 'wpfm-rest-api' )
+                'message' => __( 'Already Checkin.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 416,
                 'status' => 'Error',
-                'message' => __( 'You can Checkin only for confirmed ticket.', 'wpfm-rest-api' )
+                'message' => __( 'You can Checkin only for confirmed ticket.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 412,
                 'status' => 'Error',
-                'message' => __( 'You Do Not Have Permission to Delete Resource.', 'wpfm-rest-api' )
+                'message' => __( 'You Do Not Have Permission to Delete Resource.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 500,
                 'status' => 'Internal server error',
-                'message' => __( 'An unexpected error has occurred in processing the request. View the logs on the device for details.', 'wpfm-rest-api' )
+                'message' => __( 'An unexpected error has occurred in processing the request. View the logs on the device for details.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 503,
                 'status' => 'Service unavailable',
-                'message' => __( 'You Do Not Have Permission to access this app.', 'wpfm-rest-api' )
+                'message' => __( 'You Do Not Have Permission to access this app.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 504,
                 'status' => 'Permission Denied',
-                'message' => __( 'You do not have permission to edit this resource.', 'wpfm-rest-api' )
+                'message' => __( 'You do not have permission to edit this resource.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 505,
                 'status' => 'Checkin Denied',
-                'message' => __( 'You do not have permission to checkin yet.', 'wpfm-rest-api' )
+                'message' => __( 'You do not have permission to checkin yet.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 203,
                 'status' => 'Non-Authorative Information',
-                'message' => __( 'You does not have read permissions.', 'wpfm-rest-api' )
+                'message' => __( 'You does not have read permissions.', 'wpem-rest-api' )
             ),
             array(
                 'code' => 405,
                 'status' => 'Authentication Failed',
-                'message' => __( 'User not exist.', 'wpfm-rest-api' )
+                'message' => __( 'User not exist.', 'wpem-rest-api' )
             ),
         ) );
         return $error_info;
@@ -393,5 +393,64 @@ if( !function_exists( 'get_wpem_restaurant_users' ) ) {
             }
         }
         return $filtered_users;
+    }
+}
+
+if( !function_exists( 'wpem_rest_check_user_data' ) ) {
+
+    /**
+     * This function is used to check user information
+     */
+    function wpem_rest_check_user_data() {
+        // Get the authorization header
+        global $wpdb;
+        $headers = getallheaders();
+        $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+
+        // Check if authorization header is provided
+        if (!$auth_header) {
+            return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);
+        }
+
+        // Handle Basic Auth
+        if (strpos($auth_header, 'Basic ') === 0) {
+            $auth = base64_decode(substr($auth_header, 6));
+            list($consumer_key, $consumer_secret) = explode(':', $auth);
+            // Validate the credentials
+            if ($consumer_key && $consumer_secret) {
+                $app_key = $wpdb->get_var($wpdb->prepare("SELECT app_key FROM {$wpdb->prefix}wpem_rest_api_keys WHERE consumer_key = '$consumer_key'"));
+                if($app_key){
+                    return $app_key;
+                } else{
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+}
+
+if( !function_exists( 'wpem_rest_get_current_user_id' ) ) {
+    /**
+     * This function is used to check user is exist or not.
+     * @since 1.0.1
+     */
+    function wpem_rest_get_current_user_id(){
+        global $wpdb;
+        $get_user_id = wpem_rest_check_user_data();
+        // Check if $get_userid is a WP_REST_Response object
+        if (is_a($get_user_id, 'WP_REST_Response')) {
+            // Extract the data from the response
+            $get_user_id = $get_user_id->get_data(); 
+        }
+        $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys WHERE app_key = '$get_user_id'"));
+        if ($user_id) {
+            return $user_id;
+        } else {
+            return false;
+        }
     }
 }
