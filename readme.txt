@@ -125,6 +125,7 @@ Fixed : Centralize repsponse of Rest Api.
 Fixed : Without active license, APP will not work and show message that renew your license.
 Fixed : Checkin restriction based on app loggedin user and web settings.
 Added : Create API for login with username and password instead of app key.
+Added : Checkin restriction API added.
 
 = 1.0.6 [ 26th September 2024 ] =
 
