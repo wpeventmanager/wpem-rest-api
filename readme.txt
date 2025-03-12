@@ -3,10 +3,10 @@
 Contributors: wpeventmanager,ashokdudhat,krinay
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
-Requires at least: 4.1
-Tested up to: 6.2.2
-Stable tag: 1.0.6
-Requires PHP: 5.6
+Requires at least: 6.0.1
+Tested up to: 6.7
+Stable tag: 1.0.7
+Requires PHP: 8.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -118,6 +118,13 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 
 == Changelog ==
+
+= 1.0.7 [ 12th March 2025 ] =
+
+Fixed : Centralize repsponse of Rest Api.
+Fixed : Without active license, APP will not work and show message that renew your license.
+Fixed : Checkin restriction based on app loggedin user and web settings.
+Added : Create API for login with username and password instead of app key.
 
 = 1.0.6 [ 26th September 2024 ] =
 
