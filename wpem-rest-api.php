@@ -44,6 +44,7 @@ class WPEM_Rest_API{
         define( 'WPEM_REST_API_FILE', __FILE__ );
         define( 'WPEM_REST_API_PLUGIN_DIR', untrailingslashit( plugin_dir_path(__FILE__ ) ) );
         define( 'WPEM_REST_API_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path(__FILE__) ), basename(__FILE__) ) ) );
+        define( 'WPEM_PLUGIN_ACTIVATION_API_URL', 'https://wp-eventmanager.com/?wc-api=check_expire_license_key' );
 
         if( is_admin() ) {
             include 'admin/wpem-rest-api-admin.php';

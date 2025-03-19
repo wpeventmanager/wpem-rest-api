@@ -282,8 +282,6 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
         // Get ecosystem data
         $plugins = get_plugins();
         $ecosystem_info = array();
-        $api_url = 'https://wp-eventmanager.com/?wc-api=wpemstore_licensing_update_api';
-
         
         foreach( $plugins as $filename => $plugin ) {
             if( 'woocommerce' == $plugin['TextDomain'] || 'wp-event-manager' == $plugin['TextDomain'] || 'wpem-rest-api' == $plugin['TextDomain']){
@@ -292,13 +290,12 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
                     'activated' => is_plugin_active( $filename ),
                     'plugin_name' => $plugin["Name"]
                 );
-                
             } else{
                 if( $plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename ) ) {
                     $licence_activate = get_option( $plugin['TextDomain'] . '_licence_key' );
 
                     if( !empty ( $licence_activate ) ) {
-                        $license_status = check_wpem_license_expire_date($licence_activate, $api_url );
+                        $license_status = check_wpem_license_expire_date($licence_activate );
                         $ecosystem_info[$plugin["TextDomain"]] = array(
                             'version' => $plugin["Version"],
                             'activated' => $license_status,
@@ -336,7 +333,7 @@ if( !function_exists( 'check_wpem_license_expire_date' ) ) {
     /**
      * This function is used to check plugin license key is expired or not
      */
-    function check_wpem_license_expire_date($licence_key, $api_url) {
+    function check_wpem_license_expire_date($licence_key) {
         
         $args = array();
         $defaults = array(
@@ -345,7 +342,7 @@ if( !function_exists( 'check_wpem_license_expire_date' ) ) {
         );
 
         $args    = wp_parse_args($args, $defaults);
-        $request = wp_remote_get($api_url . '&' . http_build_query($args, '', '&'));
+        $request = wp_remote_get(WPEM_PLUGIN_ACTIVATION_API_URL . '&' . http_build_query($args, '', '&'));
 
         if(is_wp_error($request) || wp_remote_retrieve_response_code($request) != 200) {
             return false;
@@ -365,14 +362,14 @@ if( !function_exists( 'check_wpem_license_expire_date' ) ) {
     }
 }
 
-if( !function_exists( 'get_wpem_restaurant_users' ) ) {
+if( !function_exists( 'get_wpem_event_users' ) ) {
 
     /**
      * This function used to get all event users
      * 
      * @since 1.0.1
      */
-    function get_wpem_restaurant_users() {
+    function get_wpem_event_users() {
         $args = array(
             'role__not_in' => array('customer'), // Exclude customers
         );
@@ -451,6 +448,35 @@ if( !function_exists( 'wpem_rest_get_current_user_id' ) ) {
             return $user_id;
         } else {
             return false;
+        }
+    }
+}
+
+if( !function_exists( 'check_wpem_plugin_activation' ) ) {
+    /**
+     * This function is used to check perticular plugin license activated or not.
+     *
+     * @param $post Event instance.
+     * @param string $context Request context.
+     * @return array
+     */
+    function check_wpem_plugin_activation($plugin_domain) {
+        if(!is_plugin_active($plugin_domain.'/'.$plugin_domain.'.php')) {
+            return WPEM_REST_CRUD_Controller::prepare_error_for_response(203);
+        } else {
+            $licence_activate = get_option( $plugin_domain . '_licence_key' );
+
+            if( !empty ( $licence_activate ) ) {
+                $license_status = check_wpem_license_expire_date($licence_activate );
+
+                if( $license_status ) {
+                    return true;
+                } else {
+                    return WPEM_REST_CRUD_Controller::prepare_error_for_response(203);
+                }
+            } else {
+                return WPEM_REST_CRUD_Controller::prepare_error_for_response(203);
+            }
         }
     }
 }

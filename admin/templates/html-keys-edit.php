@@ -39,7 +39,7 @@ defined( 'ABSPATH' ) || exit; ?>
 					<td class="forminp">
 						<?php
 						$disabled = "";
-						$all_users = get_wpem_restaurant_users();
+						$all_users = get_wpem_event_users();
 						global $wpdb;
 						$app_user = $wpdb->get_col("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys");
 						$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';

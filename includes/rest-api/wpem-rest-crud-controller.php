@@ -666,9 +666,9 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             // Validate the credentials
             if ($consumer_key && $consumer_secret) {
                 $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE consumer_key = '$consumer_key' AND consumer_secret = '$consumer_secret'"));
-                $user = get_userdata($user_info->user_id);
                 if($user_info){ 
-                    if($user_info){ 
+                    $user = get_userdata($user_info->user_id);
+                    if($user){ 
                         $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
                         if( $user_info->permissions == 'write'){
                             return self::prepare_error_for_response(203);
@@ -704,7 +704,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      * @param  WP_REST_Request $request Request object.
      * @return WP_Error|WP_REST_Response Response object on success, or WP_Error object on failure.
      */
-    public function prepare_error_for_response( $code, $data = array()) {
+    public static function prepare_error_for_response( $code, $data = array()) {
         $error_info = wpem_response_default_status();
 
         // Filter the array to find the element where 'code' matches the provided $code
