@@ -351,7 +351,7 @@ if( !function_exists( 'check_wpem_license_expire_date' ) ) {
         $response = json_decode(wp_remote_retrieve_body($request),true);
         $response = (object)$response;
 
-        if ( isset( $response->errors ) ) {
+        if ( isset( $response->error ) ) {
             return false;
         }
 
