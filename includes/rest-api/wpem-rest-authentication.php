@@ -628,8 +628,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		$parameters = $request->get_params();
 
 		$username = isset($parameters['username']) ? sanitize_text_field($parameters['username']) : '';
-		$password = isset($parameters['password']) ? sanitize_text_field($parameters['password']) : '';
-		
+		$password = isset($parameters['password']) ? str_replace(' ', '+', trim($parameters['password'])) : '';
+
 		$response = array();
 		if( !empty( $username ) && !empty($password)){
 			$user = wp_authenticate($username, $password);
@@ -675,7 +675,6 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 */
 	public function perform_app_key_authentication( $request ){
 		global $wpdb;
-
 		if( isset( $_GET['key'] ) && !empty( $_GET['key'] ) ){
 			$app_key = sanitize_text_field( $_GET['key'] );
 
