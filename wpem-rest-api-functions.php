@@ -404,6 +404,17 @@ if( !function_exists( 'wpem_rest_check_user_data' ) ) {
         $headers = getallheaders();
         $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
 
+        if(empty($auth_header)) {
+            $headers = apache_request_headers();
+            // Ensure case insensitivity
+            $auth_header = '';
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'authorization') {
+                    $auth_header = $value;
+                    break;
+                }
+            }
+        }
         // Check if authorization header is provided
         if (!$auth_header) {
             return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);

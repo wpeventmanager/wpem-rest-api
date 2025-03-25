@@ -654,6 +654,18 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $headers = getallheaders();
         $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
 
+        if(empty($auth_header)) {
+            $headers = apache_request_headers();
+            // Ensure case insensitivity
+            $auth_header = '';
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'authorization') {
+                    $auth_header = $value;
+                    break;
+                }
+            }
+        }
+
         // Check if authorization header is provided
         if (!$auth_header) {
             return self::prepare_error_for_response(405);

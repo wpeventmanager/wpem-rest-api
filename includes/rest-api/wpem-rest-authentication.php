@@ -228,6 +228,15 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 					return $value;
 				}
 			}
+		} else {
+			$headers = apache_request_headers();
+			// Ensure case insensitivity
+			$auth_header = '';
+			foreach ($headers as $key => $value) {
+				if (strtolower($key) === 'authorization') {
+					return $value;
+				}
+			}
 		}
 		return '';
 	}
