@@ -61,11 +61,6 @@ class WPEM_Rest_API{
         include 'includes/rest-api/wpem-rest-app-branding.php';
         include 'includes/rest-api/wpem-rest-ecosystem-controller.php';
 
-        include 'includes/rest-api/wpem-rest-api-attendee-login.php';
-		include 'includes/rest-api/wp-rest-api-matchmaking-profile.php';
-		include 'includes/rest-api/wpem-rest-api-message-to-attendee.php';
-		include 'includes/rest-api/wpem-rest-api-matchmaking-filter.php';
-
         // Activate
         register_activation_hook( __FILE__, array( $this, 'install' ) );
 
