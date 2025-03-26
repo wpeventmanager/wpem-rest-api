@@ -228,15 +228,6 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 					return $value;
 				}
 			}
-		} else {
-			$headers = apache_request_headers();
-			// Ensure case insensitivity
-			$auth_header = '';
-			foreach ($headers as $key => $value) {
-				if (strtolower($key) === 'authorization') {
-					return $value;
-				}
-			}
 		}
 		return '';
 	}
@@ -620,7 +611,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 			'/login' ,
 			array(
 				array(
-					'methods'             => WP_REST_Server::READABLE,
+					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'perform_login_authentication' ),
 					'permission_callback' => '__return_true'
 				),
@@ -634,11 +625,9 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @since 1.0.1
 	 */
 	public function perform_login_authentication($request){
-		$parameters = $request->get_params();
-
-		$username = isset($parameters['username']) ? sanitize_text_field($parameters['username']) : '';
-		$password = isset($parameters['password']) ? str_replace(' ', '+', trim($parameters['password'])) : '';
-
+		$params = $request->get_json_params();
+		$username = isset($params['username']) ? sanitize_text_field($params['username']) : '';
+		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
 		if( !empty( $username ) && !empty($password)){
 			$user = wp_authenticate($username, $password);
