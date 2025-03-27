@@ -9,10 +9,10 @@
 * 
 * Text Domain: wpem-rest-api
 * Domain Path: /languages
-* Version: 1.0.6
+* Version: 1.0.7.1
 * Since: 1.0.0
 * 
-* Requires WordPress Version at least: 5.6
+* Requires WordPress Version at least: 6.0.1
 * Copyright: 2019 WP Event Manager
 * License: GNU General Public License v3.0
 * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -40,22 +40,23 @@ class WPEM_Rest_API{
         }
 
         // Define constants
-        define( 'WPEM_REST_API_VERSION', '1.0.6' );
+        define( 'WPEM_REST_API_VERSION', '1.0.7.1' );
         define( 'WPEM_REST_API_FILE', __FILE__ );
         define( 'WPEM_REST_API_PLUGIN_DIR', untrailingslashit( plugin_dir_path(__FILE__ ) ) );
         define( 'WPEM_REST_API_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path(__FILE__) ), basename(__FILE__) ) ) );
+        define( 'WPEM_PLUGIN_ACTIVATION_API_URL', 'https://wp-eventmanager.com/?wc-api=wpemstore_licensing_expire_license' );
 
         if( is_admin() ) {
             include 'admin/wpem-rest-api-admin.php';
         }
         //include
         include 'wpem-rest-api-functions.php';
-        include 'includes/wpem-rest-api-dashboard.php';
 
-        include 'includes/rest-api/wpem-rest-authentication.php';
+        include 'includes/wpem-rest-api-dashboard.php';
         include 'includes/rest-api/wpem-rest-conroller.php';
         include 'includes/rest-api/wpem-rest-posts-conroller.php';
         include 'includes/rest-api/wpem-rest-crud-controller.php';
+        include 'includes/rest-api/wpem-rest-authentication.php';        
         include 'includes/rest-api/wpem-rest-events-controller.php';
         include 'includes/rest-api/wpem-rest-app-branding.php';
         include 'includes/rest-api/wpem-rest-ecosystem-controller.php';

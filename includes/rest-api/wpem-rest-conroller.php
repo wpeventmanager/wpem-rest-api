@@ -105,8 +105,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
         }
 
         if( $total > $limit ) {
-            /* translators: %s: items limit */
-            return new WP_Error( 'wpem_rest_request_entity_too_large', sprintf( __( 'Unable to accept more than %s items for this request.', 'wpem-rest-api' ), $limit ), array( 'status' => 413 ) );
+            return parent::prepare_error_for_response(413);
         }
         return true;
     }
@@ -254,7 +253,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
         if( array_key_exists( $value, $setting['options'] ) ) {
             return $value;
         } else {
-            return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ) );
+            return parent::prepare_error_for_response(400);
         }
     }
 
@@ -272,7 +271,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
         }
 
         if( !is_array( $values ) ) {
-            return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ) );
+            return parent::prepare_error_for_response(400);
         }
 
         $final_values = array();
@@ -294,7 +293,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      */
     public function validate_setting_image_width_field( $values, $setting ) {
         if( !is_array( $values ) ) {
-            return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ));
+            return parent::prepare_error_for_response(400);
         }
 
         $current = $setting['value'];
@@ -337,7 +336,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
             $value = isset( $setting['default'] ) ? $setting['default'] : 'no';
             return $value;
         } else {
-            return new WP_Error( 'rest_setting_value_invalid', __( 'An invalid setting value was passed.', 'wpem-rest-api' ), array( 'status' => 400 ));
+            return parent::prepare_error_for_response(400);
         }
     }
 

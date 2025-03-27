@@ -135,3 +135,359 @@ if( !function_exists( 'wpem_rest_api_check_manager_permissions' ) ) {
         return apply_filters( 'wpem_rest_api_check_permissions', $permission, $context, 0, $object );
     }
 }
+
+if( !function_exists( 'wpem_response_default_status' ) ) {
+    /**
+     * This function is used to get error code, status, messages
+     * @since 1.0.1
+     */
+    function wpem_response_default_status() {
+        $error_info = apply_filters('wpem_rest_response_default_status', array(
+            array(
+                'code' => 200,
+                'status' => 'OK',
+                'message' => __( 'Request is successfully completed.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 201,
+                'status' => 'Created',
+                'message' => __( 'Resource was successfully created.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 202,
+                'status' => 'Updated',
+                'message' => __( 'Resource was successfully updated.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 204,
+                'status' => 'No Content',
+                'message' => __( 'Request was successfully processed and there is no content to return.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 400,
+                'status' => 'Bad request',
+                'message' => __( 'Invalid syntax, incorrectly formatted JSON, or data violating a database constraint.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 401,
+                'status' => 'Unauthorized',
+                'message' => __( 'Username or Password Wrong, Please try again.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 403,
+                'status' => 'Forbidden',
+                'message' => __( 'Does not have permissions to access the requested resource.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 404,
+                'status' => 'Not found',
+                'message' => __( 'Data not found.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 406,
+                'status' => 'Unauthorized',
+                'message' => __( 'Username already exists.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 407,
+                'status' => 'Unauthorized',
+                'message' => __( 'Email already exists.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 413,
+                'status' => 'Error',
+                'message' => __( 'Unable to accept items for this request.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 408,
+                'status' => 'Error',
+                'message' => __( 'Failed to create Resource.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 409,
+                'status' => 'Error',
+                'message' => __( 'Failed to update Resource.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 410,
+                'status' => 'Error',
+                'message' => __( 'The item already deleted.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 418,
+                'status' => 'Error',
+                'message' => __( 'Already Checkin.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 416,
+                'status' => 'Error',
+                'message' => __( 'You can Checkin only for confirmed ticket.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 412,
+                'status' => 'Error',
+                'message' => __( 'You Do Not Have Permission to Delete Resource.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 500,
+                'status' => 'Internal server error',
+                'message' => __( 'An unexpected error has occurred in processing the request. View the logs on the device for details.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 503,
+                'status' => 'Service unavailable',
+                'message' => __( 'You Do Not Have Permission to access this app.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 504,
+                'status' => 'Permission Denied',
+                'message' => __( 'You do not have permission to edit this resource.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 505,
+                'status' => 'Checkin Denied',
+                'message' => __( 'You do not have permission to checkin yet.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 203,
+                'status' => 'Non-Authorative Information',
+                'message' => __( 'You does not have read permissions.', 'wpem-rest-api' )
+            ),
+            array(
+                'code' => 405,
+                'status' => 'Authentication Failed',
+                'message' => __( 'User not exist.', 'wpem-rest-api' )
+            ),
+        ) );
+        return $error_info;
+    }
+}
+
+if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
+    /**
+     * This function is used to get ecosystem information of website
+     * @since 1.0.1
+     */
+    function get_wpem_rest_api_ecosystem_info(){
+        // Create required plugin list for wpem rest api
+        $required_plugins = apply_filters( 'wpem_rest_api_required_plugin_list', array(
+            'woocommerce' => 'Woocommerce',
+            'wp-event-manager' => 'WP Event Manager',
+            'wpem-rest-api' => 'WPEM Rest API',
+            'wp-event-manager-sell-tickets' => 'WP Event Manager Sell Tickets',
+            'wp-event-manager-registrations' => 'WP Event Manager Registrations',
+            'wpem-guests' => 'WP Event Manager Guests',
+        ) );
+
+        // Get ecosystem data
+        $plugins = get_plugins();
+        $ecosystem_info = array();
+        
+        foreach( $plugins as $filename => $plugin ) {
+            if( 'woocommerce' == $plugin['TextDomain'] || 'wp-event-manager' == $plugin['TextDomain'] || 'wpem-rest-api' == $plugin['TextDomain']){
+                $ecosystem_info[$plugin["TextDomain"]] = array(
+                    'version' => $plugin["Version"],
+                    'activated' => is_plugin_active( $filename ),
+                    'plugin_name' => $plugin["Name"]
+                );
+            } else{
+                if( $plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename ) ) {
+                    $licence_activate = get_option( $plugin['TextDomain'] . '_licence_key' );
+
+                    if( !empty ( $licence_activate ) ) {
+                        $license_status = check_wpem_license_expire_date($licence_activate );
+                        $ecosystem_info[$plugin["TextDomain"]] = array(
+                            'version' => $plugin["Version"],
+                            'activated' => $license_status,
+                            'plugin_name' => $plugin["Name"]
+                        );
+                    } else {
+                        $ecosystem_info[$plugin["TextDomain"]] = array(
+                            'version' => $plugin["Version"],
+                            'activated' => false,
+                            'plugin_name' => $plugin["Name"]
+                        );
+                    }
+                }
+            }
+        }
+
+        $plugin_list = array();
+        // Check id required plugin is not in list
+        foreach( $required_plugins as $plugin_key => $plugin_name){
+            if( array_key_exists( $plugin_key, $ecosystem_info ) ) {
+                $plugin_list[$plugin_key] = $ecosystem_info[$plugin_key];
+            } else {
+                $plugin_list[$plugin_key] = array(
+                    'version' => '',
+                    'activated' => false,
+                    'plugin_name' => $plugin_name
+                );
+            }
+        }
+        return $plugin_list;
+    }
+}
+
+if( !function_exists( 'check_wpem_license_expire_date' ) ) {
+    /**
+     * This function is used to check plugin license key is expired or not
+     */
+    function check_wpem_license_expire_date($licence_key) {
+        
+        $args = array();
+        $defaults = array(
+            'request'        => 'check_expire_key',
+            'licence_key'    => $licence_key,
+        );
+
+        $args    = wp_parse_args($args, $defaults);
+        $request = wp_remote_get(WPEM_PLUGIN_ACTIVATION_API_URL . '&' . http_build_query($args, '', '&'));
+
+        if(is_wp_error($request) || wp_remote_retrieve_response_code($request) != 200) {
+            return false;
+        }
+
+        $response = json_decode(wp_remote_retrieve_body($request),true);
+        $response = (object)$response;
+
+        if ( isset( $response->error ) ) {
+            return false;
+        }
+
+        // Set version variables
+        if ( isset( $response ) && is_object( $response ) && $response !== false ) {
+            return true;
+        }
+    }
+}
+
+if( !function_exists( 'get_wpem_event_users' ) ) {
+
+    /**
+     * This function used to get all event users
+     * 
+     * @since 1.0.1
+     */
+    function get_wpem_event_users() {
+        $args = array(
+            'role__not_in' => array('customer'), // Exclude customers
+        );
+
+        $users = get_users($args);
+        $filtered_users = array();
+
+        foreach ($users as $user) {
+            if(isset($user->roles)) {
+                foreach ($user->roles as $role) {
+                    $filtered_users[] = array(
+                        'ID'       => $user->ID,
+                        'username' => $user->user_login,
+                        'email'    => $user->user_email,
+                        'roles'    => $user->roles,
+                    );
+                }
+            }
+        }
+        return $filtered_users;
+    }
+}
+
+if( !function_exists( 'wpem_rest_check_user_data' ) ) {
+
+    /**
+     * This function is used to check user information
+     */
+    function wpem_rest_check_user_data() {
+        // Get the authorization header
+        global $wpdb;
+        $headers = getallheaders();
+        $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+
+        if(empty($auth_header)) {
+            $headers = apache_request_headers();
+            // Ensure case insensitivity
+            $auth_header = '';
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'authorization') {
+                    $auth_header = $value;
+                    break;
+                }
+            }
+        }
+        // Check if authorization header is provided
+        if (!$auth_header) {
+            return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);
+        }
+
+        // Handle Basic Auth
+        if (strpos($auth_header, 'Basic ') === 0) {
+            $auth = base64_decode(substr($auth_header, 6));
+            list($consumer_key, $consumer_secret) = explode(':', $auth);
+            // Validate the credentials
+            if ($consumer_key && $consumer_secret) {
+                $app_key = $wpdb->get_var($wpdb->prepare("SELECT app_key FROM {$wpdb->prefix}wpem_rest_api_keys WHERE consumer_key = '$consumer_key'"));
+                if($app_key){
+                    return $app_key;
+                } else{
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+}
+
+if( !function_exists( 'wpem_rest_get_current_user_id' ) ) {
+    /**
+     * This function is used to check user is exist or not.
+     * @since 1.0.1
+     */
+    function wpem_rest_get_current_user_id(){
+        global $wpdb;
+        $get_user_id = wpem_rest_check_user_data();
+        // Check if $get_userid is a WP_REST_Response object
+        if (is_a($get_user_id, 'WP_REST_Response')) {
+            // Extract the data from the response
+            $get_user_id = $get_user_id->get_data(); 
+        }
+        $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys WHERE app_key = '$get_user_id'"));
+        if ($user_id) {
+            return $user_id;
+        } else {
+            return false;
+        }
+    }
+}
+
+if( !function_exists( 'check_wpem_plugin_activation' ) ) {
+    /**
+     * This function is used to check perticular plugin license activated or not.
+     *
+     * @param $post Event instance.
+     * @param string $context Request context.
+     * @return array
+     */
+    function check_wpem_plugin_activation($plugin_domain) {
+        if(!is_plugin_active($plugin_domain.'/'.$plugin_domain.'.php')) {
+            return WPEM_REST_CRUD_Controller::prepare_error_for_response(203);
+        } else {
+            $licence_activate = get_option( $plugin_domain . '_licence_key' );
+
+            if( !empty ( $licence_activate ) ) {
+                $license_status = check_wpem_license_expire_date($licence_activate );
+
+                if( $license_status ) {
+                    return true;
+                } else {
+                    return WPEM_REST_CRUD_Controller::prepare_error_for_response(203);
+                }
+            } else {
+                return WPEM_REST_CRUD_Controller::prepare_error_for_response(203);
+            }
+        }
+    }
+}
