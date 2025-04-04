@@ -738,4 +738,32 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             return null;  // Or handle the case where code 400 is not found
         }
     }
+
+    /**
+     * This function is used to verify token sent in api header
+     * @since 1.0.9
+     */
+    public function wpem_verify_jwt_token($token) {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return false; // Invalid token format
+        }
+    
+        list($header, $payload, $signature) = $parts;
+        $valid_signature = wpem_base64url_encode(hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true));
+    
+        if ($signature !== $valid_signature) {
+            return false; // Invalid signature
+        }
+    
+        $payload_data = json_decode(wpem_base64url_encode($payload), true);
+        $user = get_userdata($payload_data['user']['id']);
+    
+        if (!$user || $user->user_login !== $payload_data['user']['username']) {
+            return false; // User does not exist or username changed
+        }
+    
+        return $payload_data['user']; // Return user data
+    }
+    
 }

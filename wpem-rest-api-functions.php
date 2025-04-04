@@ -491,3 +491,11 @@ if( !function_exists( 'check_wpem_plugin_activation' ) ) {
         }
     }
 }
+
+/**
+ * This function will used to generate base64url_encode
+ * @since 1.0.9
+ */
+function wpem_base64url_encode($data) {
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}

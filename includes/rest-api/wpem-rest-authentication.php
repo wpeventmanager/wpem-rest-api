@@ -596,12 +596,12 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 */
 	public function register_routes() {
 		register_rest_route(
-			'wpem-auth',
+			'wpem',
 			'/appkey' ,
 			array(
 				array(
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'perform_app_key_authentication' ),
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'perform_user_authentication' ),
 					'permission_callback' => '__return_true'
 				),
 			)
@@ -671,34 +671,86 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @since 1.0.0
 	 */
-	public function perform_app_key_authentication( $request ){
-		global $wpdb;
-		if( isset( $_GET['key'] ) && !empty( $_GET['key'] ) ){
-			$app_key = sanitize_text_field( $_GET['key'] );
-
-			$key_data = $wpdb->get_row( 
-				$wpdb->prepare(
-					"
-						SELECT key_id, app_key, user_id, permissions, consumer_key, consumer_secret, nonces, date_expires
-						FROM {$wpdb->prefix}wpem_rest_api_keys
-						WHERE app_key = %s
-					",
-					$app_key
-				)
-			);
-			if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
-				$key_data->expiry  = false;
-			}else{
-				$key_data->expiry  = true;
-			}
-			if( empty( $key_data ) )
+	public function perform_user_authentication($request){
+		$params = $request->get_json_params();
+		$username = isset($params['username']) ? sanitize_text_field($params['username']) : '';
+		$password = isset($params['password']) ? $params['password'] : '';
+		$response = array();
+		if( !empty( $username ) && !empty($password)){
+			$user = wp_authenticate($username, $password);
+			if (is_wp_error($user)) {
 				return parent::prepare_error_for_response(401);
-			$response_data = self::prepare_error_for_response( 200 );
-			$response_data['data'] = array(
-				'user_info' => $key_data,
-			);
-			return wp_send_json($response_data);
+			} else {
+				global $wpdb;
+
+				$user_id = $user->ID;
+
+				$token = $this->wpem_generate_jwt_token($user->ID);
+
+				$key_data = $wpdb->get_row(
+					$wpdb->prepare(
+						"
+							SELECT *
+							FROM {$wpdb->prefix}wpem_rest_api_keys
+							WHERE user_id = %s
+						",
+						$user_id
+					)
+				);
+		
+				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
+					$key_data->expiry  = false;
+				} else {
+					$key_data->expiry  = true;
+				} 
+				$data = array(
+					'token' => $token,
+					'user'  => array(
+						'user_id' => $user->ID,
+						'email' => $user->user_email,
+					),
+					'user_info' => $key_data,
+					
+				);
+				if( !empty( $key_data ) )
+					$data['organizer_info'] = $key_data;
+				$response_data['data'] = $data;
+				return wp_send_json($response_data);
+			}
+		} else{
+			return parent::prepare_error_for_response(400);
 		}
 	}
+
+	/**
+	 * This function will used to generate jwt token for individual user
+	 * @since 1.0.9
+	 */
+	public function wpem_generate_jwt_token($user_id) {
+		$user = get_userdata($user_id);
+		if (!$user) return false;
+	
+		// Step 1: Create header & payload (Base64URL encoded)
+		$header = wpem_base64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+		$payload = wpem_base64url_encode(json_encode([
+			'iss' => get_bloginfo('url'),
+			'user' => [
+				'id' => $user->ID,
+				'username' => $user->user_login
+			]
+		]));
+	
+		// Step 2: Generate signature
+		$signature = wpem_base64url_encode(hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true));
+	
+		// Step 3: Remove non-alphanumeric characters (dots, dashes, underscores)
+		$clean_header = preg_replace('/[^A-Za-z0-9]/', '', $header);
+		$clean_payload = preg_replace('/[^A-Za-z0-9]/', '', $payload);
+		$clean_signature = preg_replace('/[^A-Za-z0-9]/', '', $signature);
+	
+		// Step 4: Return final alphanumeric token
+		return $clean_header . $clean_payload . $clean_signature;
+	}
+	
 }
 new WPEM_REST_Authentication();
