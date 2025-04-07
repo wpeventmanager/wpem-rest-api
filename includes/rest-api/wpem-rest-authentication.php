@@ -707,10 +707,11 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 					'token' => $token,
 					'user'  => array(
 						'user_id' => $user->ID,
-						'email' => $user->user_email,
-					),
-					'user_info' => $key_data,
-					
+						'user_email' => $user->user_email,
+						'first_name' => $user->first_name,
+						'last_name' => $user->last_name,
+						'username' => $user->user_login,
+					)					
 				);
 				if( !empty( $key_data ) )
 					$data['organizer_info'] = $key_data;
@@ -729,8 +730,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	public function wpem_generate_jwt_token($user_id) {
 		$user = get_userdata($user_id);
 		if (!$user) return false;
-	
-		// Step 1: Create header & payload (Base64URL encoded)
+
+		// Header and payload
 		$header = wpem_base64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
 		$payload = wpem_base64url_encode(json_encode([
 			'iss' => get_bloginfo('url'),
@@ -739,17 +740,12 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				'username' => $user->user_login
 			]
 		]));
-	
-		// Step 2: Generate signature
+
+		// Signature
 		$signature = wpem_base64url_encode(hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true));
-	
-		// Step 3: Remove non-alphanumeric characters (dots, dashes, underscores)
-		$clean_header = preg_replace('/[^A-Za-z0-9]/', '', $header);
-		$clean_payload = preg_replace('/[^A-Za-z0-9]/', '', $payload);
-		$clean_signature = preg_replace('/[^A-Za-z0-9]/', '', $signature);
-	
-		// Step 4: Return final alphanumeric token
-		return $clean_header . $clean_payload . $clean_signature;
+
+		// Return standard JWT format
+		return $header . '.' . $payload . '.' . $signature;
 	}
 	
 }

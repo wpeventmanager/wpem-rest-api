@@ -652,53 +652,33 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         // Get the authorization header
         global $wpdb;
         $headers = getallheaders();
-        $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+        $token = isset($headers['Authorization']) ? trim(str_replace('Bearer', '', $headers['Authorization'])) : '';
 
-        if(empty($auth_header)) {
-            $headers = apache_request_headers();
-            // Ensure case insensitivity
-            $auth_header = '';
-            foreach ($headers as $key => $value) {
-                if (strtolower($key) === 'authorization') {
-                    $auth_header = $value;
-                    break;
-                }
-            }
-        }
-
-        // Check if authorization header is provided
-        if (!$auth_header) {
+        if(empty($token)) {
             return self::prepare_error_for_response(405);
         }
 
-        // Handle Basic Auth
-        if (strpos($auth_header, 'Basic ') === 0) {
-            $auth = base64_decode(substr($auth_header, 6));
-            list($consumer_key, $consumer_secret) = explode(':', $auth);
-            // Validate the credentials
-            if ($consumer_key && $consumer_secret) {
-                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE consumer_key = '$consumer_key' AND consumer_secret = '$consumer_secret'"));
-                if($user_info){ 
-                    $user = get_userdata($user_info->user_id);
-                    if($user){ 
-                        $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
-                        if( $user_info->permissions == 'write'){
-                            return self::prepare_error_for_response(203);
-                        } else if( $date_expires < date('Y-m-d') ){
-                            return self::prepare_error_for_response(503);
-                        } else {
-                            // Get ecosystem data
-                            $ecosystem_info = get_wpem_rest_api_ecosystem_info();
-                            if( !is_array( $ecosystem_info ) ) {
-                                return self::prepare_error_for_response(403, array("Plugin Name"=>$ecosystem_info));
-                            }
-                            return false;
-                        }
-                    } else {
-                        return self::prepare_error_for_response(405);
-                    }
+        $user_data = $this->wpem_validate_jwt_token($token);
+        if (!$user_data) {
+            return self::prepare_error_for_response(405);
+        }
+        $user = get_userdata($user_data['id']);
+
+        if($user){ 
+            $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
+            if($user_info){ 
+                $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
+                if( $user_info->permissions == 'write'){
+                    return self::prepare_error_for_response(203);
+                } else if( $date_expires < date('Y-m-d') ){
+                    return self::prepare_error_for_response(503);
                 } else {
-                    return self::prepare_error_for_response(405);
+                    // Get ecosystem data
+                    $ecosystem_info = get_wpem_rest_api_ecosystem_info();
+                    if( !is_array( $ecosystem_info ) ) {
+                        return self::prepare_error_for_response(403, array("Plugin Name"=>$ecosystem_info));
+                    }
+                    return false;
                 }
             } else {
                 return self::prepare_error_for_response(405);
@@ -706,6 +686,33 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         } else {
             return self::prepare_error_for_response(405);
         }
+    }
+    
+    /**
+     * This function is used to verify token sent in api header
+     * @since 1.0.9
+     */
+    public function wpem_validate_jwt_token($token) {
+        // Extract the JWT parts
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return false;
+        }
+
+        list($encodedHeader, $encodedPayload, $encodedSignature) = $parts;
+    
+        $payload_json = wpem_base64url_decode($encodedPayload);
+        $payload = json_decode($payload_json, true);
+    
+        // Re-generate signature
+        $signature = hash_hmac('sha256', "$encodedHeader.$encodedPayload", JWT_SECRET_KEY, true);
+        $expected_signature = wpem_base64url_encode(hash_hmac('sha256', "$encodedHeader.$encodedPayload", JWT_SECRET_KEY, true));
+
+        if ($expected_signature === $encodedSignature) {
+            $payload = json_decode(wpem_base64url_decode($encodedPayload), true);
+            return $payload['user'];
+        }
+        return false;
     }
 
     /**
@@ -737,33 +744,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         } else {
             return null;  // Or handle the case where code 400 is not found
         }
-    }
-
-    /**
-     * This function is used to verify token sent in api header
-     * @since 1.0.9
-     */
-    public function wpem_verify_jwt_token($token) {
-        $parts = explode('.', $token);
-        if (count($parts) !== 3) {
-            return false; // Invalid token format
-        }
-    
-        list($header, $payload, $signature) = $parts;
-        $valid_signature = wpem_base64url_encode(hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true));
-    
-        if ($signature !== $valid_signature) {
-            return false; // Invalid signature
-        }
-    
-        $payload_data = json_decode(wpem_base64url_encode($payload), true);
-        $user = get_userdata($payload_data['user']['id']);
-    
-        if (!$user || $user->user_login !== $payload_data['user']['username']) {
-            return false; // User does not exist or username changed
-        }
-    
-        return $payload_data['user']; // Return user data
     }
     
 }
