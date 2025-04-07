@@ -659,7 +659,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				$response_data['data'] = array(
 					'user_info' => $key_data,
 				);
-				return wp_send_json($response_data);
+				return $response_data;
 			}
 		} else{
 			return parent::prepare_error_for_response(400);
@@ -715,8 +715,9 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				);
 				if( !empty( $key_data ) )
 					$data['organizer_info'] = $key_data;
+				$response_data = parent::prepare_error_for_response(200);
 				$response_data['data'] = $data;
-				return wp_send_json($response_data);
+				return $response_data;
 			}
 		} else{
 			return parent::prepare_error_for_response(400);
