@@ -597,7 +597,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	public function register_routes() {
 		register_rest_route(
 			'wpem',
-			'/appkey' ,
+			'/applogin' ,
 			array(
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
