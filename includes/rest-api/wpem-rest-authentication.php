@@ -626,7 +626,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 */
 	public function perform_login_authentication($request){
 		$params = $request->get_json_params();
-		$username = isset($params['username']) ? sanitize_text_field($params['username']) : '';
+		$username = isset($params['username']) ? $params['username'] : '';
 		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
 		if( !empty( $username ) && !empty($password)){
