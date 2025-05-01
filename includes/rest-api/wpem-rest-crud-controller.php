@@ -673,11 +673,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
                 } else if( $date_expires < date('Y-m-d') ){
                     return self::prepare_error_for_response(503);
                 } else {
-                    // Get ecosystem data
-                    $ecosystem_info = get_wpem_rest_api_ecosystem_info();
-                    if( !is_array( $ecosystem_info ) ) {
-                        return self::prepare_error_for_response(403, array("Plugin Name"=>$ecosystem_info));
-                    }
                     return false;
                 }
             } else {
