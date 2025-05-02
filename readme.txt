@@ -4,8 +4,8 @@ Contributors: wpeventmanager,ashokdudhat,krinay
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.0.1
-Tested up to: 6.7
-Stable tag: 1.0.8
+Tested up to: 6.8
+Stable tag: 1.0.9
 Requires PHP: 8.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -118,6 +118,14 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 
 == Changelog ==
+
+= 1.0.9 [ 02nd May 2025 ] =
+
+Fixed: API response time is improved to make APIs faster
+Fixed: API requests are now protected with authorization
+Fixed: The data loading time in the attendee section became faster
+Fixed: The manual check-in process of attendees became faster
+Fixed: Initiated multiple bug fixes and code improvements
 
 = 1.0.8 [ 27th March 2025 ] =
 
