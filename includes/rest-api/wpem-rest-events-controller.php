@@ -305,7 +305,11 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
     protected function get_event_data( $event, $context = 'view' ) {
         $meta_data    = get_post_meta( $event->ID );
         foreach( $meta_data as $key => $value ) {
-            $meta_data[$key]= get_post_meta( $event->ID, $key, true );
+            if('_event_start_time' == $key || '_event_end_time' == $key ) {
+                $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+                $meta_data[$key] = esc_attr(date_i18n($time_format, strtotime(get_post_meta( $event->ID, $key, true ))));                                           
+            } else
+                $meta_data[$key]= get_post_meta( $event->ID, $key, true );
         }
         $data = array(
             'id'                    => $event->ID,
