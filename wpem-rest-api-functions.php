@@ -393,73 +393,27 @@ if( !function_exists( 'get_wpem_event_users' ) ) {
     }
 }
 
-if( !function_exists( 'wpem_rest_check_user_data' ) ) {
-
-    /**
-     * This function is used to check user information
-     */
-    function wpem_rest_check_user_data() {
-        // Get the authorization header
-        global $wpdb;
-        $headers = getallheaders();
-        $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
-
-        if(empty($auth_header)) {
-            $headers = apache_request_headers();
-            // Ensure case insensitivity
-            $auth_header = '';
-            foreach ($headers as $key => $value) {
-                if (strtolower($key) === 'authorization') {
-                    $auth_header = $value;
-                    break;
-                }
-            }
-        }
-        // Check if authorization header is provided
-        if (!$auth_header) {
-            return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);
-        }
-
-        // Handle Basic Auth
-        if (strpos($auth_header, 'Basic ') === 0) {
-            $auth = base64_decode(substr($auth_header, 6));
-            list($consumer_key, $consumer_secret) = explode(':', $auth);
-            // Validate the credentials
-            if ($consumer_key && $consumer_secret) {
-                $app_key = $wpdb->get_var($wpdb->prepare("SELECT app_key FROM {$wpdb->prefix}wpem_rest_api_keys WHERE consumer_key = '$consumer_key'"));
-                if($app_key){
-                    return $app_key;
-                } else{
-                    return true;
-                }
-            } else {
-                return true;
-            }
-        } else {
-            return true;
-        }
-    }
-}
-
 if( !function_exists( 'wpem_rest_get_current_user_id' ) ) {
     /**
      * This function is used to check user is exist or not.
      * @since 1.0.1
      */
     function wpem_rest_get_current_user_id(){
-        global $wpdb;
-        $get_user_id = wpem_rest_check_user_data();
-        // Check if $get_userid is a WP_REST_Response object
-        if (is_a($get_user_id, 'WP_REST_Response')) {
-            // Extract the data from the response
-            $get_user_id = $get_user_id->get_data(); 
+        // Get the authorization header
+        $headers = getallheaders();
+        $token = isset($headers['Authorization']) ? trim(str_replace('Bearer', '', $headers['Authorization'])) : '';
+
+        if(empty($token)) {
+            return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);
         }
-        $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys WHERE app_key = '$get_user_id'"));
-        if ($user_id) {
-            return $user_id;
-        } else {
-            return false;
+
+        $user_data = WPEM_REST_CRUD_Controller::wpem_validate_jwt_token($token);
+        if (!$user_data) {
+            return WPEM_REST_CRUD_Controller::prepare_error_for_response(405);
         }
+
+        $user_id = $user_data['id'];
+        return $user_id;
     }
 }
 

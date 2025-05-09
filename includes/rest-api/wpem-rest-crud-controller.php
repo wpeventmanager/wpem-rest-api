@@ -658,7 +658,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             return self::prepare_error_for_response(405);
         }
 
-        $user_data = $this->wpem_validate_jwt_token($token);
+        $user_data = self::wpem_validate_jwt_token($token);
         if (!$user_data) {
             return self::prepare_error_for_response(405);
         }
@@ -687,7 +687,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      * This function is used to verify token sent in api header
      * @since 1.0.9
      */
-    public function wpem_validate_jwt_token($token) {
+    public static function wpem_validate_jwt_token($token) {
         // Extract the JWT parts
         $parts = explode('.', $token);
         if (count($parts) !== 3) {
