@@ -237,7 +237,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             $args['tax_query'] = $tax_query; // WPCS: slow query ok.
         }
 
-        $args['author'] = get_current_user_id();
+        $args['author'] = wpem_rest_get_current_user_id();
         $args['post_type'] = $this->post_type;
 
         return $args;
