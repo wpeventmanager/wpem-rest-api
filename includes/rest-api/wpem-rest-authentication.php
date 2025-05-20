@@ -687,22 +687,6 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 				$token = $this->wpem_generate_jwt_token($user->ID);
 
-				$key_data = $wpdb->get_row(
-					$wpdb->prepare(
-						"
-							SELECT *
-							FROM {$wpdb->prefix}wpem_rest_api_keys
-							WHERE user_id = %s
-						",
-						$user_id
-					)
-				);
-		
-				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
-					$key_data->expiry  = false;
-				} else {
-					$key_data->expiry  = true;
-				} 
 				$data = array(
 					'token' => $token,
 					'user'  => array(
@@ -713,8 +697,25 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 						'username' => $user->user_login,
 					)					
 				);
-				if( !empty( $key_data ) )
+
+				$key_data = $wpdb->get_row(
+					$wpdb->prepare(
+						"
+							SELECT *
+							FROM {$wpdb->prefix}wpem_rest_api_keys
+							WHERE user_id = %s
+						",
+						$user_id
+					)
+				);
+				if( !empty( $key_data ) ) {
+					if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
+						$key_data->expiry  = false;
+					} else {
+						$key_data->expiry  = true;
+					}
 					$data['organizer_info'] = $key_data;
+				}
 				$response_data = parent::prepare_error_for_response(200);
 				$response_data['data'] = $data;
 				return $response_data;
