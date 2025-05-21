@@ -1,0 +1,43 @@
+name: Deploy Plugin to WP Event Manager Store Site.
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: wpeventmanager/deploy-wordpress-plugin-action/.github/actions/deploy-plugin@1.0.0
+        with:
+          remote_host: ${{ secrets.KINSTA_HOST }}
+          remote_port: ${{ secrets.KINSTA_PORT }}          # Optional (defaults to 22)
+          remote_user: ${{ secrets.KINSTA_USERNAME }}
+          remote_path: ${{ secrets.PLUGIN_REMOTE_PATH }}   # Example: /www/wpeventmanager_673/public/wp-content/uploads/woocommerce_uploads/plugins/
+          ssh_private_key: ${{ secrets.KINSTA_SSH_KEY }}
+
+      - name: Send Slack notification
+        if: success()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          PLUGIN_NAME: ${{ github.repository }}
+          RELEASE_TITLE: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          AUTHOR: ${{ github.event.release.author.login }}
+        run: |
+          payload=$(jq -n \
+            --arg title "🤩 $PLUGIN_NAME : $RELEASE_TITLE 🎯 🚀 🥂" \
+            --arg text "$RELEASE_BODY" \
+            --arg author "$AUTHOR" \
+            '{
+              attachments: [
+                {
+                  color: "#36a64f",
+                  title: $title,
+                  text: $text,
+                  author: $author,
+                  mrkdwn_in: ["text", "title","author"]
+                }
+              ]
+            }')
+          curl -X POST -H "Content-type: application/json" --data "$payload" "$SLACK_WEBHOOK_URL"
