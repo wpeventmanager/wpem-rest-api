@@ -690,7 +690,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				$data = array(
 					'token' => $token,
 					'user'  => array(
-						'user_id' => $user->ID,
+						'user_id' => $user_id,
 						'user_email' => $user->user_email,
 						'first_name' => $user->first_name,
 						'last_name' => $user->last_name,
@@ -715,7 +715,9 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 						$key_data->expiry  = true;
 					}
 					$data['organizer_info'] = $key_data;
-				}
+				} 
+				if( empty( $key_data ) && !get_user_meta($user_id, '_matchmaking_profile', true))
+					return parent::prepare_error_for_response(405);
 				$response_data = parent::prepare_error_for_response(200);
 				$response_data['data'] = $data;
 				return $response_data;
