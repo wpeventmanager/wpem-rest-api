@@ -64,8 +64,13 @@ class WPEM_REST_Attendee_Profile_Controller {
     }
 
     private function format_profile_data($data) {
+        $user = get_userdata($data['user_id']);
+
         return array(
             'attendeeId'             => $data['user_id'],
+            'firstName'              => $user ? get_user_meta($user->ID, 'first_name', true) : '',
+            'lastName'               => $user ? get_user_meta($user->ID, 'last_name', true) : '',
+            'email'                  => $user ? $user->user_email : '',
             'profilePhoto'           => $data['profile_photo'],
             'profession'             => $data['profession'],
             'experience'             => $data['experience'],
