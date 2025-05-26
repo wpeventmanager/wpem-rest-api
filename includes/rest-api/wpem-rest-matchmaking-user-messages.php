@@ -72,7 +72,7 @@ class WPEM_REST_Send_Message_Controller {
 			$wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $receiver_id)
 		);
 
-		if ($sender_notify !== 1 || $receiver_notify !== 1) {
+		if ($sender_notify != 1 || $receiver_notify != 1) {
 			return new WP_REST_Response([
 				'code'    => 403,
 				'status'  => 'Forbidden',
