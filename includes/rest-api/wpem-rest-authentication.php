@@ -687,6 +687,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 				$token = $this->wpem_generate_jwt_token($user->ID);
 				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true);
+				$enable_matchmaking = get_option('enable_matchmaking', false) ? 1 : 0;
 
 				$data = array(
 					'token' => $token,
@@ -697,6 +698,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 						'last_name' => $user->last_name,
 						'username' => $user->user_login,
 						'matchmaking_profile'	=> $is_matchmaking,
+						'enable_matchmaking' => $enable_matchmaking,
 					)					
 				);
 
