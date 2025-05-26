@@ -1,10 +1,6 @@
 <?php
-
 defined('ABSPATH') || exit;
 
-/**
- * REST API Send Message controller class.
- */
 class WPEM_REST_Send_Message_Controller {
 
     protected $namespace = 'wpem';
@@ -15,38 +11,32 @@ class WPEM_REST_Send_Message_Controller {
     }
 
     public function register_routes() {
-        register_rest_route(
-            $this->namespace,
-            '/' . $this->rest_base,
-            array(
-                'methods'             => WP_REST_Server::CREATABLE,
-                'callback'            => array($this, 'handle_send_message'),
-                'permission_callback' => '__return_true',
-                'args'                => array(
-                    'senderId' => array(
-                        'required' => true,
-                        'type'     => 'integer',
-                    ),
-                    'receiverId' => array(
-                        'required' => true,
-                        'type'     => 'integer',
-                    ),
-                    'message' => array(
-                        'required' => true,
-                        'type'     => 'string',
-                    ),
-                    'eventId' => array(
-                        'required' => false,
-                        'type'     => 'integer',
-                    ),
-                ),
-            )
-        );
+        register_rest_route($this->namespace, '/' . $this->rest_base, array(
+            'methods'  => WP_REST_Server::CREATABLE,
+            'callback' => array($this, 'handle_send_message'),
+            'permission_callback' => '__return_true',
+            'args' => array(
+                'senderId'   => array('required' => true, 'type' => 'integer'),
+                'receiverId' => array('required' => true, 'type' => 'integer'),
+                'message'    => array('required' => true, 'type' => 'string'),
+                'eventId'    => array('required' => false, 'type' => 'integer'),
+            ),
+        ));
+
+        register_rest_route($this->namespace, '/get-messages', array(
+            'methods'  => WP_REST_Server::READABLE,
+            'callback' => array($this, 'handle_get_messages'),
+            'permission_callback' => '__return_true',
+            'args' => array(
+                'senderId'   => array('required' => true, 'type' => 'integer'),
+                'receiverId' => array('required' => true, 'type' => 'integer'),
+            ),
+        ));
     }
 
     public function handle_send_message($request) {
-		
-		 // Check if matchmaking is enabled
+        global $wpdb;
+
         if (!get_option('enable_matchmaking', false)) {
             return new WP_REST_Response(array(
                 'code'    => 403,
@@ -55,88 +45,124 @@ class WPEM_REST_Send_Message_Controller {
                 'data'    => null
             ), 403);
         }
-		
-        global $wpdb;
 
         $sender_id   = intval($request->get_param('senderId'));
         $receiver_id = intval($request->get_param('receiverId'));
         $message     = sanitize_textarea_field($request->get_param('message'));
         $event_id    = intval($request->get_param('eventId'));
 
-        // Validate users
         $sender_user   = get_user_by('id', $sender_id);
         $receiver_user = get_user_by('id', $receiver_id);
-
-        if (!$sender_user) {
-            return new WP_REST_Response(['success' => 0, 'message' => 'Sender not found.'], 404);
-        }
-
-        if (!$receiver_user) {
-            return new WP_REST_Response(['success' => 0, 'message' => 'Receiver not found.'], 404);
+        if (!$sender_user || !$receiver_user) {
+            return new WP_REST_Response([
+                'code'    => 404,
+                'status'  => 'Not Found',
+                'message' => 'Sender or Receiver not found.',
+                'data'    => null
+            ], 404);
         }
 
         $first_name = get_user_meta($sender_id, 'first_name', true);
         $last_name  = get_user_meta($sender_id, 'last_name', true);
 
+        // Determine parent_id (new conversation for the day = parent_id 1)
         $table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
         $today = date('Y-m-d');
 
-        // Check if the user already sent a message to the same participant today
-        $existing_count = $wpdb->get_var($wpdb->prepare(
+        $existing = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM $table 
              WHERE sender_id = %d AND receiver_id = %d 
              AND DATE(created_at) = %s",
             $sender_id, $receiver_id, $today
         ));
 
-        $parent_id = ($existing_count == 0) ? 1 : 0;
+        $parent_id = ($existing == 0) ? 1 : 0;
 
-        // Insert message
-        $inserted = $wpdb->insert(
-            $table,
-            array(
-                'event_id'    => $event_id,
-                'parent_id'   => $parent_id,
-                'sender_id'   => $sender_id,
-                'receiver_id' => $receiver_id,
-                'first_name'  => $first_name,
-                'last_name'   => $last_name,
-                'message'     => $message,
-                'created_at'  => current_time('mysql'),
-            ),
-            array('%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s')
-        );
+        $inserted = $wpdb->insert($table, array(
+            'event_id'    => $event_id,
+            'parent_id'   => $parent_id,
+            'sender_id'   => $sender_id,
+            'receiver_id' => $receiver_id,
+            'first_name'  => $first_name,
+            'last_name'   => $last_name,
+            'message'     => $message,
+            'created_at'  => current_time('mysql')
+        ), array('%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s'));
 
         if (!$inserted) {
             return new WP_REST_Response([
-                'success' => 0,
+                'code'    => 500,
+                'status'  => 'Error',
                 'message' => 'Failed to save message.',
-                'error'   => $wpdb->last_error
+                'data'    => $wpdb->last_error
             ], 500);
         }
 
-        // Send email
-        $to      = $receiver_user->user_email;
-        $subject = 'New Message from ' . $sender_user->display_name;
-        $body    = "You have received a new message:\n\n" . $message . "\n\nFrom: " . $sender_user->display_name;
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-        wp_mail($to, $subject, $body, $headers);
+        wp_mail(
+            $receiver_user->user_email,
+            'New Message from ' . $sender_user->display_name,
+            "You have received a new message:\n\n" . $message . "\n\nFrom: " . $sender_user->display_name,
+            array('Content-Type: text/plain; charset=UTF-8')
+        );
 
-        return new WP_REST_Response(array(
-            'success' => 1,
+        return new WP_REST_Response([
+            'code'    => 200,
+            'status'  => 'OK',
             'message' => 'Message sent and saved successfully.',
             'data'    => array(
-                'id'          => $wpdb->insert_id,
-                'event_id'    => $event_id,
-                'parent_id'   => $parent_id,
-                'sender_id'   => $sender_id,
-                'receiver_id' => $receiver_id,
-                'first_name'  => $first_name,
-                'last_name'   => $last_name,
-                'message'     => $message,
-                'created_at'  => current_time('mysql'),
+                'id'         => $wpdb->insert_id,
+                'event_id'   => $event_id,
+                'parent_id'  => $parent_id,
+                'sender_id'  => $sender_id,
+                'receiver_id'=> $receiver_id,
+                'first_name' => $first_name,
+                'last_name'  => $last_name,
+                'message'    => $message,
+                'created_at' => current_time('mysql'),
             )
-        ), 200);
+        ], 200);
+    }
+
+    public function handle_get_messages($request) {
+        global $wpdb;
+
+        if (!get_option('enable_matchmaking', false)) {
+            return new WP_REST_Response(array(
+                'code'    => 403,
+                'status'  => 'Disabled',
+                'message' => 'Matchmaking functionality is not enabled.',
+                'data'    => null
+            ), 403);
+        }
+
+        $sender_id   = intval($request->get_param('senderId'));
+        $receiver_id = intval($request->get_param('receiverId'));
+
+        if (!$sender_id || !$receiver_id) {
+            return new WP_REST_Response([
+                'code'    => 400,
+                'status'  => 'Bad Request',
+                'message' => 'senderId and receiverId are required.',
+                'data'    => null
+            ], 400);
+        }
+
+        $table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+
+        $messages = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table 
+             WHERE (sender_id = %d AND receiver_id = %d) 
+                OR (sender_id = %d AND receiver_id = %d) 
+             ORDER BY created_at ASC",
+            $sender_id, $receiver_id, $receiver_id, $sender_id
+        ), ARRAY_A);
+
+        return new WP_REST_Response([
+            'code'    => 200,
+            'status'  => 'OK',
+            'message' => 'Messages retrieved successfully.',
+            'data'    => $messages
+        ], 200);
     }
 }
 
