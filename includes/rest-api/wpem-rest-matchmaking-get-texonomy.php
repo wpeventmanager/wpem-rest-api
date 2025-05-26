@@ -1,0 +1,85 @@
+<?php
+class WPEM_REST_Taxonomy_List_Controller {
+
+    protected $namespace = 'wpem';
+    protected $rest_base = 'taxonomy-list';
+
+    public function __construct() {
+        add_action('rest_api_init', array($this, 'register_routes'), 10);
+    }
+
+    public function register_routes() {
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base,
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array($this, 'get_taxonomy_terms'),
+                'permission_callback' => '__return_true',
+                'args'                => array(
+                    'taxonomy' => array(
+                        'required'    => true,
+                        'type'        => 'string',
+                        'description' => 'Taxonomy name (e.g., category, post_tag, custom_taxonomy).',
+                    )
+                ),
+            )
+        );
+    }
+
+    public function get_taxonomy_terms($request) {
+        // Check if matchmaking is enabled
+        if (!get_option('enable_matchmaking', false)) {
+            return new WP_REST_Response(array(
+                'code'    => 403,
+                'status'  => 'Disabled',
+                'message' => 'Matchmaking functionality is not enabled.',
+                'data'    => null
+            ), 403);
+        }
+
+        $taxonomy = sanitize_text_field($request->get_param('taxonomy'));
+
+        if (!taxonomy_exists($taxonomy)) {
+            return new WP_REST_Response(array(
+                'code'    => 400,
+                'status'  => 'Bad Request',
+                'message' => 'Invalid taxonomy.',
+                'data'    => null
+            ), 400);
+        }
+
+        $terms = get_terms(array(
+            'taxonomy'   => $taxonomy,
+            'hide_empty' => false,
+        ));
+
+        if (is_wp_error($terms)) {
+            return new WP_REST_Response(array(
+                'code'    => 500,
+                'status'  => 'Server Error',
+                'message' => 'Failed to fetch terms.',
+                'data'    => null
+            ), 500);
+        }
+
+        $term_list = array_map(array($this, 'format_term_data'), $terms);
+
+        return new WP_REST_Response(array(
+            'code'    => 200,
+            'status'  => 'OK',
+            'message' => 'Taxonomy terms retrieved successfully.',
+            'data'    => $term_list
+        ), 200);
+    }
+
+    private function format_term_data($term) {
+        return array(
+            'id'    => $term->term_id,
+            'name'  => $term->name,
+            'slug'  => $term->slug,
+        );
+    }
+}
+
+new WPEM_REST_Taxonomy_List_Controller();
