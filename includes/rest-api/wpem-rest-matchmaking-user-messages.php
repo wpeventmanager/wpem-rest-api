@@ -61,6 +61,24 @@ class WPEM_REST_Send_Message_Controller {
                 'data'    => null
             ], 404);
         }
+		// Check message_notification in wp_wpem_matchmaking_users table
+		$table_users = $wpdb->prefix . 'wpem_matchmaking_users';
+
+		$sender_notify = $wpdb->get_var(
+			$wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $sender_id)
+		);
+
+		$receiver_notify = $wpdb->get_var(
+			$wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $receiver_id)
+		);
+
+		if ($sender_notify !== 1 || $receiver_notify !== 1) {
+			return new WP_REST_Response([
+				'code'    => 403,
+				'status'  => 'Forbidden',
+				'message' => 'Both sender and receiver must have message notifications enabled to send messages.',
+			], 403);
+		}
 
         $first_name = get_user_meta($sender_id, 'first_name', true);
         $last_name  = get_user_meta($sender_id, 'last_name', true);
