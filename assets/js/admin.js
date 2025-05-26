@@ -4,7 +4,7 @@ var WPEMRestAPIAdmin = (function () {
             jQuery("#update_api_key").on("click", WPEMRestAPIAdmin.actions.saveApiKey),
                 jQuery("select#key_user").chosen(),
                 jQuery("select#event_id").chosen(),
-                jQuery("input#date_expires").datepicker({ dateFormat: "yy-mm-dd" }),
+                jQuery("input#date_expires").datepicker({dateFormat: "yy-mm-dd",minDate: 0}),
                 jQuery("table#app-branding-color-dark").hide(),
                 jQuery(".wpem-app-branding-mode .app-branding-mode .wpem-light-mode").click(function () {
                     jQuery(".wpem-app-branding-mode").removeClass("wpem-dark-mode").addClass("wpem-light-mode"), jQuery("table#app-branding-color").show(), jQuery("table#app-branding-color-dark").hide();
