@@ -35,6 +35,14 @@ class WPEM_REST_Create_Meeting_Controller {
     }
 
     public function create_meeting(WP_REST_Request $request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code'    => 403,
+				'status'  => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data'    => null
+			], 403);
+		}
 		global $wpdb;
 
 		$user_id       = intval($request->get_param('user_id'));
@@ -206,6 +214,14 @@ class WPEM_REST_Create_Meeting_Controller {
 	}
 
 	public function get_user_meetings(WP_REST_Request $request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code'    => 403,
+				'status'  => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data'    => null
+			], 403);
+		}
 		global $wpdb;
 
 		$event_id        = $request->get_param('event_id');
