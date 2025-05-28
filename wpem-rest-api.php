@@ -72,6 +72,7 @@ class WPEM_Rest_API{
         include 'includes/rest-api/wpem-rest-matchmaking-user-messages.php';
         include 'includes/rest-api/wpem-rest-matchmaking-filter-users-api.php';
         include 'includes/rest-api/wpem-rest-matchmaking-create-meetings.php';
+        include 'includes/rest-api/wpem-rest-matchmaking-user-registred-events.php';
 
         // Activate
         register_activation_hook( __FILE__, array( $this, 'install' ) );
