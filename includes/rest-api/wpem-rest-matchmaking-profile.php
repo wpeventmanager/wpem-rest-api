@@ -1,12 +1,8 @@
 <?php
 defined('ABSPATH') || exit;
 
-/**
- * REST API Attendee Profile GET controller class.
- */
-class WPEM_REST_Attendee_Profile_Controller {
+class WPEM_REST_Attendee_Profile_Controller_All {
     protected $namespace = 'wpem';
-    protected $rest_base = 'attendee-profile';
 
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'), 10);
@@ -15,7 +11,7 @@ class WPEM_REST_Attendee_Profile_Controller {
     public function register_routes() {
         register_rest_route(
             $this->namespace,
-            '/' . $this->rest_base,
+            '/attendee-profile',
             array(
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_attendee_profile'),
@@ -25,6 +21,38 @@ class WPEM_REST_Attendee_Profile_Controller {
                         'required' => false,
                         'type' => 'integer',
                     )
+                ),
+            )
+        );
+
+        register_rest_route(
+            $this->namespace,
+            '/attendee-profile/update',
+            array(
+                'methods' => WP_REST_Server::EDITABLE,
+                'callback' => array($this, 'update_attendee_profile'),
+                'permission_callback' => '__return_true',
+                'args' => array(
+                    'user_id' => array(
+                        'required' => true,
+                        'type' => 'integer',
+                    ),
+                ),
+            )
+        );
+
+        register_rest_route(
+            $this->namespace,
+            '/upload-user-file',
+            array(
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => array($this, 'upload_user_file'),
+                'permission_callback' => '__return_true',
+                'args' => array(
+                    'user_id' => array(
+                        'required' => true,
+                        'type' => 'integer',
+                    ),
                 ),
             )
         );
@@ -73,6 +101,161 @@ class WPEM_REST_Attendee_Profile_Controller {
         }
     }
 
+    /**
+     * Update profile including handling file upload from device for profile_photo
+     */
+    public function update_attendee_profile($request) {
+        if (!get_option('enable_matchmaking', false)) {
+            return new WP_REST_Response([
+                'code' => 403,
+                'status' => 'Disabled',
+                'message' => 'Matchmaking functionality is not enabled.'
+            ], 403);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'wpem_matchmaking_users';
+        $user_id = $request->get_param('user_id');
+
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            return new WP_REST_Response(['code' => 404, 'status' => 'Not Found', 'message' => 'User not found.'], 404);
+        }
+
+        $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id = %d", $user_id));
+        if (!$existing) {
+            return new WP_REST_Response(['code' => 404, 'status' => 'Not Found', 'message' => 'Profile not found.'], 404);
+        }
+
+        $custom_fields = [
+            'profession', 'experience', 'company_name', 'country',
+            'city', 'about', 'skills', 'interests', 'organization_name', 'organization_logo',
+            'organization_city', 'organization_country', 'organization_description',
+            'message_notification', 'approve_profile_status',
+        ];
+
+        $custom_data = [];
+
+        // Handle normal fields
+        foreach ($custom_fields as $field) {
+            if ($request->get_param($field) !== null) {
+                $value = $request->get_param($field);
+                $custom_data[$field] = sanitize_text_field($value);
+            }
+        }
+
+        // Handle profile_photo file upload if present in $_FILES
+        if (!empty($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            $upload_overrides = array('test_form' => false);
+
+            $movefile = wp_handle_upload($_FILES['profile_photo'], $upload_overrides);
+
+            if (isset($movefile['url'])) {
+                $profile_photo_url = esc_url_raw($movefile['url']);
+                $custom_data['profile_photo'] = $profile_photo_url;
+                update_user_meta($user_id, '_profile_photo', $profile_photo_url);
+            } else {
+                return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => 'Profile photo upload failed.'], 500);
+            }
+        } else {
+            // If no file, but profile_photo is sent as URL string, update that
+            if ($request->get_param('profile_photo') !== null) {
+                $profile_photo_url = esc_url_raw($request->get_param('profile_photo'));
+                $custom_data['profile_photo'] = $profile_photo_url;
+                update_user_meta($user_id, '_profile_photo', $profile_photo_url);
+            }
+        }
+
+        if (!empty($custom_data)) {
+            $updated = $wpdb->update($table, $custom_data, ['user_id' => $user_id]);
+            if ($updated === false) {
+                return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => 'Failed to update profile.'], 500);
+            }
+        }
+
+        // Update basic WP user fields
+        if ($first = $request->get_param('first_name')) {
+            update_user_meta($user_id, 'first_name', sanitize_text_field($first));
+        }
+        if ($last = $request->get_param('last_name')) {
+            update_user_meta($user_id, 'last_name', sanitize_text_field($last));
+        }
+        if ($email = $request->get_param('email')) {
+            $email = sanitize_email($email);
+            $email_exists = email_exists($email);
+            if ($email_exists && $email_exists != $user_id) {
+                return new WP_REST_Response(['code' => 400, 'status' => 'Error', 'message' => 'Email already in use.'], 400);
+            }
+            $result = wp_update_user(['ID' => $user_id, 'user_email' => $email]);
+            if (is_wp_error($result)) {
+                return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => $result->get_error_message()], 500);
+            }
+        }
+
+        return new WP_REST_Response(['code' => 200, 'status' => 'OK', 'message' => 'Profile updated successfully.'], 200);
+    }
+
+    public function upload_user_file($request) {
+        if (!get_option('enable_matchmaking', false)) {
+            return new WP_REST_Response([
+                'code' => 403,
+                'status' => 'Disabled',
+                'message' => 'Matchmaking functionality is not enabled.'
+            ], 403);
+        }
+
+        $user_id = $request->get_param('user_id');
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            return new WP_REST_Response(['code' => 404, 'status' => 'Not Found', 'message' => 'User not found.'], 404);
+        }
+
+        if (empty($_FILES['file'])) {
+            return new WP_REST_Response(['code' => 400, 'status' => 'Error', 'message' => 'No file uploaded.'], 400);
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+
+        $file = $_FILES['file'];
+        $upload_overrides = array('test_form' => false);
+
+        $movefile = wp_handle_upload($file, $upload_overrides);
+
+        if (!isset($movefile['url'])) {
+            return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => 'File upload failed.'], 500);
+        }
+
+        $file_url = esc_url_raw($movefile['url']);
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'wpem_matchmaking_users';
+
+        $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id = %d", $user_id));
+        if (!$existing) {
+            return new WP_REST_Response(['code' => 404, 'status' => 'Not Found', 'message' => 'Profile not found.'], 404);
+        }
+
+        $updated = $wpdb->update(
+            $table,
+            ['profile_photo' => $file_url],
+            ['user_id' => $user_id]
+        );
+
+        if ($updated === false) {
+            return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => 'Failed to update file URL in table.'], 500);
+        }
+
+        update_user_meta($user_id, '_profile_photo', $file_url);
+
+        return new WP_REST_Response([
+            'code' => 200,
+            'status' => 'OK',
+            'message' => 'File uploaded and stored successfully.',
+            'data' => ['file_url' => $file_url]
+        ], 200);
+    }
+
     private function format_profile_data($data) {
         $user = get_userdata($data['user_id']);
 
@@ -100,103 +283,4 @@ class WPEM_REST_Attendee_Profile_Controller {
         );
     }
 }
-
-
-/**
- * REST API Attendee Profile UPDATE controller class.
- */
-class WPEM_REST_Attendee_Profile_Update_Controller {
-    protected $namespace = 'wpem';
-    protected $rest_base = 'attendee-profile';
-
-    public function __construct() {
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
-    }
-
-    public function register_routes() {
-        register_rest_route(
-            $this->namespace,
-            '/' . $this->rest_base . '/update',
-            array(
-                'methods' => WP_REST_Server::EDITABLE,
-                'callback' => array($this, 'update_attendee_profile'),
-                'permission_callback' => '__return_true',
-                'args' => array(
-                    'user_id' => array(
-                        'required' => true,
-                        'type' => 'integer',
-                    ),
-                ),
-            )
-        );
-    }
-
-    public function update_attendee_profile($request) {
-        if (!get_option('enable_matchmaking', false)) {
-            return new WP_REST_Response([
-                'code' => 403,
-                'status' => 'Disabled',
-                'message' => 'Matchmaking functionality is not enabled.'
-            ], 403);
-        }
-
-        global $wpdb;
-        $table = $wpdb->prefix . 'wpem_matchmaking_users';
-        $user_id = $request->get_param('user_id');
-
-        $user = get_user_by('id', $user_id);
-        if (!$user) {
-            return new WP_REST_Response(['code' => 404, 'status' => 'Not Found', 'message' => 'User not found.'], 404);
-        }
-
-        $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id = %d", $user_id));
-        if (!$existing) {
-            return new WP_REST_Response(['code' => 404, 'status' => 'Not Found', 'message' => 'Profile not found.'], 404);
-        }
-
-        $custom_fields = [
-            'profile_photo', 'profession', 'experience', 'company_name', 'country',
-            'city', 'about', 'skills', 'interests', 'organization_name', 'organization_logo',
-            'organization_city', 'organization_country', 'organization_description',
-            'message_notification', 'approve_profile_status',
-        ];
-
-        $custom_data = [];
-        foreach ($custom_fields as $field) {
-            if ($request->get_param($field) !== null) {
-                $custom_data[$field] = sanitize_text_field($request->get_param($field));
-            }
-        }
-
-        if (!empty($custom_data)) {
-            $updated = $wpdb->update($table, $custom_data, ['user_id' => $user_id]);
-            if ($updated === false) {
-                return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => 'Failed to update profile.'], 500);
-            }
-        }
-
-        if ($first = $request->get_param('first_name')) {
-            update_user_meta($user_id, 'first_name', sanitize_text_field($first));
-        }
-        if ($last = $request->get_param('last_name')) {
-            update_user_meta($user_id, 'last_name', sanitize_text_field($last));
-        }
-        if ($email = $request->get_param('email')) {
-            $email = sanitize_email($email);
-            $email_exists = email_exists($email);
-            if ($email_exists && $email_exists != $user_id) {
-                return new WP_REST_Response(['code' => 400, 'status' => 'Error', 'message' => 'Email already in use.'], 400);
-            }
-            $result = wp_update_user(['ID' => $user_id, 'user_email' => $email]);
-            if (is_wp_error($result)) {
-                return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => $result->get_error_message()], 500);
-            }
-        }
-
-        return new WP_REST_Response(['code' => 200, 'status' => 'OK', 'message' => 'Profile updated successfully.'], 200);
-    }
-}
-
-// Initialize both controllers
-new WPEM_REST_Attendee_Profile_Controller();
-new WPEM_REST_Attendee_Profile_Update_Controller();
+new WPEM_REST_Attendee_Profile_Controller_All();
