@@ -70,7 +70,7 @@ class WPEM_Rest_API{
         include 'includes/rest-api/wpem-rest-matchmaking-profile.php';
 		include 'includes/rest-api/wpem-rest-matchmaking-get-texonomy.php';
         include 'includes/rest-api/wpem-rest-matchmaking-user-messages.php';
-        include 'includes/rest-api/wpem-rest-matchmaking-filter-users-api.php';
+        include 'includes/rest-api/wpem-rest-matchmaking-filter-users.php';
         include 'includes/rest-api/wpem-rest-matchmaking-create-meetings.php';
         include 'includes/rest-api/wpem-rest-matchmaking-user-registred-events.php';
 
