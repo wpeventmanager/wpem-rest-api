@@ -1,4 +1,4 @@
-<?php 
+<?php
 class WPEM_REST_Filter_Users_Controller {
 
     protected $namespace = 'wpem';
@@ -9,120 +9,194 @@ class WPEM_REST_Filter_Users_Controller {
     }
 
     public function register_routes() {
+        // General filter
         register_rest_route($this->namespace, '/' . $this->rest_base, array(
             'methods'  => WP_REST_Server::READABLE,
             'callback' => array($this, 'handle_filter_users'),
             'permission_callback' => '__return_true',
             'args' => array(
                 'profession'    => array('required' => false, 'type' => 'string'),
-				'company_name'  => array('required' => false, 'type' => 'string'),
-				'country'       => array('required' => false, 'type' => 'array'),
-				'city'          => array('required' => false, 'type' => 'string'),
-				'experience'    => array('required' => false, 'type' => 'integer'), // or 'array' if you want range
-				'skills'        => array('required' => false, 'type' => 'array'),
-				'interests'     => array('required' => false, 'type' => 'array'),
+                'company_name'  => array('required' => false, 'type' => 'string'),
+                'country'       => array('required' => false, 'type' => 'array'),
+                'city'          => array('required' => false, 'type' => 'string'),
+                'experience'    => array('required' => false),
+                'skills'        => array('required' => false, 'type' => 'array'),
+                'interests'     => array('required' => false, 'type' => 'array'),
+            ),
+        ));
+
+        // Your matches (with optional user_id param)
+        register_rest_route($this->namespace, '/your-matches', array(
+            'methods'  => WP_REST_Server::READABLE,
+            'callback' => array($this, 'handle_your_matches'),
+            'permission_callback' => '__return_true',
+            'args' => array(
+                'user_id' => array('required' => false, 'type' => 'integer'),
             ),
         ));
     }
 
-   public function handle_filter_users($request) {
-    global $wpdb;
+    public function handle_your_matches($request) {
+        global $wpdb;
 
-    if (!get_option('enable_matchmaking', false)) {
+        if (!get_option('enable_matchmaking', false)) {
+            return new WP_REST_Response([
+                'code'    => 403,
+                'status'  => 'Disabled',
+                'message' => 'Matchmaking functionality is not enabled.',
+                'data'    => null
+            ], 403);
+        }
+
+        $user_id = intval($request->get_param('user_id'));
+        if (!$user_id) {
+            $user_id = get_current_user_id();
+        }
+
+        if (!$user_id) {
+            return new WP_REST_Response([
+                'code' => 401,
+                'status' => 'Unauthorized',
+                'message' => 'User not logged in or user_id not provided'
+            ], 401);
+        }
+
+        $table = $wpdb->prefix . 'wpem_matchmaking_users';
+        $user_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id = %d", $user_id), ARRAY_A);
+
+        if (!$user_data) {
+            return new WP_REST_Response([
+                'code' => 404,
+                'status' => 'Not Found',
+                'message' => 'Matchmaking profile not found for user'
+            ], 404);
+        }
+
+        // Build a filter request based on user's profile
+        $filter_request = new WP_REST_Request('GET');
+        $filter_request->set_param('profession', $user_data['profession']);
+        $filter_request->set_param('company_name', $user_data['company_name']);
+        $filter_request->set_param('country', [$user_data['country']]);
+        $filter_request->set_param('city', $user_data['city']);
+
+        $exp = (int)$user_data['experience'];
+        $filter_request->set_param('experience', [
+            'min' => max(0, $exp - 2),
+            'max' => $exp + 2
+        ]);
+
+        $skills = maybe_unserialize($user_data['skills']);
+        if (is_array($skills)) {
+            $filter_request->set_param('skills', $skills);
+        }
+
+        $interests = maybe_unserialize($user_data['interests']);
+        if (is_array($interests)) {
+            $filter_request->set_param('interests', $interests);
+        }
+
+        // Reuse the filter handler
+        $response = $this->handle_filter_users($filter_request);
+
+        // Exclude the user from their own matches
+        if ($response instanceof WP_REST_Response) {
+            $data = $response->get_data();
+            $data['data'] = array_values(array_filter($data['data'], function ($item) use ($user_id) {
+                return $item['user_id'] != $user_id;
+            }));
+            $response->set_data($data);
+        }
+
+        return $response;
+    }
+
+    public function handle_filter_users($request) {
+        global $wpdb;
+
+        if (!get_option('enable_matchmaking', false)) {
+            return new WP_REST_Response([
+                'code'    => 403,
+                'status'  => 'Disabled',
+                'message' => 'Matchmaking functionality is not enabled.',
+                'data'    => null
+            ], 403);
+        }
+
+        $table = $wpdb->prefix . 'wpem_matchmaking_users';
+        $where_clauses = [];
+        $query_params = [];
+
+        if ($profession = sanitize_text_field($request->get_param('profession'))) {
+            $where_clauses[] = "profession = %s";
+            $query_params[] = $profession;
+        }
+
+        $experience = $request->get_param('experience');
+        if (is_array($experience) && isset($experience['min'], $experience['max'])) {
+            $where_clauses[] = "experience BETWEEN %d AND %d";
+            $query_params[] = (int)$experience['min'];
+            $query_params[] = (int)$experience['max'];
+        } elseif (is_numeric($experience)) {
+            $where_clauses[] = "experience = %d";
+            $query_params[] = (int)$experience;
+        }
+
+        if ($company = sanitize_text_field($request->get_param('company_name'))) {
+            $where_clauses[] = "company_name = %s";
+            $query_params[] = $company;
+        }
+
+        $countries = $request->get_param('country');
+        if (is_array($countries)) {
+            $placeholders = implode(',', array_fill(0, count($countries), '%s'));
+            $where_clauses[] = "country IN ($placeholders)";
+            $query_params = array_merge($query_params, array_map('sanitize_text_field', $countries));
+        } elseif (!empty($countries)) {
+            $country = sanitize_text_field($countries);
+            $where_clauses[] = "country = %s";
+            $query_params[] = $country;
+        }
+
+        if ($city = sanitize_text_field($request->get_param('city'))) {
+            $where_clauses[] = "city = %s";
+            $query_params[] = $city;
+        }
+
+        $skills = $request->get_param('skills');
+        if (is_array($skills) && !empty($skills)) {
+            foreach ($skills as $skill) {
+                $like = '%' . $wpdb->esc_like(serialize($skill)) . '%';
+                $where_clauses[] = "skills LIKE %s";
+                $query_params[] = $like;
+            }
+        }
+
+        $interests = $request->get_param('interests');
+        if (is_array($interests) && !empty($interests)) {
+            foreach ($interests as $interest) {
+                $like = '%' . $wpdb->esc_like(serialize($interest)) . '%';
+                $where_clauses[] = "interests LIKE %s";
+                $query_params[] = $like;
+            }
+        }
+
+        if (get_option('participant_activation') === 'manual') {
+            $where_clauses[] = "approve_profile_status = '1'";
+        }
+
+        $where_sql = $where_clauses ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
+        $sql = "SELECT * FROM $table $where_sql";
+
+        $prepared_sql = $wpdb->prepare($sql, $query_params);
+        $results = $wpdb->get_results($prepared_sql, ARRAY_A);
+
         return new WP_REST_Response([
-            'code'    => 403,
-            'status'  => 'Disabled',
-            'message' => 'Matchmaking functionality is not enabled.',
-            'data'    => null
-        ], 403);
+            'code'    => 200,
+            'status'  => 'OK',
+            'message' => 'Users retrieved successfully.',
+            'data'    => $results
+        ], 200);
     }
-
-    $table = $wpdb->prefix . 'wpem_matchmaking_users';
-    $where_clauses = [];
-    $query_params = [];
-
-    // Profession
-    if ($profession = sanitize_text_field($request->get_param('profession'))) {
-        $where_clauses[] = "profession = %s";
-        $query_params[] = $profession;
-    }
-
-    // Experience (support exact or range)
-    $experience = $request->get_param('experience');
-    if (is_array($experience) && isset($experience['min'], $experience['max'])) {
-        $where_clauses[] = "experience BETWEEN %d AND %d";
-        $query_params[] = (int) $experience['min'];
-        $query_params[] = (int) $experience['max'];
-    } elseif (is_numeric($experience)) {
-        $where_clauses[] = "experience = %d";
-        $query_params[] = (int) $experience;
-    }
-
-    // Company name
-    if ($company = sanitize_text_field($request->get_param('company_name'))) {
-        $where_clauses[] = "company_name = %s";
-        $query_params[] = $company;
-    }
-
-    // Country (string or array)
-    $countries = $request->get_param('country');
-    if (is_array($countries)) {
-        $placeholders = implode(',', array_fill(0, count($countries), '%s'));
-        $where_clauses[] = "country IN ($placeholders)";
-        $query_params = array_merge($query_params, $countries);
-    } elseif (!empty($countries)) {
-        $country = sanitize_text_field($countries);
-        $where_clauses[] = "country = %s";
-        $query_params[] = $country;
-    }
-
-    // City
-    if ($city = sanitize_text_field($request->get_param('city'))) {
-        $where_clauses[] = "city = %s";
-        $query_params[] = $city;
-    }
-
-    // Skills (serialized array match using LIKE)
-    $skills = $request->get_param('skills');
-    if (is_array($skills) && !empty($skills)) {
-        foreach ($skills as $skill) {
-            $like = '%' . $wpdb->esc_like(serialize($skill)) . '%';
-            $where_clauses[] = "skills LIKE %s";
-            $query_params[] = $like;
-        }
-    }
-
-    // Interests (serialized array match using LIKE)
-    $interests = $request->get_param('interests');
-    if (is_array($interests) && !empty($interests)) {
-        foreach ($interests as $interest) {
-            $like = '%' . $wpdb->esc_like(serialize($interest)) . '%';
-            $where_clauses[] = "interests LIKE %s";
-            $query_params[] = $like;
-        }
-    }
-
-    // Only include approved profiles if required
-    if (get_option('participant_activation') === 'manual') {
-        $where_clauses[] = "approve_profile_status = '1'";
-    }
-
-    $where_sql = implode(' AND ', $where_clauses);
-    $sql = "SELECT * FROM $table WHERE $where_sql";
-
-    $prepared_sql = $wpdb->prepare($sql, $query_params);
-    $results = $wpdb->get_results($prepared_sql, ARRAY_A);
-
-    return new WP_REST_Response([
-        'code'    => 200,
-        'status'  => 'OK',
-        'message' => 'Users retrieved successfully.',
-        'data'    => $results
-    ], 200);
-}
-
 }
 
 new WPEM_REST_Filter_Users_Controller();
-
-?>
