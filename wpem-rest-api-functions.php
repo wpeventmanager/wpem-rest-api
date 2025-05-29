@@ -402,8 +402,20 @@ if( !function_exists( 'wpem_rest_get_current_user_id' ) ) {
     function wpem_rest_get_current_user_id(){
         // Get the authorization header
         $headers = getallheaders();
-        $token = isset($headers['Authorization']) ? trim(str_replace('Bearer', '', $headers['Authorization'])) : '';
+        $token = '';
 
+        // First try standard header
+        if (isset($headers['Authorization'])) {
+            $token = trim(str_replace('Bearer', '', $headers['Authorization']));
+        } 
+        // Try for some server environments
+        elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $token = trim(str_replace('Bearer', '', $_SERVER['HTTP_AUTHORIZATION']));
+        }
+        // NGINX or fastcgi_pass may use this
+        elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $token = trim(str_replace('Bearer', '', $_SERVER['REDIRECT_HTTP_AUTHORIZATION']));
+        }
         if(empty($token)) {
             return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);
         }

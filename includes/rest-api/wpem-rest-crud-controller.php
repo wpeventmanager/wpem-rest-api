@@ -652,10 +652,22 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         // Get the authorization header
         global $wpdb;
         $headers = getallheaders();
-        $token = isset($headers['Authorization']) ? trim(str_replace('Bearer', '', $headers['Authorization'])) : '';
+        $token = '';
 
+        // First try standard header
+        if (isset($headers['Authorization'])) {
+            $token = trim(str_replace('Bearer', '', $headers['Authorization']));
+        } 
+        // Try for some server environments
+        elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $token = trim(str_replace('Bearer', '', $_SERVER['HTTP_AUTHORIZATION']));
+        }
+        // NGINX or fastcgi_pass may use this
+        elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $token = trim(str_replace('Bearer', '', $_SERVER['REDIRECT_HTTP_AUTHORIZATION']));
+        }
         if(empty($token)) {
-            return self::prepare_error_for_response(405);
+            return WPEM_REST_CRUD_Controller::prepare_error_for_response(405);
         }
 
         $user_data = self::wpem_validate_jwt_token($token);
