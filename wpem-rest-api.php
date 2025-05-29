@@ -1,6 +1,6 @@
 <?php
 /**
-* Plugin Name: WPEM - REST API
+* Plugin Name: WP Event Manager - REST API
 * Plugin URI: http://www.wp-eventmanager.com/plugins/
 * 
 * Description: Lets users connect the Mobile application with their WordPress events website.
@@ -58,21 +58,21 @@ class WPEM_Rest_API{
         include 'wpem-rest-api-functions.php';
 
         include 'includes/wpem-rest-api-dashboard.php';
-        include 'includes/rest-api/wpem-rest-conroller.php';
-        include 'includes/rest-api/wpem-rest-posts-conroller.php';
-        include 'includes/rest-api/wpem-rest-crud-controller.php';
-        include 'includes/rest-api/wpem-rest-authentication.php';        
-        include 'includes/rest-api/wpem-rest-events-controller.php';
-        include 'includes/rest-api/wpem-rest-app-branding.php';
-        include 'includes/rest-api/wpem-rest-ecosystem-controller.php';
+        include 'includes/wpem-rest-conroller.php';
+        include 'includes/wpem-rest-posts-conroller.php';
+        include 'includes/wpem-rest-crud-controller.php';
+        include 'includes/wpem-rest-authentication.php';        
+        include 'includes/wpem-rest-events-controller.php';
+        include 'includes/wpem-rest-app-branding.php';
+        include 'includes/wpem-rest-ecosystem-controller.php';
 
         // match making api
-        include 'includes/rest-api/wpem-rest-matchmaking-profile.php';
-		include 'includes/rest-api/wpem-rest-matchmaking-get-texonomy.php';
-        include 'includes/rest-api/wpem-rest-matchmaking-user-messages.php';
-        include 'includes/rest-api/wpem-rest-matchmaking-filter-users.php';
-        include 'includes/rest-api/wpem-rest-matchmaking-create-meetings.php';
-        include 'includes/rest-api/wpem-rest-matchmaking-user-registred-events.php';
+        include 'includes/wpem-rest-matchmaking-profile.php';
+		include 'includes/wpem-rest-matchmaking-get-texonomy.php';
+        include 'includes/wpem-rest-matchmaking-user-messages.php';
+        include 'includes/wpem-rest-matchmaking-filter-users.php';
+        include 'includes/wpem-rest-matchmaking-create-meetings.php';
+        include 'includes/wpem-rest-matchmaking-user-registred-events.php';
 
         // Activate
         register_activation_hook( __FILE__, array( $this, 'install' ) );

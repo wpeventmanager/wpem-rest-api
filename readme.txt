@@ -1,4 +1,4 @@
-=== WPEM - REST API ===
+=== WP Event Manager - REST API ===
 
 Contributors: wpeventmanager,ashokdudhat,krinay
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
