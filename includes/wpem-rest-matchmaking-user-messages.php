@@ -11,10 +11,11 @@ class WPEM_REST_Send_Message_Controller {
     }
 
     public function register_routes() {
+        $auth_controller = new WPEM_REST_Authentication();
         register_rest_route($this->namespace, '/' . $this->rest_base, array(
             'methods'  => WP_REST_Server::CREATABLE,
             'callback' => array($this, 'handle_send_message'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($auth_controller, 'check_authentication'),
             'args' => array(
                 'senderId'   => array('required' => true, 'type' => 'integer'),
                 'receiverId' => array('required' => true, 'type' => 'integer'),
@@ -26,7 +27,7 @@ class WPEM_REST_Send_Message_Controller {
         register_rest_route($this->namespace, '/get-messages', array(
             'methods'  => WP_REST_Server::READABLE,
             'callback' => array($this, 'handle_get_messages'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($auth_controller, 'check_authentication'),
             'args' => array(
                 'senderId'   => array('required' => true, 'type' => 'integer'),
                 'receiverId' => array('required' => true, 'type' => 'integer'),

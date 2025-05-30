@@ -10,11 +10,12 @@ class WPEM_REST_Create_Meeting_Controller {
     }
 
     public function register_routes() {
+		$auth_controller = new WPEM_REST_Authentication();
         // Create Meeting
         register_rest_route($this->namespace, '/' . $this->rest_base, [
             'methods'  => WP_REST_Server::CREATABLE,
             'callback' => [$this, 'create_meeting'],
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($auth_controller, 'check_authentication'),
             'args' => [
                 'user_id'              => ['required' => true, 'type' => 'integer'],
                 'event_id'             => ['required' => true, 'type' => 'integer'],
@@ -30,7 +31,7 @@ class WPEM_REST_Create_Meeting_Controller {
         register_rest_route($this->namespace, '/get-meetings', [
             'methods'  => WP_REST_Server::CREATABLE,
             'callback' => [$this, 'get_user_meetings'],
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($auth_controller, 'check_authentication'),
         ]);
     }
 

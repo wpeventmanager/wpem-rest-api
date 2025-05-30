@@ -9,13 +9,14 @@ class WPEM_REST_Taxonomy_List_Controller {
     }
 
     public function register_routes() {
+        $auth_controller = new WPEM_REST_Authentication();
         register_rest_route(
             $this->namespace,
             '/' . $this->rest_base,
             array(
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => array($this, 'get_taxonomy_terms'),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array($auth_controller, 'check_authentication'),
                 'args'                => array(
                     'taxonomy' => array(
                         'required'    => true,

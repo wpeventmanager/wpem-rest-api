@@ -755,6 +755,49 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		// Return standard JWT format
 		return $header . '.' . $payload . '.' . $signature;
 	}
+
+	/**
+	 * This function will used to check authentication while use the match making apis
+	 * @since 1.1.0
+	 */
+	public function check_authentication( $request ) {
+		$auth_header = $this->get_authorization_header();
+
+		if ( preg_match( '/Bearer\s(\S+)/', $auth_header, $matches ) ) {
+			$token = $matches[1];
+
+			return $this->validate_jwt_token($token);
+		}
+
+		return new WP_Error( 'rest_forbidden', __( 'Missing or invalid authorization token.', 'textdomain' ), array( 'status' => 401 ) );
+	}
+	/**
+	 * This function will used to check validation of jwt token 
+	 * @since 1.1.0
+	 */
+	private function validate_jwt_token($token) {
+		$parts = explode('.', $token);
+		if (count($parts) !== 3) {
+			return new WP_Error( 'rest_forbidden', __( 'Malformed token.', 'textdomain' ), array( 'status' => 401 ) );
+		}
+
+		list($header_b64, $payload_b64, $signature_b64) = $parts;
+
+		$expected_signature = wpem_base64url_encode(
+			hash_hmac('sha256', "$header_b64.$payload_b64", JWT_SECRET_KEY, true)
+		);
+
+		if (!hash_equals($expected_signature, $signature_b64)) {
+			return new WP_Error( 'rest_forbidden', __( 'Invalid token signature.', 'textdomain' ), array( 'status' => 401 ) );
+		}
+
+		$payload = json_decode(base64_decode(strtr($payload_b64, '-_', '+/')), true);
+		if (!isset($payload['user']['id'])) {
+			return new WP_Error( 'rest_forbidden', __( 'Invalid token payload.', 'textdomain' ), array( 'status' => 401 ) );
+		}
+
+		return true;
+	}
 	
 }
 new WPEM_REST_Authentication();

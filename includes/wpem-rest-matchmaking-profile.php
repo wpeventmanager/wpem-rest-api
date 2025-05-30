@@ -9,13 +9,14 @@ class WPEM_REST_Attendee_Profile_Controller_All {
     }
 
     public function register_routes() {
+        $auth_controller = new WPEM_REST_Authentication();
         register_rest_route(
             $this->namespace,
             '/attendee-profile',
             array(
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_attendee_profile'),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array($auth_controller, 'check_authentication'),
                 'args' => array(
                     'attendeeId' => array(
                         'required' => false,
@@ -31,7 +32,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
             array(
                 'methods' => WP_REST_Server::EDITABLE,
                 'callback' => array($this, 'update_attendee_profile'),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array($auth_controller, 'check_authentication'),
                 'args' => array(
                     'user_id' => array(
                         'required' => true,
@@ -47,7 +48,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
             array(
                 'methods' => WP_REST_Server::CREATABLE,
                 'callback' => array($this, 'upload_user_file'),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array($auth_controller, 'check_authentication'),
                 'args' => array(
                     'user_id' => array(
                         'required' => true,
