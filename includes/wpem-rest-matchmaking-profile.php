@@ -168,6 +168,28 @@ class WPEM_REST_Attendee_Profile_Controller_All {
             }
         }
 
+        // Handle organization_logo file upload if present in $_FILES
+		if (!empty($_FILES['organization_logo']) && $_FILES['organization_logo']['error'] === UPLOAD_ERR_OK) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			$upload_overrides = array('test_form' => false);
+
+			$movefile = wp_handle_upload($_FILES['organization_logo'], $upload_overrides);
+
+			if (isset($movefile['url'])) {
+				$organization_logo_url = esc_url_raw($movefile['url']);
+				$custom_data['organization_logo'] = $organization_logo_url;
+				update_user_meta($user_id, '_organization_logo', $organization_logo_url); // optional
+			} else {
+				return new WP_REST_Response(['code' => 500, 'status' => 'Error', 'message' => 'Organization logo upload failed.'], 500);
+			}
+		} else {
+			if ($request->get_param('organization_logo') !== null) {
+				$organization_logo_url = esc_url_raw($request->get_param('organization_logo'));
+				$custom_data['organization_logo'] = $organization_logo_url;
+				update_user_meta($user_id, '_organization_logo', $organization_logo_url); // optional
+			}
+		}
+        
         if (!empty($custom_data)) {
             $updated = $wpdb->update($table, $custom_data, ['user_id' => $user_id]);
             if ($updated === false) {
