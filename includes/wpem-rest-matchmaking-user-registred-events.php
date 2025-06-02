@@ -74,6 +74,7 @@ class WPEM_REST_User_Registered_Events_Controller {
                     'start_date'  => get_post_meta($event_id, '_event_start_date', true),
                     'end_date'    => get_post_meta($event_id, '_event_end_date', true),
                     'location'    => get_post_meta($event_id, '_event_location', true),
+                    'banner'	=> get_post_meta($event_id, '_event_banner', true),
                 );
             }
         }
