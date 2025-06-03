@@ -701,7 +701,38 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 						'enable_matchmaking' => $enable_matchmaking,
 					)					
 				);
+				if ($is_matchmaking && $enable_matchmaking ) {
+					$table = $wpdb->prefix . 'wpem_matchmaking_users';
+					$matchmaking_data = $wpdb->get_row(
+						$wpdb->prepare("SELECT * FROM $table WHERE user_id = %d", $user_id),
+						ARRAY_A
+					);
 
+					if ($matchmaking_data) {
+						$data['user']['matchmaking_details'] = array(
+							'attendeeId'              => $matchmaking_data['user_id'],
+							'firstName'               => get_user_meta($user_id, 'first_name', true),
+							'lastName'                => get_user_meta($user_id, 'last_name', true),
+							'email'                   => $user->user_email,
+							'profilePhoto'            => $matchmaking_data['profile_photo'] ?? '',
+							'profession'              => $matchmaking_data['profession'] ?? '',
+							'experience'              => $matchmaking_data['experience'] ?? '',
+							'companyName'             => $matchmaking_data['company_name'] ?? '',
+							'country'                 => $matchmaking_data['country'] ?? '',
+							'city'                    => $matchmaking_data['city'] ?? '',
+							'about'                   => $matchmaking_data['about'] ?? '',
+							'skills'                  => !empty($matchmaking_data['skills']) ? maybe_unserialize($matchmaking_data['skills']) : [],
+							'interests'               => !empty($matchmaking_data['interests']) ? maybe_unserialize($matchmaking_data['interests']) : [],
+							'organizationName'        => $matchmaking_data['organization_name'] ?? '',
+							'organizationLogo'        => $matchmaking_data['organization_logo'] ?? '',
+							'organizationCity'        => $matchmaking_data['organization_city'] ?? '',
+							'organizationCountry'     => $matchmaking_data['organization_country'] ?? '',
+							'organizationDescription' => $matchmaking_data['organization_description'] ?? '',
+							'messageNotification'     => $matchmaking_data['message_notification'] ?? '',
+							'approveProfileStatus'    => $matchmaking_data['approve_profile_status'] ?? '',
+						);
+					}
+				}
 				$key_data = $wpdb->get_row(
 					$wpdb->prepare(
 						"
