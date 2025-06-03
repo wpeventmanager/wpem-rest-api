@@ -318,8 +318,8 @@ class WPEM_REST_Create_Meeting_Controller {
 
 			$meeting_data[] = [
 				'meeting_date' => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
-				'start_time'   => date_i18n('h:i A', strtotime($meeting['start_time'])),
-				'end_time'     => date_i18n('h:i A', strtotime($meeting['end_time'])),
+				'start_time'   => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
+				'end_time'     => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
 				'message'      => $meeting['message'] ?? '',
 				'host'         => $get_user_info($user_id),
 				'participants' => $participants_info,
