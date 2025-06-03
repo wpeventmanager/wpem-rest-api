@@ -25,6 +25,7 @@ class WPEM_REST_Filter_Users_Controller {
                 'interests'     => array('required' => false, 'type' => 'array'),
 				'event_id'     => array('required' => false, 'type' => 'integer'),
 				'user_id'     => array('required' => true, 'type' => 'integer'),
+				'search' => array('required' => false, 'type' => 'string'),
 				
             ),
         ));
@@ -95,6 +96,39 @@ class WPEM_REST_Filter_Users_Controller {
         if (is_array($interests)) {
             $filter_request->set_param('interests', $interests);
         }
+
+		$search = sanitize_text_field($request->get_param('search'));
+		if (!empty($search)) {
+			$search_like = '%' . $wpdb->esc_like($search) . '%';
+			
+			$search_conditions = [
+				"about LIKE %s",
+				"city LIKE %s",
+				"country LIKE %s",
+				"profession LIKE %s",
+				"skills LIKE %s",
+				"interests LIKE %s",
+				"company_name LIKE %s"
+			];
+
+			// First name / last name from wp_usermeta
+			$matching_user_ids = $wpdb->get_col($wpdb->prepare("
+				SELECT DISTINCT user_id
+				FROM {$wpdb->usermeta}
+				WHERE (meta_key = 'first_name' OR meta_key = 'last_name')
+				AND meta_value LIKE %s
+			", $search_like));
+
+			if (!empty($matching_user_ids)) {
+				$placeholders = implode(',', array_fill(0, count($matching_user_ids), '%d'));
+				$search_conditions[] = "user_id IN ($placeholders)";
+				$query_params = array_merge($query_params, array_fill(0, count($search_conditions) - 1, $search_like), $matching_user_ids);
+			} else {
+				$query_params = array_merge($query_params, array_fill(0, count($search_conditions), $search_like));
+			}
+
+			$where_clauses[] = '(' . implode(' OR ', $search_conditions) . ')';
+		}
 
         // Reuse the filter handler
         $response = $this->handle_filter_users($filter_request);
