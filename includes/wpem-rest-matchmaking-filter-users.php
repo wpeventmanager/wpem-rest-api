@@ -99,15 +99,19 @@ class WPEM_REST_Filter_Users_Controller {
         // Reuse the filter handler
         $response = $this->handle_filter_users($filter_request);
 
-        // Exclude the user from their own matches
         if ($response instanceof WP_REST_Response) {
-            $data = $response->get_data();
-            $data['data'] = array_values(array_filter($data['data'], function ($item) use ($user_id) {
-                return $item['user_id'] != $user_id;
-            }));
-            $response->set_data($data);
-        }
+			$data = $response->get_data();
 
+			$filtered = array_filter($data['data'], function ($item) use ($user_id) {
+				return $item['user_id'] != $user_id;
+			});
+			foreach ($filtered as &$row) {
+				$row['first_name'] = get_user_meta($row['user_id'], 'first_name', true);
+				$row['last_name']  = get_user_meta($row['user_id'], 'last_name', true);
+			}
+			$data['data'] = array_values($filtered);
+			$response->set_data($data);
+		}
         return $response;
     }
 
@@ -191,12 +195,17 @@ class WPEM_REST_Filter_Users_Controller {
         $prepared_sql = $wpdb->prepare($sql, $query_params);
         $results = $wpdb->get_results($prepared_sql, ARRAY_A);
 
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Users retrieved successfully.',
-            'data'    => $results
-        ], 200);
+        foreach ($results as &$row) {
+			$user_id = $row['user_id'];
+			$row['first_name'] = get_user_meta($user_id, 'first_name', true);
+			$row['last_name']  = get_user_meta($user_id, 'last_name', true);
+		}
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Users retrieved successfully.',
+			'data'    => $results
+		], 200);
     }
 }
 
