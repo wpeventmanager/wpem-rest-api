@@ -4,6 +4,7 @@ var WPEMRestAPIAdmin = (function () {
             jQuery("#update_api_key").on("click", WPEMRestAPIAdmin.actions.saveApiKey),
                 jQuery("select#key_user").chosen(),
                 jQuery("select#event_id").chosen(),
+                jQuery("#select_events").chosen();
                 jQuery("input#date_expires").datepicker({dateFormat: "yy-mm-dd",minDate: 0}),
                 jQuery("table#app-branding-color-dark").hide(),
                 jQuery(".wpem-app-branding-mode .app-branding-mode .wpem-light-mode").click(function () {
@@ -24,6 +25,21 @@ var WPEMRestAPIAdmin = (function () {
                         }, 500));
                 },
             });
+            // show events by radio button toggle
+			toggleEventsRow();
+			jQuery('input[name="event_show_by"]').change(function() {
+				
+				toggleEventsRow();
+			});
+			
+			function toggleEventsRow() {
+				if (jQuery('input[name="event_show_by"]:checked').val() === 'selected') {
+					jQuery('#select-events-row').show();
+					jQuery('#select_events').chosen('destroy').chosen();
+				} else {
+					jQuery('#select-events-row').hide();
+				}
+			}
         },
         actions: {
             saveApiKey: function (e) {
@@ -44,6 +60,7 @@ var WPEMRestAPIAdmin = (function () {
                             event_id: jQuery("#event_id").val(),
                             date_expires: jQuery("#date_expires").val(),
                             restrict_check_in: jQuery('input[name="restrict_check_in"]').attr("checked") ? 0 : 1,
+                            
                         },
                         beforeSend: function (e) {},
                         success: function (e) {
