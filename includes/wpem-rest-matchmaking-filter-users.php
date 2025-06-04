@@ -23,9 +23,11 @@ class WPEM_REST_Filter_Users_Controller {
                 'experience'    => array('required' => false),
                 'skills'        => array('required' => false, 'type' => 'array'),
                 'interests'     => array('required' => false, 'type' => 'array'),
-				'event_id'     => array('required' => false, 'type' => 'integer'),
-				'user_id'     => array('required' => true, 'type' => 'integer'),
-				'search' => array('required' => false, 'type' => 'string'),
+				'event_id'     	=> array('required' => false, 'type' => 'integer'),
+				'user_id'     	=> array('required' => true, 'type' => 'integer'),
+				'search' 		=> array('required' => false, 'type' => 'string'),
+				'per_page'    	=> array('required' => false, 'type' => 'integer', 'default' => 5),
+                'page'         	=> array('required' => false, 'type' => 'integer', 'default' => 1),
 				
             ),
         ));
@@ -155,164 +157,205 @@ class WPEM_REST_Filter_Users_Controller {
         return $response;
     }
 
-	public function handle_filter_users($request) {
-		global $wpdb;
+	 public function handle_filter_users($request) {
+        global $wpdb;
 
-		if (!get_option('enable_matchmaking', false)) {
-			return new WP_REST_Response([
-				'code'    => 403,
-				'status'  => 'Disabled',
-				'message' => 'Matchmaking functionality is not enabled.',
-				'data'    => null
-			], 403);
-		}
+        if (!get_option('enable_matchmaking', false)) {
+            return new WP_REST_Response([
+                'code'    => 403,
+                'status'  => 'Disabled',
+                'message' => 'Matchmaking functionality is not enabled.',
+                'data'    => null
+            ], 403);
+        }
 
-		$table = $wpdb->prefix . 'wpem_matchmaking_users';
-		$where_clauses = [];
-		$query_params = [];
+        $table = $wpdb->prefix . 'wpem_matchmaking_users';
+        $where_clauses = [];
+        $query_params = [];
+        $user_ids = [];
 
-		$user_ids = [];
+        $event_id = $request->get_param('event_id');
+        $current_user_id = $request->get_param('user_id');
 
-		$event_id = $request->get_param('event_id');
-		if (!empty($event_id)) {
-			$current_user_id = $request->get_param('user_id');
-			if (!$current_user_id) {
-				return new WP_REST_Response([
-					'code'    => 401,
-					'status'  => 'Unauthorized',
-					'message' => 'User not logged in.',
-					'data'    => []
-				], 401);
-			}
+        if (!empty($event_id)) {
+            if (!$current_user_id) {
+                return new WP_REST_Response([
+                    'code'    => 401,
+                    'status'  => 'Unauthorized',
+                    'message' => 'User not logged in.',
+                    'data'    => []
+                ], 401);
+            }
 
-			// Step 1: Check if current user is registered for the given event
-			$registration_query = new WP_Query([
-				'post_type'      => 'event_registration',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-				'meta_query'     => [
-					[
-						'key'   => '_attendee_user_id',
-						'value' => $current_user_id,
-					],
-					[
-						'key'   => '_event_id',
-						'value' => $event_id,
-					],
-				],
-			]);
+            $registration_query = new WP_Query([
+                'post_type'      => 'event_registration',
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'meta_query'     => [
+                    ['key' => '_attendee_user_id', 'value' => $current_user_id],
+                    ['key' => '_event_id', 'value' => $event_id],
+                ],
+            ]);
 
-			if (!$registration_query->have_posts()) {
-				return new WP_REST_Response([
-					'code'    => 403,
-					'status'  => 'Forbidden',
-					'message' => 'You are not registered for this event.',
-					'data'    => []
-				], 403);
-			}
+            if (!$registration_query->have_posts()) {
+                return new WP_REST_Response([
+                    'code'    => 403,
+                    'status'  => 'Forbidden',
+                    'message' => 'You are not registered for this event.',
+                    'data'    => []
+                ], 403);
+            }
 
-			// Step 2: Fetch all other attendees for the same event
-			$attendee_query = new WP_Query([
-				'post_type'      => 'event_registration',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-				'meta_query'     => [
-					[
-						'key'   => '_event_id',
-						'value' => $event_id,
-					],
-				],
-			]);
-			foreach ($attendee_query->posts as $post_id) {
-				$uid = get_post_meta($post_id, '_attendee_user_id', true);
-				if ($uid && $uid != $current_user_id && !in_array($uid, $user_ids)) {
-					$user_ids[] = (int)$uid;
-				}
-			}
-			if (empty($user_ids)) {
-				return new WP_REST_Response([
-					'code'    => 200,
-					'status'  => 'OK',
-					'message' => 'No attendees found for this event.',
-					'data'    => []
-				], 200);
-			}
+            $attendee_query = new WP_Query([
+                'post_type'      => 'event_registration',
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'meta_query'     => [['key' => '_event_id', 'value' => $event_id]],
+            ]);
 
-			// Restrict SQL to only these user_ids
-			$placeholders = implode(',', array_fill(0, count($user_ids), '%d'));
-			$where_clauses[] = "user_id IN ($placeholders)";
-			$query_params = array_merge($query_params, $user_ids);
-		}
-		if ($profession = sanitize_text_field($request->get_param('profession'))) {
-			$where_clauses[] = "profession = %s";
-			$query_params[] = $profession;
-		}
-		$experience = $request->get_param('experience');
-		if (is_array($experience) && isset($experience['min'], $experience['max'])) {
-			$where_clauses[] = "experience BETWEEN %d AND %d";
-			$query_params[] = (int)$experience['min'];
-			$query_params[] = (int)$experience['max'];
-		} elseif (is_numeric($experience)) {
-			$where_clauses[] = "experience = %d";
-			$query_params[] = (int)$experience;
-		}
-		if ($company = sanitize_text_field($request->get_param('company_name'))) {
-			$where_clauses[] = "company_name = %s";
-			$query_params[] = $company;
-		}
-		$countries = $request->get_param('country');
-		if (is_array($countries)) {
-			$placeholders = implode(',', array_fill(0, count($countries), '%s'));
-			$where_clauses[] = "country IN ($placeholders)";
-			$query_params = array_merge($query_params, array_map('sanitize_text_field', $countries));
-		} elseif (!empty($countries)) {
-			$country = sanitize_text_field($countries);
-			$where_clauses[] = "country = %s";
-			$query_params[] = $country;
-		}
-		if ($city = sanitize_text_field($request->get_param('city'))) {
-			$where_clauses[] = "city = %s";
-			$query_params[] = $city;
-		}
-		$skills = $request->get_param('skills');
-		if (is_array($skills) && !empty($skills)) {
-			foreach ($skills as $skill) {
-				$like = '%' . $wpdb->esc_like(serialize($skill)) . '%';
-				$where_clauses[] = "skills LIKE %s";
-				$query_params[] = $like;
-			}
-		}
-		$interests = $request->get_param('interests');
-		if (is_array($interests) && !empty($interests)) {
-			foreach ($interests as $interest) {
-				$like = '%' . $wpdb->esc_like(serialize($interest)) . '%';
-				$where_clauses[] = "interests LIKE %s";
-				$query_params[] = $like;
-			}
-		}
+            foreach ($attendee_query->posts as $post_id) {
+                $uid = get_post_meta($post_id, '_attendee_user_id', true);
+                if ($uid && $uid != $current_user_id && !in_array($uid, $user_ids)) {
+                    $user_ids[] = (int)$uid;
+                }
+            }
 
-		if (get_option('participant_activation') === 'manual') {
-			$where_clauses[] = "approve_profile_status = '1'";
-		}
+            if (empty($user_ids)) {
+                return new WP_REST_Response([
+                    'code'    => 200,
+                    'status'  => 'OK',
+                    'message' => 'No attendees found for this event.',
+                    'data'    => []
+                ], 200);
+            }
 
-		$where_sql = $where_clauses ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
-		$sql = "SELECT * FROM $table $where_sql";
-		$prepared_sql = $wpdb->prepare($sql, $query_params);
-		$results = $wpdb->get_results($prepared_sql, ARRAY_A);
+            $placeholders = implode(',', array_fill(0, count($user_ids), '%d'));
+            $where_clauses[] = "user_id IN ($placeholders)";
+            $query_params = array_merge($query_params, $user_ids);
+        }
 
-		foreach ($results as &$row) {
-			$user_id = $row['user_id'];
-			$row['first_name'] = get_user_meta($user_id, 'first_name', true);
-			$row['last_name']  = get_user_meta($user_id, 'last_name', true);
-		}
+        if ($profession = sanitize_text_field($request->get_param('profession'))) {
+            $where_clauses[] = "profession = %s";
+            $query_params[] = $profession;
+        }
 
-		return new WP_REST_Response([
-			'code'    => 200,
-			'status'  => 'OK',
-			'message' => 'Users retrieved successfully.',
-			'data'    => $results
-		], 200);
-	}
+        $experience = $request->get_param('experience');
+        if (is_array($experience) && isset($experience['min'], $experience['max'])) {
+            $where_clauses[] = "experience BETWEEN %d AND %d";
+            $query_params[] = (int)$experience['min'];
+            $query_params[] = (int)$experience['max'];
+        } elseif (is_numeric($experience)) {
+            $where_clauses[] = "experience = %d";
+            $query_params[] = (int)$experience;
+        }
+
+        if ($company = sanitize_text_field($request->get_param('company_name'))) {
+            $where_clauses[] = "company_name = %s";
+            $query_params[] = $company;
+        }
+
+        $countries = $request->get_param('country');
+        if (is_array($countries)) {
+            $placeholders = implode(',', array_fill(0, count($countries), '%s'));
+            $where_clauses[] = "country IN ($placeholders)";
+            $query_params = array_merge($query_params, array_map('sanitize_text_field', $countries));
+        } elseif (!empty($countries)) {
+            $country = sanitize_text_field($countries);
+            $where_clauses[] = "country = %s";
+            $query_params[] = $country;
+        }
+
+        if ($city = sanitize_text_field($request->get_param('city'))) {
+            $where_clauses[] = "city = %s";
+            $query_params[] = $city;
+        }
+
+        $skills = $request->get_param('skills');
+        if (is_array($skills) && !empty($skills)) {
+            foreach ($skills as $skill) {
+                $like = '%' . $wpdb->esc_like(serialize($skill)) . '%';
+                $where_clauses[] = "skills LIKE %s";
+                $query_params[] = $like;
+            }
+        }
+
+        $interests = $request->get_param('interests');
+        if (is_array($interests) && !empty($interests)) {
+            foreach ($interests as $interest) {
+                $like = '%' . $wpdb->esc_like(serialize($interest)) . '%';
+                $where_clauses[] = "interests LIKE %s";
+                $query_params[] = $like;
+            }
+        }
+
+        $search = sanitize_text_field($request->get_param('search'));
+        if (!empty($search)) {
+            $search_like = '%' . $wpdb->esc_like($search) . '%';
+
+            $search_conditions = [
+                "about LIKE %s",
+                "city LIKE %s",
+                "country LIKE %s",
+                "profession LIKE %s",
+                "skills LIKE %s",
+                "interests LIKE %s",
+                "company_name LIKE %s"
+            ];
+
+            $matching_user_ids = $wpdb->get_col($wpdb->prepare("
+                SELECT DISTINCT user_id FROM {$wpdb->usermeta}
+                WHERE (meta_key = 'first_name' OR meta_key = 'last_name')
+                AND meta_value LIKE %s
+            ", $search_like));
+
+            if (!empty($matching_user_ids)) {
+                $placeholders = implode(',', array_fill(0, count($matching_user_ids), '%d'));
+                $search_conditions[] = "user_id IN ($placeholders)";
+                $query_params = array_merge($query_params, array_fill(0, count($search_conditions) - 1, $search_like), $matching_user_ids);
+            } else {
+                $query_params = array_merge($query_params, array_fill(0, count($search_conditions), $search_like));
+            }
+
+            $where_clauses[] = '(' . implode(' OR ', $search_conditions) . ')';
+        }
+
+        if (get_option('participant_activation') === 'manual') {
+            $where_clauses[] = "approve_profile_status = '1'";
+        }
+
+        $where_sql = $where_clauses ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
+        $sql       = "SELECT * FROM $table $where_sql";
+        $count_sql = "SELECT COUNT(*) FROM $table $where_sql";
+
+        $total = (int) $wpdb->get_var($wpdb->prepare($count_sql, $query_params));
+
+        $per_page = max(1, (int) $request->get_param('per_page'));
+        $page     = max(1, (int) $request->get_param('page'));
+        $offset   = ($page - 1) * $per_page;
+
+        $sql .= $wpdb->prepare(" LIMIT %d OFFSET %d", $per_page, $offset);
+        $query_params[] = $per_page;
+        $query_params[] = $offset;
+
+        $prepared_sql = $wpdb->prepare($sql, $query_params);
+        $results = $wpdb->get_results($prepared_sql, ARRAY_A);
+
+        foreach ($results as &$row) {
+            $user_id = $row['user_id'];
+            $row['first_name'] = get_user_meta($user_id, 'first_name', true);
+            $row['last_name']  = get_user_meta($user_id, 'last_name', true);
+        }
+
+        return new WP_REST_Response([
+            'code'     => 200,
+            'status'   => 'OK',
+            'message'  => 'Users retrieved successfully.',
+            'data'     => $results,
+            'total'    => $total,
+            'page'     => $page,
+            'per_page' => $per_page,
+        ], 200);
+    }
 	
 }
 new WPEM_REST_Filter_Users_Controller();
