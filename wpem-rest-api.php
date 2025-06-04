@@ -125,6 +125,8 @@ class WPEM_Rest_API{
             nonces longtext NULL,
             truncated_key char(7) NOT NULL,
             last_access datetime NULL default null,
+            event_show_by varchar(20) NULL default 'loggedin',
+			selected_events longtext NULL,
             date_created datetime NULL default null,
             date_expires datetime NULL default null,
             PRIMARY KEY  (key_id),
@@ -133,6 +135,20 @@ class WPEM_Rest_API{
             ) $collate;";
 
         dbDelta( $sql );
+        
+        // Check if we need to alter existing table
+		$table_name = $wpdb->prefix . 'wpem_rest_api_keys';
+		$columns = $wpdb->get_col("DESC {$table_name}", 0);
+		
+		// Add event_show_by column if it doesn't exist
+		if (!in_array('event_show_by', $columns)) {
+			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN event_show_by varchar(20) NULL DEFAULT 'loggedin'");
+		}
+		
+		// Add selected_events column if it doesn't exist
+		if (!in_array('selected_events', $columns)) {
+			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN selected_events longtext NULL");
+		}
 
         update_option( 'wpem_rest_api_version', WPEM_REST_API_VERSION );
         
