@@ -143,7 +143,7 @@ class WPEM_Rest_API_Keys {
 
         $key = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, date_expires
+                "SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, event_show_by, selected_events, date_expires
 				FROM {$wpdb->prefix}wpem_rest_api_keys
 				WHERE key_id = %d",
                 $key_id

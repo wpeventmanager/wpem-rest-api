@@ -4,7 +4,7 @@ var WPEMRestAPIAdmin = (function () {
             jQuery("#update_api_key").on("click", WPEMRestAPIAdmin.actions.saveApiKey),
                 jQuery("select#key_user").chosen(),
                 jQuery("select#event_id").chosen(),
-                jQuery("#select_events").chosen();
+				jQuery("#select_events").chosen();
                 jQuery("input#date_expires").datepicker({dateFormat: "yy-mm-dd",minDate: 0}),
                 jQuery("table#app-branding-color-dark").hide(),
                 jQuery(".wpem-app-branding-mode .app-branding-mode .wpem-light-mode").click(function () {
@@ -25,7 +25,8 @@ var WPEMRestAPIAdmin = (function () {
                         }, 500));
                 },
             });
-            // show events by radio button toggle
+			
+			// show events by radio button toggle
 			toggleEventsRow();
 			jQuery('input[name="event_show_by"]').change(function() {
 				
@@ -60,7 +61,8 @@ var WPEMRestAPIAdmin = (function () {
                             event_id: jQuery("#event_id").val(),
                             date_expires: jQuery("#date_expires").val(),
                             restrict_check_in: jQuery('input[name="restrict_check_in"]').attr("checked") ? 0 : 1,
-                            
+							event_show_by: jQuery('input[name="event_show_by"]:checked').val(),
+							select_events: jQuery('#select_events').val() || []
                         },
                         beforeSend: function (e) {},
                         success: function (e) {
@@ -72,10 +74,12 @@ var WPEMRestAPIAdmin = (function () {
                                       ? (jQuery("#api-keys-options", a.el).parent().remove(),
                                         jQuery("p.submit", a.el).empty().append(e.data.revoke_url),
                                         jQuery("#key-fields p.submit", a.el).before(wp.template("api-keys-template")({ consumer_key: e.data.consumer_key, consumer_secret: e.data.consumer_secret, app_key: e.data.app_key })))
-                                      : (jQuery("#key_description", a.el).val(e.data.description), jQuery("#key_user", a.el).val(e.data.user_id), jQuery("#key_permissions", a.el).val(e.data.permissions)))
+                                      : (jQuery("#key_description", a.el).val(e.data.description), jQuery("#key_user", a.el).val(e.data.user_id), jQuery("#key_permissions", a.el).val(e.data.permissions),jQuery('input[name="event_show_by"][value="' + e.data.event_show_by + '"]').prop('checked', true),
+									jQuery('#select_events').val(e.data.selected_events).trigger('chosen:updated')))
                                 : jQuery("h2, h3", a.el)
                                       .first()
                                       .append('<div class="wpem-api-message error"><p>' + e.errorThrown + "</p></div>");
+									  
                         },
                         error: function (e, t, n) {
                             jQuery("h2, h3", a.el)

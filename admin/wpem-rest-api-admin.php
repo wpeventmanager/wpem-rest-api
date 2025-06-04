@@ -111,6 +111,8 @@ class WPEM_Rest_API_Admin{
             $event_id     = !empty( $_POST['event_id'] ) ?  absint( $_POST['event_id'] ) : '' ;
             $date_expires = !empty( $_POST['date_expires'] ) ?  date( 'Y-m-d H:i:s', strtotime( str_replace( '-', '/', $_POST['date_expires'] ) ) ) : null ;
             $restrict_check_in = isset( $_POST['restrict_check_in'] ) ? sanitize_text_field( $_POST['restrict_check_in'] ) : '';
+            $event_show_by = isset($_POST['event_show_by']) ? sanitize_text_field($_POST['event_show_by']) : 'loggedin';
+			$select_events = isset($_POST['select_events']) ? maybe_serialize(array_map('absint', $_POST['select_events'])) : maybe_serialize(array());
 
             // Check if current user can edit other users.
             if( $user_id && ! current_user_can( 'edit_user', $user_id ) ) {
@@ -121,11 +123,13 @@ class WPEM_Rest_API_Admin{
 
             if( 0 < $key_id ) {
                 $data = array(
-                    'user_id'      => $user_id,
-                    'description'  => $description,
-                    'permissions'  => $permissions,
-                    'event_id'     => $event_id,
-                    'date_expires' => $date_expires,
+                    'user_id'           => $user_id,
+                    'description'       => $description,
+                    'permissions'       => $permissions,
+                    'event_id'          => $event_id,
+                    'date_expires'      => $date_expires,
+                    'event_show_by'     => $event_show_by,
+					'selected_events'   => $select_events,
                 );
 
                 $wpdb->update(
@@ -138,6 +142,8 @@ class WPEM_Rest_API_Admin{
                             '%s',
                             '%d',
                             '%s',
+                            '%s',
+							'%s',
                         ),
                     array( '%d' )
                 );
@@ -146,6 +152,7 @@ class WPEM_Rest_API_Admin{
                 $response['consumer_key']    = '';
                 $response['consumer_secret'] = '';
                 $response['message']         = __( 'API Key updated successfully.', 'wpem-rest-api' );
+                $response['selected_events'] = maybe_unserialize($select_events);
             } else {
                 $app_key = wp_rand();
                 $consumer_key    = 'ck_' . sha1(wp_rand());
@@ -162,12 +169,16 @@ class WPEM_Rest_API_Admin{
                     'truncated_key'   => substr($consumer_key, -7),
                     'date_created'    => current_time( 'mysql' ) ,
                     'date_expires'    => $date_expires,
+                    'event_show_by'    => $event_show_by,
+					'selected_events' => $select_events,
                 );
                 $wpdb->insert(
                     $wpdb->prefix . 'wpem_rest_api_keys',
                     $data,
                     array(
                         '%d',
+                        '%s',
+                        '%s',
                         '%s',
                         '%s',
                         '%s',
@@ -186,6 +197,8 @@ class WPEM_Rest_API_Admin{
                 $response['app_key']         = $app_key;
                 $response['message']         = __( 'API Key generated successfully. Make sure to copy your new keys now as the secret key will be hidden once you leave this page.', 'wpem-rest-api' );
                 $response['revoke_url']      = '<a class="wpem-backend-theme-button" href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ) . '">' . __('I have Copied the Keys', 'wpem-rest-api') . '</a> <br/><br/> <a class="wpem-backend-theme-button wpem-revoke-button" href="' . esc_url(wp_nonce_url(add_query_arg(array( 'revoke-key' => $key_id ), admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access')), 'revoke')) . '">' . __('Revoke key', 'wpem-rest-api') . '</a>';
+                $response['event_show_by'] = $event_show_by;
+				$response['selected_events'] = maybe_unserialize($select_events);
             }
         } catch ( Exception $e ) {
             wp_send_json_error( array( 'message' => $e->getMessage() ) );

@@ -103,6 +103,59 @@ defined( 'ABSPATH' ) || exit; ?>
 						<?php  esc_html_e( 'Select the access type of these keys.', 'wpem-rest-api' ); ?></p>
 					</td>
 				</tr>
+				<tr valign="top">
+						<th scope="row" class="titledesc">
+							<label for="event_display_option"><?php esc_html_e( 'Event Show By', 'wpem-rest-api' ); ?></label>
+						</th>
+						<td class="forminp">
+							<?php
+							$event_show_by = isset( $key_data['event_show_by'] ) ? $key_data['event_show_by'] : 'loggedin'; // Default
+							?>
+							<label>
+								<input type="radio"  name="event_show_by" value="loggedin" <?php checked( $event_show_by, 'loggedin' ); ?> />
+								<?php esc_html_e( 'Show logged-in user events', 'wpem-rest-api' ); ?>
+							</label><br/>
+							<label>
+								<input type="radio"  name="event_show_by" value="selected" <?php checked( $event_show_by, 'selected' ); ?> />
+								<?php esc_html_e( 'Show selected events', 'wpem-rest-api' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Choose how events are loaded for this key.', 'wpem-rest-api' ); ?></p>
+						</td>
+					</tr>
+					<tr valign="top" id="select-events-row" style="display:none">
+					<th scope="row" class="titledesc">
+						<label for="select_events"><?php esc_html_e( 'Select Events', 'wpem-rest-api' ); ?></label>
+					</th>
+					<td class="forminp">
+						<?php
+							$selected_events = array();
+							if (isset($key_data['selected_events'])) {
+								if (is_serialized($key_data['selected_events'])) {
+									$selected_events = maybe_unserialize($key_data['selected_events']);
+								} elseif (is_array($key_data['selected_events'])) {
+									$selected_events = $key_data['selected_events'];
+								}
+								
+								$selected_events = array_map('absint', (array)$selected_events);
+							}
+							$events = get_posts(array(
+								'post_type'      => 'event_listing',
+								'post_status'    => 'publish',
+								'posts_per_page' => -1,
+								'orderby'        => 'title',
+								'order'          => 'ASC',
+							));
+						?>
+						<select id="select_events" name="select_events[]" class="event-manager-select-chosen" multiple data-placeholder="<?php esc_attr_e( 'Choose events&hellip;', 'wpem-rest-api' ); ?>">
+							<?php foreach ($events as $event) : ?>
+								<option value="<?php echo esc_attr($event->ID); ?>" <?php selected(in_array($event->ID, $selected_events), true); ?>>
+									<?php echo esc_html($event->post_title); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description"><?php esc_html_e('Select one or more events to associate with this key.', 'wpem-rest-api'); ?></p>
+					</td>
+				</tr>
 
 				<?php if ( 0 !== $key_id ) : ?>
 					<tr valign="top">
@@ -141,52 +194,7 @@ defined( 'ABSPATH' ) || exit; ?>
 							<input id="js-restrict-check-in" type="checkbox" name="restrict_check_in"   <?php echo ($restrict === '1') ? 'checked="checked"' : ''; ?> value="1" >
 						</td>
 					</tr>
-										<tr valign="top">
-						<th scope="row" class="titledesc">
-							<label for="event_display_option"><?php esc_html_e( 'Event Show By', 'wpem-rest-api' ); ?></label>
-						</th>
-						<td class="forminp">
-							<?php
-							$event_source = isset( $key_data['event_source'] ) ? $key_data['event_source'] : 'loggedin'; // Default
-							?>
-							<label>
-								<input type="radio"  name="event_show_by" value="loggedin" <?php checked( $event_source, 'loggedin' ); ?> />
-								<?php esc_html_e( 'Show logged-in user events', 'wpem-rest-api' ); ?>
-							</label><br/>
-							<label>
-								<input type="radio"  name="event_show_by" value="selected" <?php checked( $event_source, 'selected' ); ?> />
-								<?php esc_html_e( 'Show selected events', 'wpem-rest-api' ); ?>
-							</label>
-							<p class="description"><?php esc_html_e( 'Choose how events are loaded for this key.', 'wpem-rest-api' ); ?></p>
-						</td>
-					</tr>
-					<tr valign="top" id="select-events-row" style="display:none">
-						<th scope="row" class="titledesc">
-							<label for="select_events"><?php esc_html_e( 'Select Events', 'wpem-rest-api' ); ?></label>
-						</th>
-						<td class="forminp">
-							<?php
-							$selected_events = isset( $key_data['selected_events'] ) ? (array) $key_data['selected_events'] : array();
-
-							// Fetch all events
-							$events = get_posts( array(
-								'post_type'      => 'event_listing',
-								'post_status'    => 'publish',
-								'posts_per_page' => -1,
-								'orderby'        => 'title',
-								'order'          => 'ASC',
-							) );
-							?>
-							<select id="select_events" name="select_events[]" class="event-manager-select-chosen" multiple data-placeholder="<?php esc_attr_e( 'Choose events&hellip;', 'wpem-rest-api' ); ?>">
-								<?php foreach ( $events as $event ) : ?>
-									<option value="<?php echo esc_attr( $event->ID ); ?>" <?php selected( in_array( $event->ID, $selected_events ), true ); ?>>
-										<?php echo esc_html( $event->post_title ); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-							<p class="description"><?php esc_html_e( 'Select one or more events to associate with this key.', 'wpem-rest-api' ); ?></p>
-						</td>
-					</tr>
+					
 				<?php endif ?>
 			</tbody>
 		</table>	
