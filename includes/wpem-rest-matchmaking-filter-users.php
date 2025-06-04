@@ -12,7 +12,7 @@ class WPEM_REST_Filter_Users_Controller {
         $auth_controller = new WPEM_REST_Authentication();
         // General filter
         register_rest_route($this->namespace, '/' . $this->rest_base, array(
-            'methods'  => WP_REST_Server::READABLE,
+            'methods'  => WP_REST_Server::CREATABLE,
             'callback' => array($this, 'handle_filter_users'),
             'permission_callback' => array($auth_controller, 'check_authentication'),
             'args' => array(
