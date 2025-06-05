@@ -350,11 +350,14 @@ class WPEM_REST_Filter_Users_Controller {
             'code'     => 200,
             'status'   => 'OK',
             'message'  => 'Users retrieved successfully.',
-            'data'     => $results,
-            'total'    => $total,
-            'page'     => $page,
-            'per_page' => $per_page,
-        ], 200);
+            'data'    => [
+				'total_post_count' => $total,
+				'current_page'     => $page,
+				'last_page'        => ceil($total / $per_page),
+				'total_pages'      => ceil($total / $per_page),
+				'events'           => $results,
+			],
+		], 200);
     }
 	
 }
