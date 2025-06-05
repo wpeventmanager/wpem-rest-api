@@ -355,7 +355,7 @@ class WPEM_REST_Filter_Users_Controller {
 				'current_page'     => $page,
 				'last_page'        => ceil($total / $per_page),
 				'total_pages'      => ceil($total / $per_page),
-				'events'           => $results,
+				'users'           => $results,
 			],
 		], 200);
     }
