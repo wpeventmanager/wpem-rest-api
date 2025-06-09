@@ -103,6 +103,27 @@ defined( 'ABSPATH' ) || exit; ?>
 						<?php  esc_html_e( 'Select the access type of these keys.', 'wpem-rest-api' ); ?></p>
 					</td>
 				</tr>
+				<?php 
+					$saved_mobile_menu = get_user_meta($user_id, '_mobile_menu', true);
+					$saved_mobile_menu = is_array($saved_mobile_menu) ? $saved_mobile_menu : [];
+				?>
+				<tr valign="top">
+					<th scope="row" class="titledesc">
+						<label for="dashboard_menu">
+							<?php esc_html_e( 'Mobile Menu', 'wpem-rest-api' ); ?>
+						</label>
+					</th>
+					<td class="forminp">
+						<label><input type="checkbox" name="mobile_menu[]" value="dashboard" <?php checked(in_array('dashboard', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Dashboard', 'wpem-rest-api' ); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="attendees" <?php checked(in_array('attendees', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Attendees', 'wpem-rest-api' ); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="guest_list" <?php checked(in_array('guest_list', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Guest List', 'wpem-rest-api' ); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="orders" <?php checked(in_array('orders', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Orders', 'wpem-rest-api' ); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="arrivals" <?php checked(in_array('arrivals', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Arrivals', 'wpem-rest-api' ); ?></label>
+						<p class="description">
+							<?php esc_html_e( 'Restrict pages for this key.', 'wpem-rest-api' ); ?>
+						</p>
+					</td>
+				</tr>
 				<tr valign="top">
 						<th scope="row" class="titledesc">
 							<label for="event_display_option"><?php esc_html_e( 'Event Show By', 'wpem-rest-api' ); ?></label>

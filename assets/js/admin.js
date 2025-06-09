@@ -62,7 +62,10 @@ var WPEMRestAPIAdmin = (function () {
                             date_expires: jQuery("#date_expires").val(),
                             restrict_check_in: jQuery('input[name="restrict_check_in"]').attr("checked") ? 0 : 1,
 							event_show_by: jQuery('input[name="event_show_by"]:checked').val(),
-							select_events: jQuery('#select_events').val() || []
+							select_events: jQuery('#select_events').val() || [],
+                            mobile_menu: jQuery('input[name="mobile_menu[]"]:checked').map(function () {
+								return this.value;
+							}).get()
                         },
                         beforeSend: function (e) {},
                         success: function (e) {
@@ -80,7 +83,13 @@ var WPEMRestAPIAdmin = (function () {
                                       .first()
                                       .append('<div class="wpem-api-message error"><p>' + e.errorThrown + "</p></div>");
 									  
-                        },
+                                if (e.data.mobile_menu) {
+									jQuery('input[name="mobile_menu[]"]').prop('checked', false);
+									e.data.mobile_menu.forEach(function (val) {
+										jQuery('input[name="mobile_menu[]"][value="' + val + '"]').prop('checked', true);
+									});
+								}
+                                    },
                         error: function (e, t, n) {
                             jQuery("h2, h3", a.el)
                                 .first()

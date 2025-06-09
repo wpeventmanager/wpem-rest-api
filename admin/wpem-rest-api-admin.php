@@ -113,7 +113,10 @@ class WPEM_Rest_API_Admin{
             $restrict_check_in = isset( $_POST['restrict_check_in'] ) ? sanitize_text_field( $_POST['restrict_check_in'] ) : '';
             $event_show_by = isset($_POST['event_show_by']) ? sanitize_text_field($_POST['event_show_by']) : 'loggedin';
 			$select_events = isset($_POST['select_events']) ? maybe_serialize(array_map('absint', $_POST['select_events'])) : maybe_serialize(array());
-
+            $mobile_menu = isset($_POST['mobile_menu']) ? array_map('sanitize_text_field', $_POST['mobile_menu']) : array();
+            
+            update_user_meta($user_id, '_mobile_menu', $mobile_menu);
+            
             // Check if current user can edit other users.
             if( $user_id && ! current_user_can( 'edit_user', $user_id ) ) {
                 if( get_current_user_id() !== $user_id ) {
