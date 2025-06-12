@@ -34,6 +34,18 @@ class WPEM_REST_Send_Message_Controller {
 				'per_page'   => array('required' => false, 'type' => 'integer', 'default' => 20),
             ),
         ));
+        // Get conversation list endpoint
+		register_rest_route($this->namespace, '/get-conversation-list', array(
+			'methods'  => WP_REST_Server::READABLE,
+			'callback' => array($this, 'handle_get_conversation_list'),
+			'permission_callback' => array($auth_controller, 'check_authentication'),
+			'args' => array(
+				'user_id'   => array('required' => true, 'type' => 'integer'),
+				'event_ids' => array('required' => true, 'type' => 'array', 'items' => array('type' => 'integer')),
+				'paged'     => array('required' => false, 'type' => 'integer', 'default' => 1),
+				'per_page'  => array('required' => false, 'type' => 'integer', 'default' => 10),
+			),
+		));
     }
 
     public function handle_send_message($request) {
@@ -203,6 +215,116 @@ class WPEM_REST_Send_Message_Controller {
 			]
 		], 200);
 	}
+    public function handle_get_conversation_list($request) {
+		global $wpdb;
+
+		$user_id   = intval($request->get_param('user_id'));
+		$event_ids = $request->get_param('event_ids'); // expects an array
+		$paged     = max(1, intval($request->get_param('paged')));
+		$per_page  = max(1, intval($request->get_param('per_page')));
+
+		if (empty($user_id) || empty($event_ids) || !is_array($event_ids)) {
+			return new WP_REST_Response([
+				'code'    => 400,
+				'status'  => 'Bad Request',
+				'message' => 'user_id and event_ids[] are required.',
+			], 400);
+		}
+
+		$postmeta     = $wpdb->postmeta;
+		$messages_tbl = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+		$profile_tbl  = $wpdb->prefix . 'wpem_matchmaking_users';
+
+		// Step 1: Get users registered in the same events (excluding self)
+		$event_placeholders = implode(',', array_fill(0, count($event_ids), '%d'));
+		$registered_user_ids = $wpdb->get_col($wpdb->prepare("
+			SELECT DISTINCT pm2.meta_value
+			FROM $postmeta pm1
+			INNER JOIN $postmeta pm2 ON pm1.post_id = pm2.post_id
+			WHERE pm1.meta_key = '_event_id'
+			  AND pm1.meta_value IN ($event_placeholders)
+			  AND pm2.meta_key = '_attendee_user_id'
+			  AND pm2.meta_value != %d
+		", array_merge($event_ids, [ $user_id ])));
+
+		if (empty($registered_user_ids)) {
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'No users registered in the same events.',
+				'data'    => []
+			], 200);
+		}
+
+		// Step 2: Get users who have messaged with current user
+		$messaged_user_ids = $wpdb->get_col($wpdb->prepare("
+			SELECT DISTINCT user_id FROM (
+				SELECT sender_id AS user_id FROM $messages_tbl WHERE receiver_id = %d
+				UNION
+				SELECT receiver_id AS user_id FROM $messages_tbl WHERE sender_id = %d
+			) AS temp
+			WHERE user_id != %d
+		", $user_id, $user_id, $user_id));
+
+		if (empty($messaged_user_ids)) {
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'No message history found.',
+				'data'    => []
+			], 200);
+		}
+
+		// Step 3: Intersect both lists
+		$valid_user_ids = array_values(array_intersect($registered_user_ids, $messaged_user_ids));
+
+		$total_count = count($valid_user_ids);
+		if ($total_count === 0) {
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'No matched users found.',
+				'data'    => [
+					'total_users'   => 0,
+					'current_page'  => $paged,
+					'total_pages'   => 0,
+					'users'         => []
+				]
+			], 200);
+		}
+
+		// Step 4: Paginate
+		$offset = ($paged - 1) * $per_page;
+		$paginated_ids = array_slice($valid_user_ids, $offset, $per_page);
+
+		// Step 5: Build user info
+		$results = [];
+		foreach ($paginated_ids as $uid) {
+			$results[] = [
+				'user_id'      => (int) $uid,
+				'first_name'   => get_user_meta($uid, 'first_name', true),
+				'last_name'    => get_user_meta($uid, 'last_name', true),
+				'profile_photo'=> $wpdb->get_var($wpdb->prepare("SELECT profile_photo FROM $profile_tbl WHERE user_id = %d", $uid)),
+				'profession'   => $wpdb->get_var($wpdb->prepare("SELECT profession FROM $profile_tbl WHERE user_id = %d", $uid)),
+				'company_name' => $wpdb->get_var($wpdb->prepare("SELECT company_name FROM $profile_tbl WHERE user_id = %d", $uid)),
+			];
+		}
+
+		$last_page = ceil($total_count / $per_page);
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Filtered users retrieved.',
+			'data'    => [
+				'total_users'   => $total_count,
+				'current_page'  => $paged,
+				'per_page'      => $per_page,
+				'last_page'     => $last_page,
+				'users'         => $results
+			]
+		], 200);
+	}
+
 }
 
 new WPEM_REST_Send_Message_Controller();
