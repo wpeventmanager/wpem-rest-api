@@ -20,7 +20,6 @@ class WPEM_REST_Send_Message_Controller {
                 'senderId'   => array('required' => true, 'type' => 'integer'),
                 'receiverId' => array('required' => true, 'type' => 'integer'),
                 'message'    => array('required' => true, 'type' => 'string'),
-                'eventId'    => array('required' => false, 'type' => 'integer'),
             ),
         ));
 
@@ -50,7 +49,6 @@ class WPEM_REST_Send_Message_Controller {
         $sender_id   = intval($request->get_param('senderId'));
         $receiver_id = intval($request->get_param('receiverId'));
         $message     = sanitize_textarea_field($request->get_param('message'));
-        $event_id    = intval($request->get_param('eventId'));
 
         $sender_user   = get_user_by('id', $sender_id);
         $receiver_user = get_user_by('id', $receiver_id);
@@ -88,25 +86,24 @@ class WPEM_REST_Send_Message_Controller {
         $table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
         $today = date('Y-m-d');
 
-        $existing = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table 
-             WHERE sender_id = %d AND receiver_id = %d 
-             AND DATE(created_at) = %s",
-            $sender_id, $receiver_id, $today
-        ));
+        $first_message_id = $wpdb->get_var($wpdb->prepare(
+			"SELECT id FROM $table 
+			 WHERE (sender_id = %d AND receiver_id = %d)
+				OR (sender_id = %d AND receiver_id = %d)
+			 ORDER BY created_at ASC LIMIT 1",
+			$sender_id, $receiver_id,
+			$receiver_id, $sender_id
+		));
 
-        $parent_id = ($existing == 0) ? 1 : 0;
+		$parent_id = $first_message_id ? $first_message_id : 0;
 
         $inserted = $wpdb->insert($table, array(
-            'event_id'    => $event_id,
             'parent_id'   => $parent_id,
             'sender_id'   => $sender_id,
             'receiver_id' => $receiver_id,
-            'first_name'  => $first_name,
-            'last_name'   => $last_name,
             'message'     => $message,
             'created_at'  => current_time('mysql')
-        ), array('%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s'));
+        ), array('%d', '%d', '%d', '%s', '%s'));
 
         if (!$inserted) {
             return new WP_REST_Response([
@@ -130,7 +127,6 @@ class WPEM_REST_Send_Message_Controller {
             'message' => 'Message sent and saved successfully.',
             'data'    => array(
                 'id'         => $wpdb->insert_id,
-                'event_id'   => $event_id,
                 'parent_id'  => $parent_id,
                 'sender_id'  => $sender_id,
                 'receiver_id'=> $receiver_id,
