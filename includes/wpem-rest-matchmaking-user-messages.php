@@ -30,6 +30,8 @@ class WPEM_REST_Send_Message_Controller {
             'args' => array(
                 'senderId'   => array('required' => true, 'type' => 'integer'),
                 'receiverId' => array('required' => true, 'type' => 'integer'),
+                'page'       => array('required' => false, 'type' => 'integer', 'default' => 1),
+				'per_page'   => array('required' => false, 'type' => 'integer', 'default' => 20),
             ),
         ));
     }
@@ -139,46 +141,68 @@ class WPEM_REST_Send_Message_Controller {
     }
 
     public function handle_get_messages($request) {
-        global $wpdb;
+		global $wpdb;
 
-        if (!get_option('enable_matchmaking', false)) {
-            return new WP_REST_Response(array(
-                'code'    => 403,
-                'status'  => 'Disabled',
-                'message' => 'Matchmaking functionality is not enabled.',
-                'data'    => null
-            ), 403);
-        }
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response(array(
+				'code'    => 403,
+				'status'  => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data'    => null
+			), 403);
+		}
 
-        $sender_id   = intval($request->get_param('senderId'));
-        $receiver_id = intval($request->get_param('receiverId'));
+		$sender_id   = intval($request->get_param('senderId'));
+		$receiver_id = intval($request->get_param('receiverId'));
+		$page        = max(1, intval($request->get_param('page')));
+		$per_page    = max(1, intval($request->get_param('per_page')));
 
-        if (!$sender_id || !$receiver_id) {
-            return new WP_REST_Response([
-                'code'    => 400,
-                'status'  => 'Bad Request',
-                'message' => 'senderId and receiverId are required.',
-                'data'    => null
-            ], 400);
-        }
+		if (!$sender_id || !$receiver_id) {
+			return new WP_REST_Response([
+				'code'    => 400,
+				'status'  => 'Bad Request',
+				'message' => 'senderId and receiverId are required.',
+				'data'    => null
+			], 400);
+		}
 
-        $table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+		$offset = ($page - 1) * $per_page;
+		$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
 
-        $messages = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table 
-             WHERE (sender_id = %d AND receiver_id = %d) 
-                OR (sender_id = %d AND receiver_id = %d) 
-             ORDER BY created_at ASC",
-            $sender_id, $receiver_id, $receiver_id, $sender_id
-        ), ARRAY_A);
+		// Get total message count
+		$total_messages = $wpdb->get_var($wpdb->prepare(
+			"SELECT COUNT(*) FROM $table 
+			 WHERE (sender_id = %d AND receiver_id = %d) 
+				OR (sender_id = %d AND receiver_id = %d)",
+			$sender_id, $receiver_id, $receiver_id, $sender_id
+		));
 
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Messages retrieved successfully.',
-            'data'    => $messages
-        ], 200);
-    }
+		// Get paginated messages
+		$messages = $wpdb->get_results($wpdb->prepare(
+			"SELECT * FROM $table 
+			 WHERE (sender_id = %d AND receiver_id = %d) 
+				OR (sender_id = %d AND receiver_id = %d)
+			 ORDER BY created_at ASC
+			 LIMIT %d OFFSET %d",
+			$sender_id, $receiver_id, $receiver_id, $sender_id,
+			$per_page, $offset
+		), ARRAY_A);
+
+		$total_pages = ceil($total_messages / $per_page);
+
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Messages retrieved successfully.',
+			'data'    => [
+				'total_page_count' => intval($total_messages),
+				'current_page'     => $page,
+				'last_page'        => $total_pages,
+				'total_pages'      => $total_pages,
+				'messages'         => $messages,
+			]
+		], 200);
+	}
 }
 
 new WPEM_REST_Send_Message_Controller();
