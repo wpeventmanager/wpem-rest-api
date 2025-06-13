@@ -297,20 +297,32 @@ class WPEM_REST_Send_Message_Controller {
 		$offset = ($paged - 1) * $per_page;
 		$paginated_ids = array_slice($valid_user_ids, $offset, $per_page);
 
-		// Step 5: Build user info
+		// Step 5: Build user info with last message
 		$results = [];
 		foreach ($paginated_ids as $uid) {
+			// Get last message exchanged
+			$last_message_row = $wpdb->get_row($wpdb->prepare("
+				SELECT message, created_at
+				FROM $messages_tbl
+				WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d)
+				ORDER BY created_at DESC
+				LIMIT 1
+			", $user_id, $uid, $uid, $user_id));
+
 			$results[] = [
-				'user_id'      => (int) $uid,
-				'first_name'   => get_user_meta($uid, 'first_name', true),
-				'last_name'    => get_user_meta($uid, 'last_name', true),
-				'profile_photo'=> $wpdb->get_var($wpdb->prepare("SELECT profile_photo FROM $profile_tbl WHERE user_id = %d", $uid)),
-				'profession'   => $wpdb->get_var($wpdb->prepare("SELECT profession FROM $profile_tbl WHERE user_id = %d", $uid)),
-				'company_name' => $wpdb->get_var($wpdb->prepare("SELECT company_name FROM $profile_tbl WHERE user_id = %d", $uid)),
+				'user_id'       => (int) $uid,
+				'first_name'    => get_user_meta($uid, 'first_name', true),
+				'last_name'     => get_user_meta($uid, 'last_name', true),
+				'profile_photo' => $wpdb->get_var($wpdb->prepare("SELECT profile_photo FROM $profile_tbl WHERE user_id = %d", $uid)),
+				'profession'    => $wpdb->get_var($wpdb->prepare("SELECT profession FROM $profile_tbl WHERE user_id = %d", $uid)),
+				'company_name'  => $wpdb->get_var($wpdb->prepare("SELECT company_name FROM $profile_tbl WHERE user_id = %d", $uid)),
+				'last_message'  => $last_message_row ? $last_message_row->message : null,
+				'message_time'  => $last_message_row ? date('d/m/y, h:i A', strtotime($last_message_row->created_at)) : null,
 			];
 		}
 
 		$last_page = ceil($total_count / $per_page);
+
 		return new WP_REST_Response([
 			'code'    => 200,
 			'status'  => 'OK',
@@ -324,7 +336,6 @@ class WPEM_REST_Send_Message_Controller {
 			]
 		], 200);
 	}
-
 }
 
 new WPEM_REST_Send_Message_Controller();
