@@ -194,7 +194,7 @@ class WPEM_REST_Send_Message_Controller {
 			"SELECT * FROM $table 
 			 WHERE (sender_id = %d AND receiver_id = %d) 
 				OR (sender_id = %d AND receiver_id = %d)
-			 ORDER BY created_at ASC
+			 ORDER BY created_at DESC
 			 LIMIT %d OFFSET %d",
 			$sender_id, $receiver_id, $receiver_id, $sender_id,
 			$per_page, $offset
