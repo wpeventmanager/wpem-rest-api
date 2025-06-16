@@ -163,88 +163,94 @@ class WPEM_REST_Create_Meeting_Controller {
     }
 
     public function get_user_meetings(WP_REST_Request $request) {
-        if (!get_option('enable_matchmaking', false)) {
-            return new WP_REST_Response(['code' => 403, 'status' => 'Disabled', 'message' => 'Matchmaking functionality is not enabled.', 'data' => null], 403);
-        }
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code' => 403,
+				'status' => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data' => null
+			], 403);
+		}
 
-        global $wpdb;
+		global $wpdb;
 
-        $event_id        = intval($request->get_param('event_id'));
-        $user_id         = intval($request->get_param('user_id'));
-        $participants_id = $request->get_param('participants_id');
+		$event_id = intval($request->get_param('event_id'));
+		$user_id  = intval($request->get_param('user_id'));
 
-        if (!$event_id || !$user_id || empty($participants_id)) {
-            return new WP_REST_Response(['code' => 400, 'status' => 'error', 'message' => 'Missing event_id, user_id, or participants_id.', 'data' => null], 400);
-        }
+		if (!$event_id || !$user_id) {
+			return new WP_REST_Response([
+				'code' => 400,
+				'status' => 'error',
+				'message' => 'Missing event_id or user_id.',
+				'data' => null
+			], 400);
+		}
 
-        $participants_id = is_array($participants_id) ? array_map('intval', $participants_id) : array_map('intval', explode(',', $participants_id));
+		$table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
 
-        $conditions = [];
-        foreach ($participants_id as $id) {
-            $conditions[] = $wpdb->prepare("FIND_IN_SET(%d, participant_ids)", $id);
-        }
-        $where_participants = implode(" OR ", $conditions);
+		$query = $wpdb->prepare("
+			SELECT * FROM $table 
+			WHERE event_id = %d 
+			AND (
+				user_id = %d 
+				OR participant_ids LIKE %s 
+				OR participant_ids LIKE %s 
+				OR participant_ids LIKE %s 
+				OR participant_ids = %s
+			)
+		", $event_id, $user_id,
+		   "%," . $user_id . ",%", // middle
+		   $user_id . ",%",        // beginning
+		   "%," . $user_id,        // end
+		   $user_id);              // only one participant
 
-        $table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
-        $sql = "
-            SELECT * FROM $table
-            WHERE event_id = %d
-              AND (user_id = %d OR ($where_participants))
-        ";
-        $query = $wpdb->prepare($sql, $event_id, $user_id);
-        $meetings = $wpdb->get_results($query, ARRAY_A);
+		$meetings = $wpdb->get_results($query, ARRAY_A);
 
-        if (empty($meetings)) {
-            return new WP_REST_Response(['code' => 404, 'status' => 'error', 'message' => 'No meetings found.', 'data' => null], 404);
-        }
+		if (empty($meetings)) {
+			return new WP_REST_Response([
+				'code' => 404,
+				'status' => 'error',
+				'message' => 'No meetings found.',
+				'data' => null
+			], 404);
+		}
 
-        // Collect all user IDs involved
-        $all_user_ids = [$user_id];
-        foreach ($meetings as $meeting) {
-            $all_user_ids = array_merge($all_user_ids, array_map('intval', explode(',', $meeting['participant_ids'])));
-        }
-        $all_user_ids = array_unique($all_user_ids);
-
-        $profiles = $wpdb->get_results(
-            $wpdb->prepare("SELECT user_id, profession, profile_photo FROM {$wpdb->prefix}wpem_matchmaking_users WHERE user_id IN (" . implode(',', array_fill(0, count($all_user_ids), '%d')) . ")", ...$all_user_ids),
-            ARRAY_A
-        );
-        $custom_user_indexed = array_column($profiles, null, 'user_id');
-
-        $meeting_data = [];
-        foreach ($meetings as $meeting) {
-            $participant_array = maybe_unserialize($meeting['participant_ids']);
-			$participants_info = [];
-
-			if (is_array($participant_array)) {
-				foreach ($participant_array as $pid => $status) {
-					if ((int)$pid !== $user_id) {
-						$participants_info[] = [
-							'id'     => (int)$pid,
-							'status' => (int)$status,
-						];
-					}
-				}
-			}
-
-			$meeting_data[] = [
-				'meeting_id'           => (int)$meeting['id'],
-				'meeting_date' => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
-				'start_time'   => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
-				'end_time'     => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
-				'message'      => $meeting['message'],
-				'host'         => (int)$meeting['user_id'],
-				'participants' => $participants_info,
-			];
-        }
-
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Meetings retrieved successfully.',
-            'data'    => $meeting_data,
-        ], 200);
+		$meeting_data = [];
+		foreach ($meetings as $meeting) {
+			$participant_statuses = maybe_unserialize($meeting['participant_ids']);
+    if (!is_array($participant_statuses)) {
+        $participant_statuses = [];
     }
+
+    $participants_info = [];
+    foreach ($participant_statuses as $pid => $status) {
+        if ((int)$pid !== $user_id) {
+            $participants_info[] = [
+                'id'     => (int)$pid,
+                'status' => (int)$status
+            ];
+        }
+    }
+
+    $meeting_data[] = [
+        'meeting_id'   => (int)$meeting['id'],
+        'meeting_date' => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
+        'start_time'   => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
+        'end_time'     => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
+        'message'      => $meeting['message'],
+        'host'         => (int)$meeting['user_id'],
+        'participants' => $participants_info,
+    ];
+		}
+
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Meetings retrieved successfully.',
+			'data'    => $meeting_data
+		], 200);
+	}
+
 	public function cancel_meeting(WP_REST_Request $request) {
 		global $wpdb;
 
