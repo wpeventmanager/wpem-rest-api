@@ -317,7 +317,7 @@ class WPEM_REST_Send_Message_Controller {
 				'profession'    => $wpdb->get_var($wpdb->prepare("SELECT profession FROM $profile_tbl WHERE user_id = %d", $uid)),
 				'company_name'  => $wpdb->get_var($wpdb->prepare("SELECT company_name FROM $profile_tbl WHERE user_id = %d", $uid)),
 				'last_message'  => $last_message_row ? $last_message_row->message : null,
-				'message_time'  => $last_message_row ? date('d/m/y, h:i A', strtotime($last_message_row->created_at)) : null,
+				'message_time'  => $last_message_row ?  date('Y-m-d H:i:s', strtotime($last_message_row->created_at)) : null,
 			];
 		}
 
