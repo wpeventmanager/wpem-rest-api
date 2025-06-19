@@ -32,6 +32,7 @@ class WPEM_REST_Create_Meeting_Controller {
             'callback' => [$this, 'get_user_meetings'],
             'permission_callback' => [$auth_controller, 'check_authentication'],
         ]);
+
 		register_rest_route($this->namespace, '/cancel-meeting', [
 			'methods'  => WP_REST_Server::CREATABLE,
 			'callback' => [$this, 'cancel_meeting'],
@@ -41,6 +42,18 @@ class WPEM_REST_Create_Meeting_Controller {
 				'user_id'    => ['required' => true, 'type' => 'integer'],
 			],
 		]);
+
+        register_rest_route($this->namespace, '/update-meeting-status', [
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => [$this, 'update_meeting_status'],
+			'permission_callback' => [$auth_controller, 'check_authentication'],
+			'args' => [
+				'meeting_id' => ['required' => true, 'type' => 'integer'],
+				'user_id'    => ['required' => true, 'type' => 'integer'],
+				'status'     => ['required' => true, 'type' => 'integer', 'enum' => [0, 1]],
+			],
+		]);
+
     }
 
     public function create_meeting(WP_REST_Request $request) {
@@ -69,7 +82,7 @@ class WPEM_REST_Create_Meeting_Controller {
         $inserted = $wpdb->insert($table, [
             'user_id'            => $user_id,
             'event_id'           => $event_id,
-            'participant_ids'    => implode(',', $participants),
+            'participant_ids'    => serialize($participants),
             'meeting_date'       => $meeting_date,
             'meeting_start_time' => $start_time,
             'meeting_end_time'   => $end_time,
@@ -218,29 +231,43 @@ class WPEM_REST_Create_Meeting_Controller {
 		$meeting_data = [];
 		foreach ($meetings as $meeting) {
 			$participant_statuses = maybe_unserialize($meeting['participant_ids']);
-    if (!is_array($participant_statuses)) {
-        $participant_statuses = [];
-    }
+			if (!is_array($participant_statuses)) {
+				$participant_statuses = [];
+			}
 
-    $participants_info = [];
-    foreach ($participant_statuses as $pid => $status) {
-        if ((int)$pid !== $user_id) {
-            $participants_info[] = [
-                'id'     => (int)$pid,
-                'status' => (int)$status
-            ];
-        }
-    }
+			$participants_info = [];
+			foreach ($participant_statuses as $pid => $status) {
+				if ((int)$pid === $user_id) continue;
 
-    $meeting_data[] = [
-        'meeting_id'   => (int)$meeting['id'],
-        'meeting_date' => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
-        'start_time'   => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
-        'end_time'     => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
-        'message'      => $meeting['message'],
-        'host'         => (int)$meeting['user_id'],
-        'participants' => $participants_info,
-    ];
+				// Get user display name
+				$user_data = get_userdata($pid);
+				$display_name = $user_data ? $user_data->display_name : '';
+
+				// Get extra profile info from custom table
+				$meta = $wpdb->get_row($wpdb->prepare(
+					"SELECT profile_photo, profession, company_name FROM {$wpdb->prefix}wpem_matchmaking_users WHERE user_id = %d",
+					$pid
+				));
+
+				$participants_info[] = [
+					'id'         => (int)$pid,
+					'status'     => (int)$status,
+					'name'       => $display_name,
+					'image'      => !empty($meta->profile_photo) ? esc_url($meta->profile_photo) : '',
+					'profession' => isset($meta->profession) ? esc_html($meta->profession) : '',
+					'company'    => isset($meta->company_name) ? esc_html($meta->company_name) : '',
+				];
+			}
+
+			$meeting_data[] = [
+				'meeting_id'   => (int)$meeting['id'],
+				'meeting_date' => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
+				'start_time'   => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
+				'end_time'     => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
+				'message'      => $meeting['message'],
+				'host'         => (int)$meeting['user_id'],
+				'participants' => $participants_info,
+			];
 		}
 
 		return new WP_REST_Response([
@@ -314,6 +341,67 @@ class WPEM_REST_Create_Meeting_Controller {
 			'status'  => 'OK',
 			'message' => 'Meeting cancelled successfully.',
 			'data'    => ['meeting_id' => $meeting_id],
+		], 200);
+	}
+    public function update_meeting_status(WP_REST_Request $request) {
+		global $wpdb;
+
+		$meeting_id = intval($request->get_param('meeting_id'));
+		$user_id    = intval($request->get_param('user_id'));
+		$new_status = intval($request->get_param('status'));
+
+		if (!$meeting_id || !$user_id || !in_array($new_status, [0, 1], true)) {
+			return new WP_REST_Response(['code' => 400, 'message' => 'Invalid parameters.'], 400);
+		}
+
+		$table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
+		$meeting = $wpdb->get_row($wpdb->prepare("SELECT participant_ids FROM $table WHERE id = %d", $meeting_id));
+
+		if (!$meeting) {
+			return new WP_REST_Response(['code' => 404, 'message' => 'Meeting not found.'], 404);
+		}
+
+		$participant_data = maybe_unserialize($meeting->participant_ids);
+		if (!is_array($participant_data)) {
+			$participant_data = [];
+		}
+
+		if (!array_key_exists($user_id, $participant_data)) {
+			return new WP_REST_Response(['code' => 403, 'message' => 'You are not a participant of this meeting.'], 403);
+		}
+
+		// Update current user's status
+		$participant_data[$user_id] = $new_status;
+
+		// If at least one participant has accepted (status = 1), mark meeting as accepted
+		$meeting_status = (in_array(1, $participant_data, true)) ? 1 : 0;
+
+		// Update in DB
+		$updated = $wpdb->update(
+			$table,
+			[
+				'participant_ids' => maybe_serialize($participant_data),
+				'meeting_status'  => $meeting_status,
+			],
+			['id' => $meeting_id],
+			['%s', '%d'],
+			['%d']
+		);
+
+		if ($updated === false) {
+			return new WP_REST_Response(['code' => 500, 'message' => 'Failed to update status.'], 500);
+		}
+
+		return new WP_REST_Response([
+			'code' => 200,
+			'status' => 'OK',
+			'message' => $new_status ? 'Meeting accepted.' : 'Meeting declined.',
+			'data' => [
+				'meeting_id'       => $meeting_id,
+				'participant_id'   => $user_id,
+				'participant_status' => $new_status,
+				'meeting_status'   => $meeting_status,
+			]
 		], 200);
 	}
 }
