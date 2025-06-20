@@ -176,7 +176,7 @@ class WPEM_REST_Create_Meeting_Controller {
         ], 200);
     }
 
-    public function get_user_meetings(WP_REST_Request $request) {
+   public function get_user_meetings(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
 				'code' => 403,
@@ -202,49 +202,38 @@ class WPEM_REST_Create_Meeting_Controller {
 
 		$table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
 
-		$query = $wpdb->prepare("
-			SELECT * FROM $table 
-			WHERE event_id = %d 
-			AND (
-				user_id = %d 
-				OR participant_ids LIKE %s 
-				OR participant_ids LIKE %s 
-				OR participant_ids LIKE %s 
-				OR participant_ids = %s
-			)
-		", $event_id, $user_id,
-		   "%," . $user_id . ",%", // middle
-		   $user_id . ",%",        // beginning
-		   "%," . $user_id,        // end
-		   $user_id);              // only one participant
+		// Fetch ALL meetings for this event
+		$all_meetings = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table WHERE event_id = %d", $event_id), ARRAY_A);
 
-		$meetings = $wpdb->get_results($query, ARRAY_A);
-
-		if (empty($meetings)) {
+		if (empty($all_meetings)) {
 			return new WP_REST_Response([
 				'code' => 404,
 				'status' => 'error',
-				'message' => 'No meetings found.',
+				'message' => 'No meetings found for this event.',
 				'data' => null
 			], 404);
 		}
 
 		$meeting_data = [];
-		foreach ($meetings as $meeting) {
+
+		foreach ($all_meetings as $meeting) {
 			$participant_statuses = maybe_unserialize($meeting['participant_ids']);
 			if (!is_array($participant_statuses)) {
 				$participant_statuses = [];
+			}
+
+			// Check if current user is host or in participant list
+			if ((int)$meeting['user_id'] !== $user_id && !array_key_exists($user_id, $participant_statuses)) {
+				continue;
 			}
 
 			$participants_info = [];
 			foreach ($participant_statuses as $pid => $status) {
 				if ((int)$pid === $user_id) continue;
 
-				// Get user display name
 				$user_data = get_userdata($pid);
 				$display_name = $user_data ? $user_data->display_name : '';
 
-				// Get extra profile info from custom table
 				$meta = $wpdb->get_row($wpdb->prepare(
 					"SELECT profile_photo, profession, company_name FROM {$wpdb->prefix}wpem_matchmaking_users WHERE user_id = %d",
 					$pid
@@ -261,15 +250,24 @@ class WPEM_REST_Create_Meeting_Controller {
 			}
 
 			$meeting_data[] = [
-				'meeting_id'   => (int)$meeting['id'],
-				'meeting_date' => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
-				'start_time'   => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
-				'end_time'     => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
-				'message'      => $meeting['message'],
-				'host'         => (int)$meeting['user_id'],
-				'participants' => $participants_info,
-				'meeting_status'=> $meeting['meeting_status']
+				'meeting_id'     => (int)$meeting['id'],
+				'meeting_date'   => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
+				'start_time'     => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
+				'end_time'       => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
+				'message'        => $meeting['message'],
+				'host'           => (int)$meeting['user_id'],
+				'participants'   => $participants_info,
+				'meeting_status' => (int)$meeting['meeting_status']
 			];
+		}
+
+		if (empty($meeting_data)) {
+			return new WP_REST_Response([
+				'code' => 404,
+				'status' => 'error',
+				'message' => 'No meetings found for this user.',
+				'data' => null
+			], 404);
 		}
 
 		return new WP_REST_Response([
