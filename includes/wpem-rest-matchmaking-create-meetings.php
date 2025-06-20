@@ -268,6 +268,7 @@ class WPEM_REST_Create_Meeting_Controller {
 				'message'      => $meeting['message'],
 				'host'         => (int)$meeting['user_id'],
 				'participants' => $participants_info,
+				'meeting_status'=> $meeting['meeting_status']
 			];
 		}
 
