@@ -77,7 +77,7 @@ class WPEM_REST_Create_Meeting_Controller {
 
         // Filter out the user themselves from participant list
         $participants = array_filter(array_map('intval', $participants), fn($pid) => $pid !== $user_id);
-		$participants = array_fill_keys($participants, 0);  
+		$participants = array_fill_keys($participants, -1);  
 
         $table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
         $inserted = $wpdb->insert($table, [
