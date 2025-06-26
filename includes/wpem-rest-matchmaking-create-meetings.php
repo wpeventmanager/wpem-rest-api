@@ -229,7 +229,7 @@ class WPEM_REST_Create_Meeting_Controller {
 
 			$participants_info = [];
 			foreach ($participant_statuses as $pid => $status) {
-				if ((int)$pid === $user_id) continue;
+				//if ((int)$pid === $user_id) continue;
 
 				$user_data = get_userdata($pid);
 				$display_name = $user_data ? $user_data->display_name : '';
