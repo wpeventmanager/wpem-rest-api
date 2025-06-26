@@ -248,14 +248,27 @@ class WPEM_REST_Create_Meeting_Controller {
 					'company'    => isset($meta->company_name) ? esc_html($meta->company_name) : '',
 				];
 			}
+			$host_id = (int)$meeting['user_id'];
+			$host_user = get_userdata($host_id);
+			$host_meta = $wpdb->get_row($wpdb->prepare(
+				"SELECT profile_photo, profession, company_name FROM {$wpdb->prefix}wpem_matchmaking_users WHERE user_id = %d",
+				$host_id
+			));
 
+			$host_info = [
+				'id'         => $host_id,
+				'name'       => $host_user ? $host_user->display_name : '',
+				'image'      => !empty($host_meta->profile_photo) ? esc_url($host_meta->profile_photo) : '',
+				'profession' => isset($host_meta->profession) ? esc_html($host_meta->profession) : '',
+				'company'    => isset($host_meta->company_name) ? esc_html($host_meta->company_name) : '',
+			];
 			$meeting_data[] = [
 				'meeting_id'     => (int)$meeting['id'],
 				'meeting_date'   => date_i18n('l, d F Y', strtotime($meeting['meeting_date'])),
 				'start_time'     => date_i18n('h:i A', strtotime($meeting['meeting_start_time'])),
 				'end_time'       => date_i18n('h:i A', strtotime($meeting['meeting_end_time'])),
 				'message'        => $meeting['message'],
-				'host'           => (int)$meeting['user_id'],
+				'host_info'      => $host_info,
 				'participants'   => $participants_info,
 				'meeting_status' => (int)$meeting['meeting_status']
 			];
