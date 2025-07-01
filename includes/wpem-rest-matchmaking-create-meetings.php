@@ -53,6 +53,21 @@ class WPEM_REST_Create_Meeting_Controller {
 				'status'     => ['required' => true, 'type' => 'integer', 'enum' => [0, 1]],
 			],
 		]);
+		register_rest_route($this->namespace, '/get-availability-slots', [
+			'methods'  => WP_REST_Server::READABLE,
+			'callback' => [$this, 'get_booked_meeting_slots'],
+			'permission_callback' => [$auth_controller, 'check_authentication'],
+			'args' => [
+				'event_id' => [
+					'required' => true,
+					'type' => 'integer'
+				],
+				'user_id' => [
+					'required' => false,
+					'type' => 'integer'
+				]
+			]
+		]);
 
     }
 
@@ -292,6 +307,14 @@ class WPEM_REST_Create_Meeting_Controller {
 	}
 
 	public function cancel_meeting(WP_REST_Request $request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code' => 403,
+				'status' => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data' => null
+			], 403);
+		}
 		global $wpdb;
 
 		$meeting_id = intval($request->get_param('meeting_id'));
@@ -357,6 +380,14 @@ class WPEM_REST_Create_Meeting_Controller {
 		], 200);
 	}
     public function update_meeting_status(WP_REST_Request $request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code' => 403,
+				'status' => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data' => null
+			], 403);
+		}
 		global $wpdb;
 
 		$meeting_id = intval($request->get_param('meeting_id'));
@@ -415,6 +446,48 @@ class WPEM_REST_Create_Meeting_Controller {
 				'participant_status' => $new_status,
 				'meeting_status'   => $meeting_status,
 			]
+		], 200);
+	}
+	public function get_booked_meeting_slots(WP_REST_Request $request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code' => 403,
+				'status' => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data' => null
+			], 403);
+		}
+		global $wpdb;
+
+		$event_id = intval($request->get_param('event_id'));
+		$user_id  = intval($request->get_param('user_id')) ?: get_current_user_id();
+
+		if (!$event_id || !$user_id) {
+			return new WP_REST_Response([
+				'code' => 400,
+				'status' => 'error',
+				'message' => 'Missing event_id or unauthorized access.',
+				'data' => null
+			], 400);
+		}
+
+		$table = $wpdb->prefix . 'wpem_matchmaking_users';
+		$saved = $wpdb->get_var(
+			$wpdb->prepare("SELECT meeting_availability_slot FROM $table WHERE user_id = %d", $user_id)
+		);
+
+		$saved_data = !empty($saved) ? maybe_unserialize($saved) : [];
+
+		$event_slots = $saved_data[$event_id] ?? [];
+		
+		if (is_array($event_slots)) {
+			ksort($event_slots); // sorts date keys in ascending order
+		}
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Availability slots fetched successfully.',
+			'data'    => $event_slots
 		], 200);
 	}
 }
