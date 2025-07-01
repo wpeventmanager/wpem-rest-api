@@ -457,6 +457,7 @@ class WPEM_REST_Create_Meeting_Controller {
 				'data' => null
 			], 403);
 		}
+
 		global $wpdb;
 
 		$event_id = intval($request->get_param('event_id'));
@@ -472,22 +473,30 @@ class WPEM_REST_Create_Meeting_Controller {
 		}
 
 		$table = $wpdb->prefix . 'wpem_matchmaking_users';
-		$saved = $wpdb->get_var(
-			$wpdb->prepare("SELECT meeting_availability_slot FROM $table WHERE user_id = %d", $user_id)
+
+		// Get availability slot and available flag in single query
+		$result = $wpdb->get_row(
+			$wpdb->prepare("SELECT meeting_availability_slot, available_for_meeting FROM $table WHERE user_id = %d", $user_id),
+			ARRAY_A
 		);
 
-		$saved_data = !empty($saved) ? maybe_unserialize($saved) : [];
+		$saved_data = !empty($result['meeting_availability_slot']) ? maybe_unserialize($result['meeting_availability_slot']) : [];
+		$available_flag = isset($result['available_for_meeting']) ? (int)$result['available_for_meeting'] : 0;
 
 		$event_slots = $saved_data[$event_id] ?? [];
-		
+
 		if (is_array($event_slots)) {
-			ksort($event_slots); // sorts date keys in ascending order
+			ksort($event_slots); // sort by date keys
 		}
+
 		return new WP_REST_Response([
-			'code'    => 200,
-			'status'  => 'OK',
+			'code' => 200,
+			'status' => 'OK',
 			'message' => 'Availability slots fetched successfully.',
-			'data'    => $event_slots
+			'data' => [
+				'available_for_meeting' => $available_flag,
+				'slots' => $event_slots
+			]
 		], 200);
 	}
 }
