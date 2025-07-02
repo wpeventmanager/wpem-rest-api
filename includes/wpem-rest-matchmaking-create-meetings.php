@@ -68,7 +68,25 @@ class WPEM_REST_Create_Meeting_Controller {
 				]
 			]
 		]);
-
+		register_rest_route($this->namespace, '/common-availability-slots', [
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => [$this, 'get_common_availability_slots'],
+			'permission_callback' => [$auth_controller, 'check_authentication'],
+			'args' => [
+				'event_id' => [
+					'required' => true,
+					'type' => 'integer',
+				],
+				'user_ids' => [
+					'required' => true,
+					'type' => 'array',
+				],
+				'date' => [
+					'required' => true,
+					'type' => 'string', // expected in Y-m-d format
+				],
+			]
+		]);
     }
 
     public function create_meeting(WP_REST_Request $request) {
@@ -498,6 +516,113 @@ class WPEM_REST_Create_Meeting_Controller {
 				'slots' => $event_slots
 			]
 		], 200);
+	}
+	public function get_common_availability_slots($request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code' => 403,
+				'status' => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data' => null
+			], 403);
+		}
+		global $wpdb;
+
+		$event_id = intval($request->get_param('event_id'));
+		$user_ids = $request->get_param('user_ids');
+		$date     = sanitize_text_field($request->get_param('date'));
+
+		if (!is_array($user_ids) || empty($user_ids) || !$event_id || !$date) {
+			return new WP_REST_Response([
+				'code'    => 400,
+				'status'  => 'ERROR',
+				'message' => 'Invalid parameters.',
+				'data'    => [],
+			], 400);
+		}
+
+		$placeholders = implode(',', array_fill(0, count($user_ids), '%d'));
+		$query = "
+			SELECT user_id, meeting_availability_slot 
+			FROM {$wpdb->prefix}wpem_matchmaking_users 
+			WHERE user_id IN ($placeholders)
+		";
+		$prepared = $wpdb->prepare($query, $user_ids);
+		$results = $wpdb->get_results($prepared);
+
+		if (empty($results)) {
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'No common slots found.',
+				'data'    => ['common_slots' => []],
+			]);
+		}
+
+		$all_user_slots = [];
+
+		foreach ($results as $row) {
+			$data = maybe_unserialize($row->meeting_availability_slot);
+
+			if (
+				empty($data) ||
+				!isset($data[$event_id]) ||
+				!isset($data[$event_id][$date]) ||
+				!is_array($data[$event_id][$date])
+			) {
+				return new WP_REST_Response([
+					'code'    => 200,
+					'status'  => 'OK',
+					'message' => 'No common slots found.',
+					'data'    => ['common_slots' => []],
+				]);
+			}
+
+			$all_user_slots[] = $data[$event_id][$date];
+		}
+
+		// If only one user, just return their slots
+		if (count($all_user_slots) === 1) {
+			sort($all_user_slots[0]);
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'Availability slots retrieved successfully.',
+				'data'    => [
+					'event_id'     => $event_id,
+					'date'         => $date,
+					'common_slots' => array_values($all_user_slots[0]),
+				],
+			]);
+		}
+
+		// Multiple users: get intersection
+		$common_slots = array_shift($all_user_slots);
+		foreach ($all_user_slots as $slots) {
+			$common_slots = array_intersect($common_slots, $slots);
+		}
+
+		sort($common_slots);
+
+		if (empty($common_slots)) {
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'No common slots found.',
+				'data'    => ['common_slots' => []],
+			]);
+		}
+
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Common availability slots retrieved successfully.',
+			'data'    => [
+				'event_id'     => $event_id,
+				'date'         => $date,
+				'common_slots' => array_values($common_slots),
+			],
+		]);
 	}
 }
 
