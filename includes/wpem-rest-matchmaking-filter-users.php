@@ -104,7 +104,6 @@ class WPEM_REST_Filter_Users_Controller {
 			$search_like = '%' . $wpdb->esc_like($search) . '%';
 			
 			$search_conditions = [
-				"about LIKE %s",
 				"city LIKE %s",
 				"country LIKE %s",
 				"profession LIKE %s",
