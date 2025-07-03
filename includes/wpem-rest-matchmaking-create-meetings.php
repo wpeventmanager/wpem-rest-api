@@ -68,6 +68,29 @@ class WPEM_REST_Create_Meeting_Controller {
 				]
 			]
 		]);
+		register_rest_route($this->namespace, '/update-availability-slots', [
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => [$this, 'update_availability_slots_rest'],
+			'permission_callback' => [$auth_controller, 'check_authentication'],
+			'args' => [
+				'event_id' => [
+					'required' => true,
+					'type' => 'integer'
+				],
+				'availability_slots' => [
+					'required' => true,
+					'type' => 'object'  
+				],
+				'available_for_meeting' => [
+					'required' => false,
+					'type' => 'boolean' 
+				],
+				'user_id' => [
+					'required' => false,
+					'type' => 'integer'
+				]
+			]
+		]);
 		register_rest_route($this->namespace, '/common-availability-slots', [
 			'methods'  => WP_REST_Server::CREATABLE,
 			'callback' => [$this, 'get_common_availability_slots'],
@@ -516,6 +539,70 @@ class WPEM_REST_Create_Meeting_Controller {
 				'slots' => $event_slots
 			]
 		], 200);
+	}
+	public function update_availability_slots_rest(WP_REST_Request $request) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'wpem_matchmaking_users';
+
+		$event_id              = $request->get_param('event_id');
+		$availability_slots    = $request->get_param('availability_slots');
+		$available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
+		$user_id               = $request->get_param('user_id') ?: get_current_user_id();
+
+		if (!$user_id || !$event_id || !is_array($availability_slots)) {
+			return new WP_REST_Response([
+				'code'    => 400,
+				'status'  => 'ERROR',
+				'message' => 'Missing or invalid parameters.'
+			], 400);
+		}
+
+		// Get existing availability
+		$current_data = $wpdb->get_var($wpdb->prepare(
+			"SELECT meeting_availability_slot FROM {$table} WHERE user_id = %d",
+			$user_id
+		));
+
+		$availability_data = [];
+		if ($current_data) {
+			$maybe_unserialized = maybe_unserialize($current_data);
+			if (is_array($maybe_unserialized)) {
+				$availability_data = $maybe_unserialized;
+			}
+		}
+
+		if (!isset($availability_data[$event_id]) || !is_array($availability_data[$event_id])) {
+			$availability_data[$event_id] = [];
+		}
+
+		foreach ($availability_slots as $date => $slots) {
+			$availability_data[$event_id][$date] = $slots;
+		}
+
+		$updated = $wpdb->update(
+			$table,
+			[
+				'meeting_availability_slot' => maybe_serialize($availability_data),
+				'available_for_meeting'     => $available_for_meeting,
+			],
+			['user_id' => $user_id],
+			['%s', '%d'],
+			['%d']
+		);
+
+		if ($updated !== false) {
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'Availability updated successfully.',
+			], 200);
+		} else {
+			return new WP_REST_Response([
+				'code'    => 500,
+				'status'  => 'ERROR',
+				'message' => 'No changes made or failed to save availability.',
+			], 500);
+		}
 	}
 	public function get_common_availability_slots($request) {
 		if (!get_option('enable_matchmaking', false)) {
