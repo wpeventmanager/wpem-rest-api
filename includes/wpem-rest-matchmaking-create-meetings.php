@@ -544,10 +544,10 @@ class WPEM_REST_Create_Meeting_Controller {
 		global $wpdb;
 		$table = $wpdb->prefix . 'wpem_matchmaking_users';
 
-		$event_id              = $request->get_param('event_id');
-		$availability_slots    = $request->get_param('availability_slots');
+		$event_id              = intval($request->get_param('event_id'));
+		$availability_slots    = $request->get_param('availability_slots'); // Expected as [ '2024-07-05' => ['08:00', '09:00'] ]
 		$available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
-		$user_id               = $request->get_param('user_id') ?: get_current_user_id();
+		$user_id               = intval($request->get_param('user_id') ?: get_current_user_id());
 
 		if (!$user_id || !$event_id || !is_array($availability_slots)) {
 			return new WP_REST_Response([
@@ -571,12 +571,29 @@ class WPEM_REST_Create_Meeting_Controller {
 			}
 		}
 
+		// Ensure event array is initialized
 		if (!isset($availability_data[$event_id]) || !is_array($availability_data[$event_id])) {
 			$availability_data[$event_id] = [];
 		}
 
-		foreach ($availability_slots as $date => $slots) {
-			$availability_data[$event_id][$date] = $slots;
+		// Merge submitted availability into existing structure, preserving flags
+		foreach ($availability_slots as $date => $new_slots) {
+			if (!isset($availability_data[$event_id][$date]) || !is_array($availability_data[$event_id][$date])) {
+				$availability_data[$event_id][$date] = [];
+			}
+
+			$existing_slots = $availability_data[$event_id][$date];
+			$updated_slots = [];
+
+			foreach ($new_slots as $slot) {
+				if (isset($existing_slots[$slot]) && $existing_slots[$slot] === 1) {
+					$updated_slots[$slot] = 1; // Preserve booking flag
+				} else {
+					$updated_slots[$slot] = 0; // Mark as available
+				}
+			}
+
+			$availability_data[$event_id][$date] = $updated_slots;
 		}
 
 		$updated = $wpdb->update(
@@ -604,15 +621,10 @@ class WPEM_REST_Create_Meeting_Controller {
 			], 500);
 		}
 	}
+
+
+	
 	public function get_common_availability_slots($request) {
-		if (!get_option('enable_matchmaking', false)) {
-			return new WP_REST_Response([
-				'code' => 403,
-				'status' => 'Disabled',
-				'message' => 'Matchmaking functionality is not enabled.',
-				'data' => null
-			], 403);
-		}
 		global $wpdb;
 
 		$event_id = intval($request->get_param('event_id'));
@@ -665,10 +677,24 @@ class WPEM_REST_Create_Meeting_Controller {
 				]);
 			}
 
-			$all_user_slots[] = $data[$event_id][$date];
+			// Filter only available slots (value === 0)
+			$available_slots = array_keys(array_filter($data[$event_id][$date], function($v) {
+				return $v === 0;
+			}));
+
+			if (empty($available_slots)) {
+				return new WP_REST_Response([
+					'code'    => 200,
+					'status'  => 'OK',
+					'message' => 'No common slots found.',
+					'data'    => ['common_slots' => []],
+				]);
+			}
+
+			$all_user_slots[] = $available_slots;
 		}
 
-		// If only one user, just return their slots
+		// Only one user: return their available slots
 		if (count($all_user_slots) === 1) {
 			sort($all_user_slots[0]);
 			return new WP_REST_Response([
@@ -683,7 +709,7 @@ class WPEM_REST_Create_Meeting_Controller {
 			]);
 		}
 
-		// Multiple users: get intersection
+		// Multiple users: intersect available time slots
 		$common_slots = array_shift($all_user_slots);
 		foreach ($all_user_slots as $slots) {
 			$common_slots = array_intersect($common_slots, $slots);
@@ -691,19 +717,10 @@ class WPEM_REST_Create_Meeting_Controller {
 
 		sort($common_slots);
 
-		if (empty($common_slots)) {
-			return new WP_REST_Response([
-				'code'    => 200,
-				'status'  => 'OK',
-				'message' => 'No common slots found.',
-				'data'    => ['common_slots' => []],
-			]);
-		}
-
 		return new WP_REST_Response([
 			'code'    => 200,
 			'status'  => 'OK',
-			'message' => 'Common availability slots retrieved successfully.',
+			'message' => empty($common_slots) ? 'No common slots found.' : 'Common availability slots retrieved successfully.',
 			'data'    => [
 				'event_id'     => $event_id,
 				'date'         => $date,
