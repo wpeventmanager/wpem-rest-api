@@ -545,11 +545,11 @@ class WPEM_REST_Create_Meeting_Controller {
 		$table = $wpdb->prefix . 'wpem_matchmaking_users';
 
 		$event_id              = intval($request->get_param('event_id'));
-		$availability_slots    = $request->get_param('availability_slots'); // Expected as [ '2024-07-05' => ['08:00', '09:00'] ]
+		$submitted_slots       = $request->get_param('availability_slots'); // e.g., [ '2025-07-01' => ['08:00', '09:00'] ]
 		$available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
 		$user_id               = intval($request->get_param('user_id') ?: get_current_user_id());
 
-		if (!$user_id || !$event_id || !is_array($availability_slots)) {
+		if (!$user_id || !$event_id || !is_array($submitted_slots)) {
 			return new WP_REST_Response([
 				'code'    => 400,
 				'status'  => 'ERROR',
@@ -557,43 +557,52 @@ class WPEM_REST_Create_Meeting_Controller {
 			], 400);
 		}
 
-		// Get existing availability
 		$current_data = $wpdb->get_var($wpdb->prepare(
 			"SELECT meeting_availability_slot FROM {$table} WHERE user_id = %d",
 			$user_id
 		));
 
 		$availability_data = [];
-		if ($current_data) {
+		if (!empty($current_data)) {
 			$maybe_unserialized = maybe_unserialize($current_data);
 			if (is_array($maybe_unserialized)) {
 				$availability_data = $maybe_unserialized;
 			}
 		}
 
-		// Ensure event array is initialized
+		// Define full-day time slots (07:00 to 18:00)
+		$full_day_slots = [];
+		for ($h = 7; $h <= 18; $h++) {
+			$full_day_slots[] = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
+		}
+
+		// Ensure structure exists
 		if (!isset($availability_data[$event_id]) || !is_array($availability_data[$event_id])) {
 			$availability_data[$event_id] = [];
 		}
 
-		// Merge submitted availability into existing structure, preserving flags
-		foreach ($availability_slots as $date => $new_slots) {
-			if (!isset($availability_data[$event_id][$date]) || !is_array($availability_data[$event_id][$date])) {
+		foreach ($submitted_slots as $date => $selected_times) {
+			if (!isset($availability_data[$event_id][$date])) {
 				$availability_data[$event_id][$date] = [];
 			}
 
-			$existing_slots = $availability_data[$event_id][$date];
-			$updated_slots = [];
+			foreach ($full_day_slots as $slot) {
+				$existing_val = $availability_data[$event_id][$date][$slot] ?? null;
 
-			foreach ($new_slots as $slot) {
-				if (isset($existing_slots[$slot]) && $existing_slots[$slot] === 1) {
-					$updated_slots[$slot] = 1; // Preserve booking flag
+				if (in_array($slot, $selected_times)) {
+					// If selected in request, mark 1
+					$availability_data[$event_id][$date][$slot] = 1;
 				} else {
-					$updated_slots[$slot] = 0; // Mark as available
+					// Not selected
+					if ($existing_val === 1 || $existing_val === 2) {
+						// Keep existing value (already booked/available)
+						$availability_data[$event_id][$date][$slot] = $existing_val;
+					} else {
+						// Mark as unavailable
+						$availability_data[$event_id][$date][$slot] = 0;
+					}
 				}
 			}
-
-			$availability_data[$event_id][$date] = $updated_slots;
 		}
 
 		$updated = $wpdb->update(
@@ -611,19 +620,16 @@ class WPEM_REST_Create_Meeting_Controller {
 			return new WP_REST_Response([
 				'code'    => 200,
 				'status'  => 'OK',
-				'message' => 'Availability updated successfully.',
+				'message' => 'Availability updated successfully.'
 			], 200);
 		} else {
 			return new WP_REST_Response([
 				'code'    => 500,
 				'status'  => 'ERROR',
-				'message' => 'No changes made or failed to save availability.',
+				'message' => 'Failed to update availability.'
 			], 500);
 		}
 	}
-
-
-	
 	public function get_common_availability_slots($request) {
 		global $wpdb;
 
@@ -677,9 +683,9 @@ class WPEM_REST_Create_Meeting_Controller {
 				]);
 			}
 
-			// Filter only available slots (value === 0)
+			// Filter only available slots (value === 1)
 			$available_slots = array_keys(array_filter($data[$event_id][$date], function($v) {
-				return $v === 0;
+				return $v === 1;
 			}));
 
 			if (empty($available_slots)) {
