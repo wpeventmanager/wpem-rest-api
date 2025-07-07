@@ -615,7 +615,7 @@ class WPEM_REST_Create_Meeting_Controller {
 		$table = $wpdb->prefix . 'wpem_matchmaking_users';
 
 		$event_id              = intval($request->get_param('event_id'));
-		$submitted_slots       = $request->get_param('availability_slots'); // e.g., [ '2025-07-01' => ['08:00', '09:00'] ]
+		$submitted_slots       = $request->get_param('availability_slots'); // Now: [ '2025-07-07' => [ '07:00' => 0 ] ]
 		$available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
 		$user_id               = intval($request->get_param('user_id') ?: get_current_user_id());
 
@@ -640,37 +640,21 @@ class WPEM_REST_Create_Meeting_Controller {
 			}
 		}
 
-		// Define full-day time slots (07:00 to 18:00)
-		$full_day_slots = [];
-		for ($h = 7; $h <= 18; $h++) {
-			$full_day_slots[] = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
-		}
-
-		// Ensure structure exists
-		if (!isset($availability_data[$event_id]) || !is_array($availability_data[$event_id])) {
+		// Ensure event structure exists
+		if (!isset($availability_data[$event_id])) {
 			$availability_data[$event_id] = [];
 		}
 
-		foreach ($submitted_slots as $date => $selected_times) {
+		// Update the passed slots directly
+		foreach ($submitted_slots as $date => $slots) {
 			if (!isset($availability_data[$event_id][$date])) {
 				$availability_data[$event_id][$date] = [];
 			}
 
-			foreach ($full_day_slots as $slot) {
-				$existing_val = $availability_data[$event_id][$date][$slot] ?? null;
-
-				if (in_array($slot, $selected_times)) {
-					// If selected in request, mark 1
-					$availability_data[$event_id][$date][$slot] = 1;
-				} else {
-					// Not selected
-					if ($existing_val === 1 || $existing_val === 2) {
-						// Keep existing value (already booked/available)
-						$availability_data[$event_id][$date][$slot] = $existing_val;
-					} else {
-						// Mark as unavailable
-						$availability_data[$event_id][$date][$slot] = 0;
-					}
+			foreach ($slots as $time => $value) {
+				// Accept only 0, 1, or 2 as valid values
+				if (in_array($value, [0, 1, 2], true)) {
+					$availability_data[$event_id][$date][$time] = $value;
 				}
 			}
 		}
