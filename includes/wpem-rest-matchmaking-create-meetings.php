@@ -380,7 +380,6 @@ class WPEM_REST_Create_Meeting_Controller {
 			'data'    => $meeting_data
 		], 200);
 	}
-
 	public function cancel_meeting(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
@@ -390,6 +389,7 @@ class WPEM_REST_Create_Meeting_Controller {
 				'data' => null
 			], 403);
 		}
+
 		global $wpdb;
 
 		$meeting_id = intval($request->get_param('meeting_id'));
@@ -416,20 +416,56 @@ class WPEM_REST_Create_Meeting_Controller {
 			return new WP_REST_Response(['code' => 500, 'status' => 'error', 'message' => 'Failed to cancel meeting.'], 500);
 		}
 
-		// Notify participants
+		// Participant + host IDs
 		$participant_ids = maybe_unserialize($meeting['participant_ids']);
-		if (!is_array($participant_ids)) {
-			$participant_ids = [];
+		if (!is_array($participant_ids)) $participant_ids = [];
+		$participant_ids = array_keys($participant_ids);
+		$participant_ids[] = (int)$meeting['user_id'];
+		$participant_ids = array_unique($participant_ids);
+
+		// === Availability reset ===
+		$event_id     = (int)$meeting['event_id'];
+		$meeting_date = $meeting['meeting_date'];
+		$start_time   = date('H:i', strtotime($meeting['meeting_start_time'])); // convert from H:i:s to H:i
+
+		$profile_table = $wpdb->prefix . 'wpem_matchmaking_users';
+
+		foreach ($participant_ids as $pid) {
+			$current_slots_serialized = $wpdb->get_var($wpdb->prepare(
+				"SELECT meeting_availability_slot FROM $profile_table WHERE user_id = %d",
+				$pid
+			));
+
+			$current_slots = maybe_unserialize($current_slots_serialized);
+			if (!is_array($current_slots)) $current_slots = [];
+
+			if (!isset($current_slots[$event_id])) $current_slots[$event_id] = [];
+			if (!isset($current_slots[$event_id][$meeting_date])) $current_slots[$event_id][$meeting_date] = [];
+
+			if (isset($current_slots[$event_id][$meeting_date][$start_time]) && $current_slots[$event_id][$meeting_date][$start_time] == 2) {
+				$current_slots[$event_id][$meeting_date][$start_time] = 1;
+
+				$wpdb->update(
+					$profile_table,
+					['meeting_availability_slot' => maybe_serialize($current_slots)],
+					['user_id' => $pid],
+					['%s'],
+					['%d']
+				);
+			}
 		}
 
-		foreach ($participant_ids as $pid => $status) {
+		// Notify participants
+		foreach ($participant_ids as $pid) {
+			if ($pid == $user_id) continue;
+
 			$user = get_userdata($pid);
 			if ($user) {
 				wp_mail(
 					$user->user_email,
 					'Meeting Cancelled',
 					"<p>Hello {$user->display_name},</p>
-					<p>The meeting scheduled on <strong>{$meeting['meeting_date']}</strong> has been <strong>cancelled</strong>.</p>",
+					<p>The meeting scheduled on <strong>{$meeting_date}</strong> has been <strong>cancelled</strong>.</p>",
 					['Content-Type: text/html; charset=UTF-8']
 				);
 			}
@@ -442,7 +478,7 @@ class WPEM_REST_Create_Meeting_Controller {
 				$host->user_email,
 				'You Cancelled a Meeting',
 				"<p>Hello {$host->display_name},</p>
-				<p>You have cancelled the meeting scheduled on <strong>{$meeting['meeting_date']}</strong>.</p>",
+				<p>You have cancelled the meeting scheduled on <strong>{$meeting_date}</strong>.</p>",
 				['Content-Type: text/html; charset=UTF-8']
 			);
 		}
