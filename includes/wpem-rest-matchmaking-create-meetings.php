@@ -217,7 +217,41 @@ class WPEM_REST_Create_Meeting_Controller {
             ",
             ['Content-Type: text/html; charset=UTF-8']
         );
+		// Update booked slot (2) for all participants and host
+		$availability_table = $wpdb->prefix . 'wpem_matchmaking_users';
+		$all_user_ids = array_merge([ $user_id ], array_keys($participants)); // host + participant IDs
 
+		foreach ($all_user_ids as $uid) {
+			$serialized = $wpdb->get_var($wpdb->prepare(
+				"SELECT meeting_availability_slot FROM $availability_table WHERE user_id = %d",
+				$uid
+			));
+
+			$slot_data = maybe_unserialize($serialized);
+			if (!is_array($slot_data)) {
+				$slot_data = [];
+			}
+
+			// Ensure keys exist
+			if (!isset($slot_data[$event_id])) {
+				$slot_data[$event_id] = [];
+			}
+			if (!isset($slot_data[$event_id][$meeting_date])) {
+				$slot_data[$event_id][$meeting_date] = [];
+			}
+
+			// Mark the start_time slot as booked (2)
+			$slot_data[$event_id][$meeting_date][$start_time] = 2;
+
+			// Update in DB
+			$wpdb->update(
+				$availability_table,
+				['meeting_availability_slot' => maybe_serialize($slot_data)],
+				['user_id' => $uid],
+				['%s'],
+				['%d']
+			);
+		}
         return new WP_REST_Response([
             'code'    => 200,
             'status'  => 'OK',
