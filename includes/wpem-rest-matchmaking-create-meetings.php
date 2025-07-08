@@ -20,8 +20,7 @@ class WPEM_REST_Create_Meeting_Controller {
                 'user_id'              => ['required' => true, 'type' => 'integer'],
                 'event_id'             => ['required' => true, 'type' => 'integer'],
                 'meeting_date'         => ['required' => true, 'type' => 'string'],
-                'meeting_start_time'   => ['required' => true, 'type' => 'string'],
-                'meeting_end_time'     => ['required' => true, 'type' => 'string'],
+                'slot'     			   => ['required' => true, 'type' => 'string'],
                 'meeting_participants' => ['required' => true, 'type' => 'array'],
                 'write_a_message'      => ['required' => false, 'type' => 'string'],
             ],
@@ -111,112 +110,129 @@ class WPEM_REST_Create_Meeting_Controller {
 			]
 		]);
     }
+     public function create_meeting(WP_REST_Request $request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code' => 403,
+				'status' => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data' => null
+			], 403);
+		}
 
-    public function create_meeting(WP_REST_Request $request) {
-        if (!get_option('enable_matchmaking', false)) {
-            return new WP_REST_Response(['code' => 403, 'status' => 'Disabled', 'message' => 'Matchmaking functionality is not enabled.', 'data' => null], 403);
-        }
+		global $wpdb;
 
-        global $wpdb;
+		$user_id      = intval($request->get_param('user_id'));
+		$event_id     = intval($request->get_param('event_id'));
+		$meeting_date = sanitize_text_field($request->get_param('meeting_date'));
+		$slot         = sanitize_text_field($request->get_param('slot'));
+		$participants = $request->get_param('meeting_participants');
+		$message      = sanitize_textarea_field($request->get_param('write_a_message'));
 
-        $user_id      = intval($request->get_param('user_id'));
-        $event_id     = intval($request->get_param('event_id'));
-        $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
-        $start_time   = sanitize_text_field($request->get_param('meeting_start_time'));
-        $end_time     = sanitize_text_field($request->get_param('meeting_end_time'));
-        $participants = $request->get_param('meeting_participants');
-        $message      = sanitize_textarea_field($request->get_param('write_a_message'));
+		if (
+			!$user_id || !get_userdata($user_id) ||
+			empty($meeting_date) || empty($slot) ||
+			empty($participants) || !is_array($participants)
+		) {
+			return new WP_REST_Response([
+				'code' => 400,
+				'status' => 'Bad Request',
+				'message' => 'Missing or invalid parameters.',
+				'data' => []
+			], 400);
+		}
 
-        if (!$user_id || !get_userdata($user_id) || empty($meeting_date) || empty($start_time) || empty($end_time) || empty($participants) || !is_array($participants)) {
-            return new WP_REST_Response(['code' => 400, 'status' => 'Bad Request', 'message' => 'Missing or invalid parameters.', 'data' => []], 400);
-        }
+		// Filter out the user themselves from participant list
+		$participants = array_filter(array_map('intval', $participants), fn($pid) => $pid !== $user_id);
+		$participants = array_fill_keys($participants, -1); // -1 = pending
+		
+		$table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
+		$inserted = $wpdb->insert($table, [
+			'user_id'            => $user_id,
+			'event_id'           => $event_id,
+			'participant_ids'    => serialize($participants),
+			'meeting_date'       => $meeting_date,
+			'meeting_start_time' => $slot,
+			'meeting_end_time'   => date("H:i", strtotime($slot . " +1 hour")),
+			'message'            => $message,
+			'meeting_status'     => 0
+		], ['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d']);
 
-        // Filter out the user themselves from participant list
-        $participants = array_filter(array_map('intval', $participants), fn($pid) => $pid !== $user_id);
-		$participants = array_fill_keys($participants, -1);  
+		if (!$inserted) {
+			return new WP_REST_Response([
+				'code' => 500,
+				'status' => 'Internal Server Error',
+				'message' => 'Could not create meeting.',
+				'data' => []
+			], 500);
+		}
 
-        $table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
-        $inserted = $wpdb->insert($table, [
-            'user_id'            => $user_id,
-            'event_id'           => $event_id,
-            'participant_ids'    => serialize($participants),
-            'meeting_date'       => $meeting_date,
-            'meeting_start_time' => $start_time,
-            'meeting_end_time'   => $end_time,
-            'message'            => $message,
-            'meeting_status'     => 0
-        ], ['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d']);
+		$meeting_id = $wpdb->insert_id;
+		$formatted_date = date("l, d F Y", strtotime($meeting_date));
+		$formatted_time = date("h:i A", strtotime($slot));
+		$sender_user = get_userdata($user_id);
 
-        if (!$inserted) {
-            return new WP_REST_Response(['code' => 500, 'status' => 'Internal Server Error', 'message' => 'Could not create meeting.', 'data' => []], 500);
-        }
+		$participant_details = [];
 
-        $meeting_id = $wpdb->insert_id;
-        $formatted_date = date("l, d F Y", strtotime($meeting_date));
-        $formatted_start_time = date("h:i A", strtotime($start_time));
-        $formatted_end_time = date("h:i A", strtotime($end_time));
-        $sender_user = get_userdata($user_id);
+		if (!empty($participants)) {
+			$profile_table = $wpdb->prefix . 'wpem_matchmaking_users';
+			$placeholders = implode(',', array_fill(0, count($participants), '%d'));
+			$query = $wpdb->prepare("SELECT * FROM $profile_table WHERE user_id IN ($placeholders)", ...array_keys($participants));
+			$results = $wpdb->get_results($query, ARRAY_A);
 
-        $participant_details = [];
+			foreach ($results as $participant) {
+				$participant_user = get_userdata($participant['user_id']);
+				$participant_name = $participant_user->display_name ?? 'User';
+				$participant_email = $participant_user->user_email ?? '';
+				$profile_picture = $participant['profile_photo'] ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 
-        if (!empty($participants)) {
-            $profile_table = $wpdb->prefix . 'wpem_matchmaking_users';
-            $placeholders = implode(',', array_fill(0, count($participants), '%d'));
-            $query = $wpdb->prepare("SELECT * FROM $profile_table WHERE user_id IN ($placeholders)", ...$participants);
-            $results = $wpdb->get_results($query, ARRAY_A);
+				$participant_details[] = [
+					'name'            => $participant_name,
+					'profession'      => $participant['profession'] ?? '',
+					'profile_picture' => esc_url($profile_picture)
+				];
 
-            foreach ($results as $participant) {
-                $participant_user = get_userdata($participant['user_id']);
-                $participant_name = $participant_user->display_name ?? 'User';
-                $participant_email = $participant_user->user_email ?? '';
-                $profile_picture = $participant['profile_photo'] ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+				// Email to participant
+				$host_profile = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_matchmaking_users WHERE user_id = %d", $user_id), ARRAY_A);
+				$host_company = $host_profile['company_name'] ?? '';
+				$host_city    = $host_profile['city'] ?? '';
+				$all_countries = wpem_registration_get_all_countries();
+				$host_country = $all_countries[$host_profile['country']] ?? '';
+				$event_name = get_the_title($event_id) ?: '';
+				$timezone_abbr = wp_timezone_string();
 
-                $participant_details[] = [
-                    'name'            => $participant_name,
-                    'profession'      => $participant['profession'] ?? '',
-                    'profile_picture' => esc_url($profile_picture)
-                ];
+				$subject = "{$sender_user->display_name} requested a meeting with you";
+				$body = "
+					<p>Hello {$participant_name},</p>
+					<p><strong>{$sender_user->display_name}</strong> has requested a meeting with you.</p>
+					<p><strong>Event:</strong> {$event_name}</p>
+					<p><strong>Date:</strong> {$formatted_date}</p>
+					<p><strong>Time:</strong> {$formatted_time} {$timezone_abbr}</p>
+					<p><strong>Company:</strong> {$host_company}<br>
+					   <strong>City:</strong> {$host_city}<br>
+					   <strong>Country:</strong> {$host_country}</p>
+					<p><strong>Message:</strong> {$message}</p>
+				";
 
-                // Email to participant
-                $host_profile = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_matchmaking_users WHERE user_id = %d", $user_id), ARRAY_A);
-                $host_company = $host_profile['company_name'] ?? '';
-                $host_city    = $host_profile['city'] ?? '';
-                $all_countries = wpem_registration_get_all_countries();
-                $host_country = $all_countries[$host_profile['country']] ?? '';
-                $event_name = get_the_title($event_id) ?: '';
-                $timezone_abbr = wp_timezone_string();
+				wp_mail($participant_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
+			}
+		}
 
-                $subject = "{$sender_user->display_name} requested a meeting with you";
-                $body = "
-                    <p>Hello {$participant_name},</p>
-                    <p><strong>{$sender_user->display_name}</strong> has requested a meeting with you.</p>
-                    <p><strong>Event:</strong> {$event_name}</p>
-                    <p><strong>Date:</strong> {$formatted_date}</p>
-                    <p><strong>Time:</strong> {$formatted_start_time} – {$formatted_end_time} {$timezone_abbr}</p>
-                    <p><strong>Company:</strong> {$host_company}<br>
-                       <strong>City:</strong> {$host_city}<br>
-                       <strong>Country:</strong> {$host_country}</p>
-                    <p><strong>Message:</strong> {$message}</p>
-                ";
+		// Email to sender
+		$participant_names = implode(', ', array_column($participant_details, 'name'));
+		wp_mail(
+			$sender_user->user_email,
+			'Your Meeting Request Has Been Sent',
+			"
+			<p>Hello {$sender_user->display_name},</p>
+			<p>Your meeting request has been sent to: <strong>{$participant_names}</strong>.</p>
+			<p><strong>Date:</strong> {$formatted_date}</p>
+			<p><strong>Time:</strong> {$formatted_time}</p>
+			<p><strong>Message:</strong> {$message}</p>
+			",
+			['Content-Type: text/html; charset=UTF-8']
+		);
 
-                wp_mail($participant_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
-            }
-        }
-
-        // Email to sender
-        $participant_names = implode(', ', array_column($participant_details, 'name'));
-        wp_mail(
-            $sender_user->user_email,
-            'Your Meeting Request Has Been Sent',
-            "
-            <p>Hello {$sender_user->display_name},</p>
-            <p>Your meeting request has been sent to: <strong>{$participant_names}</strong>.</p>
-            <p><strong>Date:</strong> {$formatted_date}</p>
-            <p><strong>Time:</strong> {$formatted_start_time} - {$formatted_end_time}</p>
-            <p><strong>Message:</strong> {$message}</p>
-            ",
-            ['Content-Type: text/html; charset=UTF-8']
-        );
 		// Update booked slot (2) for all participants and host
 		$availability_table = $wpdb->prefix . 'wpem_matchmaking_users';
 		$all_user_ids = array_merge([ $user_id ], array_keys($participants)); // host + participant IDs
@@ -232,7 +248,6 @@ class WPEM_REST_Create_Meeting_Controller {
 				$slot_data = [];
 			}
 
-			// Ensure keys exist
 			if (!isset($slot_data[$event_id])) {
 				$slot_data[$event_id] = [];
 			}
@@ -240,10 +255,8 @@ class WPEM_REST_Create_Meeting_Controller {
 				$slot_data[$event_id][$meeting_date] = [];
 			}
 
-			// Mark the start_time slot as booked (2)
-			$slot_data[$event_id][$meeting_date][$start_time] = 2;
+			$slot_data[$event_id][$meeting_date][$slot] = 2;
 
-			// Update in DB
 			$wpdb->update(
 				$availability_table,
 				['meeting_availability_slot' => maybe_serialize($slot_data)],
@@ -252,20 +265,19 @@ class WPEM_REST_Create_Meeting_Controller {
 				['%d']
 			);
 		}
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Meeting created and emails sent!',
-            'data'    => [
-                'meeting_date' => $formatted_date,
-                'start_time'   => $formatted_start_time,
-                'end_time'     => $formatted_end_time,
-                'participants' => $participant_details,
-                'message'      => $message
-            ]
-        ], 200);
-    }
 
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Meeting created and emails sent!',
+			'data'    => [
+				'meeting_date' => $formatted_date,
+				'time'         => $formatted_time,
+				'participants' => $participant_details,
+				'message'      => $message
+			]
+		], 200);
+	}
    public function get_user_meetings(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
