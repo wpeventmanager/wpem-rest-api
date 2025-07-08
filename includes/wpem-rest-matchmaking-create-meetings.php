@@ -233,39 +233,6 @@ class WPEM_REST_Create_Meeting_Controller {
 			['Content-Type: text/html; charset=UTF-8']
 		);
 
-		// Update booked slot (2) for all participants and host
-		$availability_table = $wpdb->prefix . 'wpem_matchmaking_users';
-		$all_user_ids = array_merge([ $user_id ], array_keys($participants)); // host + participant IDs
-
-		foreach ($all_user_ids as $uid) {
-			$serialized = $wpdb->get_var($wpdb->prepare(
-				"SELECT meeting_availability_slot FROM $availability_table WHERE user_id = %d",
-				$uid
-			));
-
-			$slot_data = maybe_unserialize($serialized);
-			if (!is_array($slot_data)) {
-				$slot_data = [];
-			}
-
-			if (!isset($slot_data[$event_id])) {
-				$slot_data[$event_id] = [];
-			}
-			if (!isset($slot_data[$event_id][$meeting_date])) {
-				$slot_data[$event_id][$meeting_date] = [];
-			}
-
-			$slot_data[$event_id][$meeting_date][$slot] = 2;
-
-			$wpdb->update(
-				$availability_table,
-				['meeting_availability_slot' => maybe_serialize($slot_data)],
-				['user_id' => $uid],
-				['%s'],
-				['%d']
-			);
-		}
-
 		return new WP_REST_Response([
 			'code'    => 200,
 			'status'  => 'OK',
@@ -511,6 +478,7 @@ class WPEM_REST_Create_Meeting_Controller {
 				'data' => null
 			], 403);
 		}
+
 		global $wpdb;
 
 		$meeting_id = intval($request->get_param('meeting_id'));
@@ -522,7 +490,11 @@ class WPEM_REST_Create_Meeting_Controller {
 		}
 
 		$table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
-		$meeting = $wpdb->get_row($wpdb->prepare("SELECT participant_ids FROM $table WHERE id = %d", $meeting_id));
+		$meeting = $wpdb->get_row($wpdb->prepare("
+			SELECT participant_ids, event_id, meeting_date, meeting_start_time 
+			FROM $table 
+			WHERE id = %d", $meeting_id
+		));
 
 		if (!$meeting) {
 			return new WP_REST_Response(['code' => 404, 'message' => 'Meeting not found.'], 404);
@@ -537,13 +509,13 @@ class WPEM_REST_Create_Meeting_Controller {
 			return new WP_REST_Response(['code' => 403, 'message' => 'You are not a participant of this meeting.'], 403);
 		}
 
-		// Update current user's status
+		// Update participant's status
 		$participant_data[$user_id] = $new_status;
 
-		// If at least one participant has accepted (status = 1), mark meeting as accepted
+		// Determine meeting status
 		$meeting_status = (in_array(1, $participant_data, true)) ? 1 : 0;
 
-		// Update in DB
+		// Update participant_ids and meeting_status in meeting table
 		$updated = $wpdb->update(
 			$table,
 			[
@@ -559,19 +531,57 @@ class WPEM_REST_Create_Meeting_Controller {
 			return new WP_REST_Response(['code' => 500, 'message' => 'Failed to update status.'], 500);
 		}
 
+		// Update user's meeting_availability_slot based on acceptance
+		$event_id     = $meeting->event_id;
+		$meeting_date = $meeting->meeting_date;
+		$slot         = date('H:i', strtotime($meeting->meeting_start_time));
+
+		$availability_table = $wpdb->prefix . 'wpem_matchmaking_users';
+
+		$serialized = $wpdb->get_var($wpdb->prepare(
+			"SELECT meeting_availability_slot FROM $availability_table WHERE user_id = %d",
+			$user_id
+		));
+
+		$slot_data = maybe_unserialize($serialized);
+		if (!is_array($slot_data)) {
+			$slot_data = [];
+		}
+
+		if (!isset($slot_data[$event_id])) {
+			$slot_data[$event_id] = [];
+		}
+		if (!isset($slot_data[$event_id][$meeting_date])) {
+			$slot_data[$event_id][$meeting_date] = [];
+		}
+
+		// Set slot status based on new_status
+		if ($new_status === 1) {
+			$slot_data[$event_id][$meeting_date][$slot] = 2; // Booked
+		} elseif ($new_status === 0) {
+			$slot_data[$event_id][$meeting_date][$slot] = 1; // Available
+		}
+
+		$wpdb->update(
+			$availability_table,
+			['meeting_availability_slot' => maybe_serialize($slot_data)],
+			['user_id' => $user_id],
+			['%s'],
+			['%d']
+		);
+
 		return new WP_REST_Response([
 			'code' => 200,
 			'status' => 'OK',
 			'message' => $new_status ? 'Meeting accepted.' : 'Meeting declined.',
 			'data' => [
-				'meeting_id'       => $meeting_id,
-				'participant_id'   => $user_id,
+				'meeting_id'         => $meeting_id,
+				'participant_id'     => $user_id,
 				'participant_status' => $new_status,
-				'meeting_status'   => $meeting_status,
+				'meeting_status'     => $meeting_status,
 			]
 		], 200);
-	}
-	public function get_booked_meeting_slots(WP_REST_Request $request) {
+	}	public function get_booked_meeting_slots(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
 				'code' => 403,
