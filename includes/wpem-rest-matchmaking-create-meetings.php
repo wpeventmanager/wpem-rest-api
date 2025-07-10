@@ -500,7 +500,7 @@ class WPEM_REST_Create_Meeting_Controller {
 			'data'    => ['meeting_id' => $meeting_id],
 		], 200);
 	}
-    public function update_meeting_status(WP_REST_Request $request) {
+	public function update_meeting_status(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
 				'code' => 403,
@@ -521,6 +521,7 @@ class WPEM_REST_Create_Meeting_Controller {
 		}
 
 		$table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
+
 		$meeting = $wpdb->get_row($wpdb->prepare("
 			SELECT participant_ids, event_id, meeting_date, meeting_start_time 
 			FROM $table 
@@ -540,13 +541,43 @@ class WPEM_REST_Create_Meeting_Controller {
 			return new WP_REST_Response(['code' => 403, 'message' => 'You are not a participant of this meeting.'], 403);
 		}
 
-		// Update participant's status
+		// If user is accepting, check for conflict in same slot
+		if ($new_status === 1) {
+			$event_id     = $meeting->event_id;
+			$meeting_date = $meeting->meeting_date;
+			$slot         = date('H:i', strtotime($meeting->meeting_start_time));
+
+			$conflicting_meeting = $wpdb->get_row($wpdb->prepare("
+				SELECT id FROM $table 
+				WHERE id != %d
+				  AND event_id = %d 
+				  AND meeting_date = %s 
+				  AND meeting_start_time = %s 
+				  AND meeting_status != -1
+			", $meeting_id, $event_id, $meeting_date, $meeting->meeting_start_time));
+
+			if ($conflicting_meeting) {
+				$existing_participants = $wpdb->get_var($wpdb->prepare("
+					SELECT participant_ids FROM $table WHERE id = %d
+				", $conflicting_meeting->id));
+
+				$existing_participant_data = maybe_unserialize($existing_participants);
+				if (is_array($existing_participant_data) && isset($existing_participant_data[$user_id]) && $existing_participant_data[$user_id] == 1) {
+					return new WP_REST_Response([
+						'code' => 409,
+						'message' => 'You already have a confirmed meeting scheduled at this time slot.',
+					], 409);
+				}
+			}
+		}
+
+		// Update this user's status
 		$participant_data[$user_id] = $new_status;
 
-		// Determine meeting status
+		// Determine overall meeting status
 		$meeting_status = (in_array(1, $participant_data, true)) ? 1 : 0;
 
-		// Update participant_ids and meeting_status in meeting table
+		// Update meeting record
 		$updated = $wpdb->update(
 			$table,
 			[
@@ -559,14 +590,10 @@ class WPEM_REST_Create_Meeting_Controller {
 		);
 
 		if ($updated === false) {
-			return new WP_REST_Response(['code' => 500, 'message' => 'Failed to update status.'], 500);
+			return new WP_REST_Response(['code' => 500, 'message' => 'Failed to update meeting status.'], 500);
 		}
 
-		// Update user's meeting_availability_slot based on acceptance
-		$event_id     = $meeting->event_id;
-		$meeting_date = $meeting->meeting_date;
-		$slot         = date('H:i', strtotime($meeting->meeting_start_time));
-
+		// Update availability slot for this user
 		$availability_table = $wpdb->prefix . 'wpem_matchmaking_users';
 
 		$serialized = $wpdb->get_var($wpdb->prepare(
@@ -586,12 +613,7 @@ class WPEM_REST_Create_Meeting_Controller {
 			$slot_data[$event_id][$meeting_date] = [];
 		}
 
-		// Set slot status based on new_status
-		if ($new_status === 1) {
-			$slot_data[$event_id][$meeting_date][$slot] = 2; // Booked
-		} elseif ($new_status === 0) {
-			$slot_data[$event_id][$meeting_date][$slot] = 1; // Available
-		}
+		$slot_data[$event_id][$meeting_date][date('H:i', strtotime($meeting->meeting_start_time))] = ($new_status === 1) ? 2 : 1;
 
 		$wpdb->update(
 			$availability_table,
@@ -612,7 +634,8 @@ class WPEM_REST_Create_Meeting_Controller {
 				'meeting_status'     => $meeting_status,
 			]
 		], 200);
-	}	public function get_booked_meeting_slots(WP_REST_Request $request) {
+	}
+    public function get_booked_meeting_slots(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
 				'code' => 403,
