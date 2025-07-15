@@ -685,7 +685,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 				$user_id = $user->ID;
 
-				$token = $this->wpem_generate_jwt_token($user->ID);
+				$token = $this->wpem_generate_jwt_token($user->ID, $password);
 				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true);
 				$enable_matchmaking = get_option('enable_matchmaking', false) ? 1 : 0;
 				
@@ -776,17 +776,19 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * This function will used to generate jwt token for individual user
 	 * @since 1.0.9
 	 */
-	public function wpem_generate_jwt_token($user_id) {
+	public function wpem_generate_jwt_token($user_id, $password) {
 		$user = get_userdata($user_id);
 		if (!$user) return false;
 
 		// Header and payload
 		$header = wpem_base64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+		
 		$payload = wpem_base64url_encode(json_encode([
 			'iss' => get_bloginfo('url'),
 			'user' => [
 				'id' => $user->ID,
-				'username' => $user->user_login
+				'username' => $user->user_login,
+				'password' => $password
 			]
 		]));
 
@@ -824,19 +826,29 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 		list($header_b64, $payload_b64, $signature_b64) = $parts;
 
+		// Recalculate the signature
 		$expected_signature = wpem_base64url_encode(
 			hash_hmac('sha256', "$header_b64.$payload_b64", JWT_SECRET_KEY, true)
 		);
 
+		// Timing-attack-safe comparison
 		if (!hash_equals($expected_signature, $signature_b64)) {
-			return new WP_Error( 'rest_forbidden', __( 'Invalid token signature.', 'textdomain' ), array( 'status' => 401 ) );
+			return new WP_Error( 'rest_forbidden', __( 'Invalid token signature.', 'textdomain' ), [ 'status' => 401 ] );
 		}
 
-		$payload = json_decode(base64_decode(strtr($payload_b64, '-_', '+/')), true);
-		if (!isset($payload['user']['id'])) {
-			return new WP_Error( 'rest_forbidden', __( 'Invalid token payload.', 'textdomain' ), array( 'status' => 401 ) );
+		// Decode payload
+		$payload_json = base64_decode(strtr($payload_b64, '-_', '+/'));
+		$payload = json_decode($payload_json, true);
+
+		if (json_last_error() !== JSON_ERROR_NONE || !isset($payload['user']['id'])) {
+			return new WP_Error( 'rest_forbidden', __( 'Invalid token payload.', 'textdomain' ), [ 'status' => 401 ] );
 		}
 
+		// Optionally: check expiration
+		if (isset($payload['exp']) && time() > $payload['exp']) {
+			return new WP_Error( 'rest_forbidden', __( 'Token has expired.', 'textdomain' ), [ 'status' => 401 ] );
+		}
+		// Return decoded payload if needed
 		return true;
 	}
 	

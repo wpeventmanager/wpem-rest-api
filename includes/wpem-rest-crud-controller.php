@@ -750,26 +750,29 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      * @since 1.0.9
      */
     public static function wpem_validate_jwt_token($token) {
-        // Extract the JWT parts
         $parts = explode('.', $token);
-        if (count($parts) !== 3) {
+        if (count($parts) !== 3) return false;
+
+        list($header, $payload, $signature) = $parts;
+
+        $expected_signature = wpem_base64url_encode(
+            hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true)
+        );
+
+        if (!hash_equals($expected_signature, $signature)) {
             return false;
         }
 
-        list($encodedHeader, $encodedPayload, $encodedSignature) = $parts;
-    
-        $payload_json = wpem_base64url_decode($encodedPayload);
-        $payload = json_decode($payload_json, true);
-    
-        // Re-generate signature
-        $signature = hash_hmac('sha256', "$encodedHeader.$encodedPayload", JWT_SECRET_KEY, true);
-        $expected_signature = wpem_base64url_encode(hash_hmac('sha256', "$encodedHeader.$encodedPayload", JWT_SECRET_KEY, true));
-
-        if ($expected_signature === $encodedSignature) {
-            $payload = json_decode(wpem_base64url_decode($encodedPayload), true);
-            return $payload['user'];
+        $payload_json = wpem_base64url_decode($payload);
+        $payload_data = json_decode($payload_json, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !isset($payload_data['user'])) {
+            return false;
         }
-        return false;
+
+        // Clean up keys (defensive)
+        $user = array_change_key_case(array_map('trim', $payload_data['user']));
+
+        return $user;
     }
 
     /**
