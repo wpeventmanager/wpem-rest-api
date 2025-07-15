@@ -59,11 +59,10 @@ class WPEM_REST_Send_Message_Controller {
 			], 403);
 		}
 
-		$sender_id   = intval($request->get_param('senderId'));
-		$receiver_id = intval($request->get_param('receiverId'));
-		$text_message = sanitize_textarea_field($request->get_param('message'));
-
-		$sender_user = get_user_by('id', $sender_id);
+		$sender_id     = intval($request->get_param('senderId'));
+		$receiver_id   = intval($request->get_param('receiverId'));
+		$text_message  = sanitize_textarea_field($request->get_param('message'));
+		$sender_user   = get_user_by('id', $sender_id);
 		$receiver_user = get_user_by('id', $receiver_id);
 
 		if (!$sender_user || !$receiver_user) {
@@ -74,7 +73,6 @@ class WPEM_REST_Send_Message_Controller {
 			], 404);
 		}
 
-		// Check message notifications
 		$table_users = $wpdb->prefix . 'wpem_matchmaking_users';
 		$sender_notify = $wpdb->get_var($wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $sender_id));
 		$receiver_notify = $wpdb->get_var($wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $receiver_id));
@@ -87,36 +85,31 @@ class WPEM_REST_Send_Message_Controller {
 			], 403);
 		}
 
-		// Handle file upload if present
-		$uploaded_file_url = '';
-		if (!empty($_FILES['image']) && !empty($_FILES['image']['tmp_name'])) {
+		$image_url = '';
+		if (!empty($_FILES['image']['tmp_name'])) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 			$uploaded = wp_handle_upload($_FILES['image'], ['test_form' => false]);
-
 			if (!isset($uploaded['error'])) {
-				$uploaded_file_url = esc_url_raw($uploaded['url']);
+				$image_url = esc_url_raw($uploaded['url']);
 			}
 		}
-
-		// Final message logic
+		
 		$final_message = '';
-		if ($text_message && $uploaded_file_url) {
-			$final_message = $text_message . "\n\n" . $uploaded_file_url;
+		if ($text_message && $image_url) {
+			$final_message = $text_message . "\n\n" . $image_url;
 		} elseif ($text_message) {
 			$final_message = $text_message;
-		} elseif ($uploaded_file_url) {
-			$final_message = $uploaded_file_url;
+		} elseif ($image_url) {
+			$final_message = $image_url;
 		} else {
 			return new WP_REST_Response([
 				'code'    => 400,
 				'status'  => 'Bad Request',
-				'message' => 'Message or image is required.',
+				'message' => 'Either message or image is required.',
 			], 400);
 		}
 
-		// Save message
 		$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
-
 		$first_message_id = $wpdb->get_var($wpdb->prepare(
 			"SELECT id FROM $table 
 			 WHERE (sender_id = %d AND receiver_id = %d)
@@ -137,7 +130,6 @@ class WPEM_REST_Send_Message_Controller {
 
 		$insert_id = $wpdb->insert_id;
 
-		// Send email
 		wp_mail(
 			$receiver_user->user_email,
 			'New Message from ' . $sender_user->display_name,
@@ -146,20 +138,20 @@ class WPEM_REST_Send_Message_Controller {
 		);
 
 		return new WP_REST_Response([
-			'code'       => 200,
-			'status'     => 'OK',
-			'message'    => 'Message sent successfully.',
-			'data'       => [
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Message sent successfully.',
+			'data'    => [
 				'id'         => $insert_id,
 				'parent_id'  => $parent_id,
 				'sender_id'  => $sender_id,
 				'receiver_id'=> $receiver_id,
-				'message'    => $final_message,
+				'message'    => $text_message ?: null,
+				'image'      => $image_url ?: null,
 				'created_at' => current_time('mysql'),
 			]
 		], 200);
 	}
-
     public function handle_get_messages($request) {
 		global $wpdb;
 
