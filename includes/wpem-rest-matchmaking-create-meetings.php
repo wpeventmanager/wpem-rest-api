@@ -109,6 +109,11 @@ class WPEM_REST_Create_Meeting_Controller {
 				],
 			]
 		]);
+		register_rest_route($this->namespace, '/matchmaking-settings', [
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => [$this, 'get_matchmaking_settings'],
+			'permission_callback' => '__return_true', // if no auth needed
+		]);
     }
      public function create_meeting(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
@@ -863,6 +868,32 @@ class WPEM_REST_Create_Meeting_Controller {
 				'common_slots' => array_values($common_slots),
 			],
 		]);
+	}
+	public function get_matchmaking_settings(WP_REST_Request $request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code'    => 403,
+				'status'  => 'Disabled',
+				'message' => 'Matchmaking is disabled.',
+				'data'    => null
+			], 403);
+		}
+
+		$settings = [
+			'request_mode'     => get_option('wpem_meeting_request_mode'), 
+			'scheduling_mode'     => get_option('wpem_meeting_scheduling_mode'),
+			'attendee_limit'   => get_option('wpem_meeting_attendee_limit'),
+			'meeting_expiration' => get_option('wpem_meeting_expiration'),
+			'enable_matchmaking' => get_option('enable_matchmaking'),
+			'participant_activation' => get_option('participant_activation'),
+		];
+
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Matchmaking settings retrieved.',
+			'data'    => $settings
+		], 200);
 	}
 }
 
