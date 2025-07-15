@@ -12,16 +12,17 @@ class WPEM_REST_Send_Message_Controller {
 
     public function register_routes() {
         $auth_controller = new WPEM_REST_Authentication();
-        register_rest_route($this->namespace, '/' . $this->rest_base, array(
-            'methods'  => WP_REST_Server::CREATABLE,
-            'callback' => array($this, 'handle_send_message'),
-            'permission_callback' => array($auth_controller, 'check_authentication'),
-            'args' => array(
-                'senderId'   => array('required' => true, 'type' => 'integer'),
-                'receiverId' => array('required' => true, 'type' => 'integer'),
-                'message'    => array('required' => true, 'type' => 'string'),
-            ),
-        ));
+       register_rest_route($this->namespace, '/' . $this->rest_base, array(
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => array($this, 'handle_send_message'),
+			'permission_callback' => array($auth_controller, 'check_authentication'),
+			'args' => array(
+				'senderId'   => array('required' => true),
+				'receiverId' => array('required' => true),
+				'message'    => array('required' => false),
+				'image'      => array('required' => false),
+			),
+		));
 
         register_rest_route($this->namespace, '/get-messages', array(
             'methods'  => WP_REST_Server::READABLE,
@@ -47,60 +48,76 @@ class WPEM_REST_Send_Message_Controller {
 			),
 		));
     }
+     public function handle_send_message($request) {
+		global $wpdb;
 
-    public function handle_send_message($request) {
-        global $wpdb;
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code'    => 403,
+				'status'  => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+			], 403);
+		}
 
-        if (!get_option('enable_matchmaking', false)) {
-            return new WP_REST_Response(array(
-                'code'    => 403,
-                'status'  => 'Disabled',
-                'message' => 'Matchmaking functionality is not enabled.',
-                'data'    => null
-            ), 403);
-        }
+		$sender_id   = intval($request->get_param('senderId'));
+		$receiver_id = intval($request->get_param('receiverId'));
+		$text_message = sanitize_textarea_field($request->get_param('message'));
 
-        $sender_id   = intval($request->get_param('senderId'));
-        $receiver_id = intval($request->get_param('receiverId'));
-        $message     = sanitize_textarea_field($request->get_param('message'));
+		$sender_user = get_user_by('id', $sender_id);
+		$receiver_user = get_user_by('id', $receiver_id);
 
-        $sender_user   = get_user_by('id', $sender_id);
-        $receiver_user = get_user_by('id', $receiver_id);
-        if (!$sender_user || !$receiver_user) {
-            return new WP_REST_Response([
-                'code'    => 404,
-                'status'  => 'Not Found',
-                'message' => 'Sender or Receiver not found.',
-                'data'    => null
-            ], 404);
-        }
-		// Check message_notification in wp_wpem_matchmaking_users table
+		if (!$sender_user || !$receiver_user) {
+			return new WP_REST_Response([
+				'code'    => 404,
+				'status'  => 'Not Found',
+				'message' => 'Sender or Receiver not found.',
+			], 404);
+		}
+
+		// Check message notifications
 		$table_users = $wpdb->prefix . 'wpem_matchmaking_users';
-
-		$sender_notify = $wpdb->get_var(
-			$wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $sender_id)
-		);
-
-		$receiver_notify = $wpdb->get_var(
-			$wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $receiver_id)
-		);
+		$sender_notify = $wpdb->get_var($wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $sender_id));
+		$receiver_notify = $wpdb->get_var($wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $receiver_id));
 
 		if ($sender_notify != 1 || $receiver_notify != 1) {
 			return new WP_REST_Response([
 				'code'    => 403,
 				'status'  => 'Forbidden',
-				'message' => 'Both sender and receiver must have message notifications enabled to send messages.',
+				'message' => 'Both sender and receiver must have message notifications enabled.',
 			], 403);
 		}
 
-        $first_name = get_user_meta($sender_id, 'first_name', true);
-        $last_name  = get_user_meta($sender_id, 'last_name', true);
+		// Handle file upload if present
+		$uploaded_file_url = '';
+		if (!empty($_FILES['image']) && !empty($_FILES['image']['tmp_name'])) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			$uploaded = wp_handle_upload($_FILES['image'], ['test_form' => false]);
 
-        // Determine parent_id (new conversation for the day = parent_id 1)
-        $table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
-        $today = date('Y-m-d');
+			if (!isset($uploaded['error'])) {
+				$uploaded_file_url = esc_url_raw($uploaded['url']);
+			}
+		}
 
-        $first_message_id = $wpdb->get_var($wpdb->prepare(
+		// Final message logic
+		$final_message = '';
+		if ($text_message && $uploaded_file_url) {
+			$final_message = $text_message . "\n\n" . $uploaded_file_url;
+		} elseif ($text_message) {
+			$final_message = $text_message;
+		} elseif ($uploaded_file_url) {
+			$final_message = $uploaded_file_url;
+		} else {
+			return new WP_REST_Response([
+				'code'    => 400,
+				'status'  => 'Bad Request',
+				'message' => 'Message or image is required.',
+			], 400);
+		}
+
+		// Save message
+		$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+
+		$first_message_id = $wpdb->get_var($wpdb->prepare(
 			"SELECT id FROM $table 
 			 WHERE (sender_id = %d AND receiver_id = %d)
 				OR (sender_id = %d AND receiver_id = %d)
@@ -108,49 +125,40 @@ class WPEM_REST_Send_Message_Controller {
 			$sender_id, $receiver_id,
 			$receiver_id, $sender_id
 		));
+		$parent_id = $first_message_id ?: 0;
 
-		$parent_id = $first_message_id ? $first_message_id : 0;
+		$wpdb->insert($table, [
+			'parent_id'   => $parent_id,
+			'sender_id'   => $sender_id,
+			'receiver_id' => $receiver_id,
+			'message'     => $final_message,
+			'created_at'  => current_time('mysql')
+		], ['%d', '%d', '%d', '%s', '%s']);
 
-        $inserted = $wpdb->insert($table, array(
-            'parent_id'   => $parent_id,
-            'sender_id'   => $sender_id,
-            'receiver_id' => $receiver_id,
-            'message'     => $message,
-            'created_at'  => current_time('mysql')
-        ), array('%d', '%d', '%d', '%s', '%s'));
+		$insert_id = $wpdb->insert_id;
 
-        if (!$inserted) {
-            return new WP_REST_Response([
-                'code'    => 500,
-                'status'  => 'Error',
-                'message' => 'Failed to save message.',
-                'data'    => $wpdb->last_error
-            ], 500);
-        }
+		// Send email
+		wp_mail(
+			$receiver_user->user_email,
+			'New Message from ' . $sender_user->display_name,
+			$final_message,
+			['Content-Type: text/plain; charset=UTF-8']
+		);
 
-        wp_mail(
-            $receiver_user->user_email,
-            'New Message from ' . $sender_user->display_name,
-            "You have received a new message:\n\n" . $message . "\n\nFrom: " . $sender_user->display_name,
-            array('Content-Type: text/plain; charset=UTF-8')
-        );
-
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Message sent and saved successfully.',
-            'data'    => array(
-                'id'         => $wpdb->insert_id,
-                'parent_id'  => $parent_id,
-                'sender_id'  => $sender_id,
-                'receiver_id'=> $receiver_id,
-                'first_name' => $first_name,
-                'last_name'  => $last_name,
-                'message'    => $message,
-                'created_at' => current_time('mysql'),
-            )
-        ], 200);
-    }
+		return new WP_REST_Response([
+			'code'       => 200,
+			'status'     => 'OK',
+			'message'    => 'Message sent successfully.',
+			'data'       => [
+				'id'         => $insert_id,
+				'parent_id'  => $parent_id,
+				'sender_id'  => $sender_id,
+				'receiver_id'=> $receiver_id,
+				'message'    => $final_message,
+				'created_at' => current_time('mysql'),
+			]
+		], 200);
+	}
 
     public function handle_get_messages($request) {
 		global $wpdb;
