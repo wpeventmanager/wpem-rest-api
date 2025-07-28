@@ -156,208 +156,251 @@ class WPEM_REST_Filter_Users_Controller {
         return $response;
     }
 
-	 public function handle_filter_users($request) {
-        global $wpdb;
+public function handle_filter_users($request) {
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response([
+				'code'    => 403,
+				'status'  => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data'    => null
+			], 403);
+		}
 
-        if (!get_option('enable_matchmaking', false)) {
-            return new WP_REST_Response([
-                'code'    => 403,
-                'status'  => 'Disabled',
-                'message' => 'Matchmaking functionality is not enabled.',
-                'data'    => null
-            ], 403);
-        }
+		$event_id = $request->get_param('event_id');
+		$current_user_id = $request->get_param('user_id');
+		$user_ids = [];
 
-        $table = $wpdb->prefix . 'wpem_matchmaking_users';
-        $where_clauses = [];
-        $query_params = [];
-        $user_ids = [];
+		// Handle event-specific filtering
+		if (!empty($event_id)) {
+			if (!$current_user_id) {
+				return new WP_REST_Response([
+					'code'    => 401,
+					'status'  => 'Unauthorized',
+					'message' => 'User not logged in.',
+					'data'    => []
+				], 401);
+			}
 
-        $event_id = $request->get_param('event_id');
-        $current_user_id = $request->get_param('user_id');
+			// Check if current user is registered for the event
+			$registration_query = new WP_Query([
+				'post_type'      => 'event_registration',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_query'     => [
+					['key' => '_attendee_user_id', 'value' => $current_user_id],
+					['key' => '_event_id', 'value' => $event_id],
+				],
+			]);
 
-        if (!empty($event_id)) {
-            if (!$current_user_id) {
-                return new WP_REST_Response([
-                    'code'    => 401,
-                    'status'  => 'Unauthorized',
-                    'message' => 'User not logged in.',
-                    'data'    => []
-                ], 401);
-            }
+			if (!$registration_query->have_posts()) {
+				return new WP_REST_Response([
+					'code'    => 403,
+					'status'  => 'Forbidden',
+					'message' => 'You are not registered for this event.',
+					'data'    => []
+				], 403);
+			}
 
-            $registration_query = new WP_Query([
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'fields'         => 'ids',
-                'meta_query'     => [
-                    ['key' => '_attendee_user_id', 'value' => $current_user_id],
-                    ['key' => '_event_id', 'value' => $event_id],
-                ],
-            ]);
+			// Get all attendees for this event
+			$attendee_query = new WP_Query([
+				'post_type'      => 'event_registration',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_query'     => [['key' => '_event_id', 'value' => $event_id]],
+			]);
 
-            if (!$registration_query->have_posts()) {
-                return new WP_REST_Response([
-                    'code'    => 403,
-                    'status'  => 'Forbidden',
-                    'message' => 'You are not registered for this event.',
-                    'data'    => []
-                ], 403);
-            }
+			foreach ($attendee_query->posts as $post_id) {
+				$uid = get_post_meta($post_id, '_attendee_user_id', true);
+				if ($uid && $uid != $current_user_id && !in_array($uid, $user_ids)) {
+					$user_ids[] = (int)$uid;
+				}
+			}
 
-            $attendee_query = new WP_Query([
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'fields'         => 'ids',
-                'meta_query'     => [['key' => '_event_id', 'value' => $event_id]],
-            ]);
+			if (empty($user_ids)) {
+				return new WP_REST_Response([
+					'code'    => 200,
+					'status'  => 'OK',
+					'message' => 'No attendees found for this event.',
+					'data'    => []
+				], 200);
+			}
+		}
 
-            foreach ($attendee_query->posts as $post_id) {
-                $uid = get_post_meta($post_id, '_attendee_user_id', true);
-                if ($uid && $uid != $current_user_id && !in_array($uid, $user_ids)) {
-                    $user_ids[] = (int)$uid;
-                }
-            }
+		// Get all users with matchmaking profile first
+		$all_users = get_users([
+			'meta_key'     => '_matchmaking_profile',
+			'meta_value'   => '1',
+			'meta_compare' => '=',
+		]);
 
-            if (empty($user_ids)) {
-                return new WP_REST_Response([
-                    'code'    => 200,
-                    'status'  => 'OK',
-                    'message' => 'No attendees found for this event.',
-                    'data'    => []
-                ], 200);
-            }
+		// Filter users based on criteria
+		$filtered_users = array_filter($all_users, function($user) use ($request, $user_ids) {
+			$user_meta = get_user_meta($user->ID);
+			
+			// If event_id provided, only include users in the attendee list
+			if (!empty($user_ids) && !in_array($user->ID, $user_ids)) {
+				return false;
+			}
 
-            $placeholders = implode(',', array_fill(0, count($user_ids), '%d'));
-            $where_clauses[] = "user_id IN ($placeholders)";
-            $query_params = array_merge($query_params, $user_ids);
-        }
+			// Profession filter
+			if ($profession = sanitize_text_field($request->get_param('profession'))) {
+				if (empty($user_meta['_profession'][0])) return false;
+				if (strcasecmp($user_meta['_profession'][0], $profession) !== 0)
+					return false;
+			}
 
-        if ($profession = sanitize_text_field($request->get_param('profession'))) {
-            $where_clauses[] = "profession = %s";
-            $query_params[] = $profession;
-        }
+			// Experience filter
+			$experience = $request->get_param('experience');
+			if (is_array($experience)) {
+				$user_exp = isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0;
+				if (isset($experience['min']) && is_numeric($experience['min']) && $user_exp < (float)$experience['min']) {
+					return false;
+				}
+				if (isset($experience['max']) && is_numeric($experience['max']) && $user_exp > (float)$experience['max']) {
+					return false;
+				}
+			} elseif (is_numeric($experience)) {
+				$user_exp = isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0;
+				if ($user_exp != (float)$experience) {
+					return false;
+				}
+			}
 
-        $experience = $request->get_param('experience');
-        if (is_array($experience) && isset($experience['min'], $experience['max'])) {
-            $where_clauses[] = "experience BETWEEN %d AND %d";
-            $query_params[] = (int)$experience['min'];
-            $query_params[] = (int)$experience['max'];
-        } elseif (is_numeric($experience)) {
-            $where_clauses[] = "experience = %d";
-            $query_params[] = (int)$experience;
-        }
+			// Company name filter
+			if ($company = sanitize_text_field($request->get_param('company_name'))) {
+				if (empty($user_meta['_company_name'][0])) return false;
+				if (strcasecmp($user_meta['_company_name'][0], $company) !== 0) return false;
+			}
 
-        if ($company = sanitize_text_field($request->get_param('company_name'))) {
-            $where_clauses[] = "company_name = %s";
-            $query_params[] = $company;
-        }
+			// Country filter
+			$countries = $request->get_param('country');
+			if (is_array($countries) && !empty($countries)) {
+				if (empty($user_meta['_country'][0])) return false;
+				if (!in_array(strtolower($user_meta['_country'][0]), array_map('strtolower', $countries))) {
+					return false;
+				}
+			} elseif (!empty($countries)) {
+				if (empty($user_meta['_country'][0])) return false;
+				if (strcasecmp($user_meta['_country'][0], $countries) !== 0) return false;
+			}
 
-        $countries = $request->get_param('country');
-        if (is_array($countries)) {
-            $placeholders = implode(',', array_fill(0, count($countries), '%s'));
-            $where_clauses[] = "country IN ($placeholders)";
-            $query_params = array_merge($query_params, array_map('sanitize_text_field', $countries));
-        } elseif (!empty($countries)) {
-            $country = sanitize_text_field($countries);
-            $where_clauses[] = "country = %s";
-            $query_params[] = $country;
-        }
+			// City filter
+			if ($city = sanitize_text_field($request->get_param('city'))) {
+				if (empty($user_meta['_city'][0])) return false;
+				if (strcasecmp($user_meta['_city'][0], $city) !== 0) return false;
+			}
 
-        if ($city = sanitize_text_field($request->get_param('city'))) {
-            $where_clauses[] = "city = %s";
-            $query_params[] = $city;
-        }
+			// Skills filter
+			$skills = $request->get_param('skills');
+			if (is_array($skills) && !empty($skills)) {
+				if (empty($user_meta['_skills'][0])) return false;
+				$user_skills = maybe_unserialize($user_meta['_skills'][0]);
+				if (!is_array($user_skills)) return false;
+				
+				$found = false;
+				foreach ($skills as $skill) {
+					if (in_array($skill, $user_skills)) {
+						$found = true;
+						break;
+					}
+				}
+				if (!$found) return false;
+			}
 
-        $skills = $request->get_param('skills');
-        if (is_array($skills) && !empty($skills)) {
-            foreach ($skills as $skill) {
-                $like = '%' . $wpdb->esc_like(serialize($skill)) . '%';
-                $where_clauses[] = "skills LIKE %s";
-                $query_params[] = $like;
-            }
-        }
+			// Interests filter
+			$interests = $request->get_param('interests');
+			if (is_array($interests) && !empty($interests)) {
+				if (empty($user_meta['_interests'][0])) return false;
+				$user_interests = maybe_unserialize($user_meta['_interests'][0]);
+				if (!is_array($user_interests)) return false;
+				
+				$found = false;
+				foreach ($interests as $interest) {
+					if (in_array($interest, $user_interests)) {
+						$found = true;
+						break;
+					}
+				}
+				if (!$found) return false;
+			}
 
-        $interests = $request->get_param('interests');
-        if (is_array($interests) && !empty($interests)) {
-            foreach ($interests as $interest) {
-                $like = '%' . $wpdb->esc_like(serialize($interest)) . '%';
-                $where_clauses[] = "interests LIKE %s";
-                $query_params[] = $like;
-            }
-        }
+			// Search filter
+			$search = sanitize_text_field($request->get_param('search'));
+			if (!empty($search)) {
+				$found = false;
+				
+				// Search in profile fields
+				$profile_fields = ['_about', '_city', '_country', '_profession', '_company_name'];
+				foreach ($profile_fields as $field) {
+					if (!empty($user_meta[$field][0]) && stripos($user_meta[$field][0], $search) !== false) {
+						$found = true;
+						break;
+					}
+				}
+				
+				// Search in user name fields
+				if (!$found) {
+					$first_name = get_user_meta($user->ID, 'first_name', true);
+					$last_name = get_user_meta($user->ID, 'last_name', true);
+					if (stripos($first_name, $search) !== false || stripos($last_name, $search) !== false) {
+						$found = true;
+					}
+				}
+				
+				if (!$found) return false;
+			}
 
-        $search = sanitize_text_field($request->get_param('search'));
-        if (!empty($search)) {
-            $search_like = '%' . $wpdb->esc_like($search) . '%';
+			// Manual approval filter
+			if (get_option('participant_activation') === 'manual') {
+				if (empty($user_meta['_approve_profile_status'][0]) || $user_meta['_approve_profile_status'][0] != '1') {
+					return false;
+				}
+			}
 
-            $search_conditions = [
-                "about LIKE %s",
-                "city LIKE %s",
-                "country LIKE %s",
-                "profession LIKE %s",
-                "skills LIKE %s",
-                "interests LIKE %s",
-                "company_name LIKE %s"
-            ];
+			return true;
+		});
 
-            $matching_user_ids = $wpdb->get_col($wpdb->prepare("
-                SELECT DISTINCT user_id FROM {$wpdb->usermeta}
-                WHERE (meta_key = 'first_name' OR meta_key = 'last_name')
-                AND meta_value LIKE %s
-            ", $search_like));
+		// Pagination
+		$per_page = max(1, (int) $request->get_param('per_page'));
+		$page = max(1, (int) $request->get_param('page'));
+		$total = count($filtered_users);
+		$offset = ($page - 1) * $per_page;
+		$paginated_users = array_slice($filtered_users, $offset, $per_page);
 
-            if (!empty($matching_user_ids)) {
-                $placeholders = implode(',', array_fill(0, count($matching_user_ids), '%d'));
-                $search_conditions[] = "user_id IN ($placeholders)";
-                $query_params = array_merge($query_params, array_fill(0, count($search_conditions) - 1, $search_like), $matching_user_ids);
-            } else {
-                $query_params = array_merge($query_params, array_fill(0, count($search_conditions), $search_like));
-            }
+		// Format results
+		$formatted_results = [];
+		foreach ($paginated_users as $user) {
+			$user_meta = get_user_meta($user->ID);
+			$formatted_results[] = [
+				'user_id' => $user->ID,
+				'first_name' => $user_meta['first_name'][0] ?? '',
+				'last_name' => $user_meta['last_name'][0] ?? '',
+				'profession' => $user_meta['_profession'][0] ?? '',
+				'experience' => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
+				'company_name' => $user_meta['_company_name'][0] ?? '',
+				'country' => $user_meta['_country'][0] ?? '',
+				'city' => $user_meta['_city'][0] ?? '',
+				'about' => $user_meta['_about'][0] ?? '',
+				'skills' => isset($user_meta['_skills'][0]) ? maybe_unserialize($user_meta['_skills'][0]) : [],
+				'interests' => isset($user_meta['_interests'][0]) ? maybe_unserialize($user_meta['_interests'][0]) : [],
+				'profile_photo' => $user_meta['_profile_photo'][0] ?? '',
+				'organization_name' => $user_meta['_organization_name'][0] ?? '',
+				'organization_logo' => isset($user_meta['_organization_logo'][0]) ? maybe_unserialize($user_meta['_organization_logo'][0]) : [],
+			];
+		}
 
-            $where_clauses[] = '(' . implode(' OR ', $search_conditions) . ')';
-        }
-
-        if (get_option('participant_activation') === 'manual') {
-            $where_clauses[] = "approve_profile_status = '1'";
-        }
-
-        $where_sql = $where_clauses ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
-        $sql       = "SELECT * FROM $table $where_sql";
-        $count_sql = "SELECT COUNT(*) FROM $table $where_sql";
-
-        $total = (int) $wpdb->get_var($wpdb->prepare($count_sql, $query_params));
-
-        $per_page = max(1, (int) $request->get_param('per_page'));
-        $page     = max(1, (int) $request->get_param('page'));
-        $offset   = ($page - 1) * $per_page;
-
-        $sql .= $wpdb->prepare(" LIMIT %d OFFSET %d", $per_page, $offset);
-        $query_params[] = $per_page;
-        $query_params[] = $offset;
-
-        $prepared_sql = $wpdb->prepare($sql, $query_params);
-        $results = $wpdb->get_results($prepared_sql, ARRAY_A);
-
-        foreach ($results as &$row) {
-            $user_id = $row['user_id'];
-            $row['first_name'] = get_user_meta($user_id, 'first_name', true);
-            $row['last_name']  = get_user_meta($user_id, 'last_name', true);
-        }
-
-        return new WP_REST_Response([
-            'code'     => 200,
-            'status'   => 'OK',
-            'message'  => 'Users retrieved successfully.',
-            'data'    => [
+		return new WP_REST_Response([
+			'code'     => 200,
+			'status'   => 'OK',
+			'message'  => 'Users retrieved successfully.',
+			'data'    => [
 				'total_post_count' => $total,
 				'current_page'     => $page,
 				'last_page'        => ceil($total / $per_page),
 				'total_pages'      => ceil($total / $per_page),
-				'users'           => $results,
+				'users'           => $formatted_results,
 			],
 		], 200);
-    }
-	
+	}
 }
 new WPEM_REST_Filter_Users_Controller();
