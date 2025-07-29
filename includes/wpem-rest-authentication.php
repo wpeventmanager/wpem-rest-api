@@ -671,12 +671,13 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @since 1.0.0
 	 */
-	public function perform_user_authentication($request){
+	public function perform_user_authentication($request) {
 		$params = $request->get_json_params();
 		$username = isset($params['username']) ? trim($params['username']) : '';
 		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
-		if( !empty( $username ) && !empty($password)){
+		
+		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
 			if (is_wp_error($user)) {
 				return parent::prepare_error_for_response(401);
@@ -689,85 +690,90 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true);
 				$enable_matchmaking = get_option('enable_matchmaking', false) ? 1 : 0;
 				
-				$all_mobile_pages = array( 'dashboard', 'attendees', 'guest_list', 'orders', 'arrivals' );
+				$all_mobile_pages = array('dashboard', 'attendees', 'guest_list', 'orders', 'arrivals');
 				$user_mobile_menu = get_user_meta($user_id, '_mobile_menu', true);
 				$user_mobile_menu = is_array($user_mobile_menu) ? $user_mobile_menu : [];
 
 				$mobile_menu_status = array();
-				foreach ( $all_mobile_pages as $page ) {
-					$mobile_menu_status[ $page ] = in_array( $page, $user_mobile_menu ) ? 1 : 0;
+				foreach ($all_mobile_pages as $page) {
+					$mobile_menu_status[$page] = in_array($page, $user_mobile_menu) ? 1 : 0;
 				}
+
+				// Get all user data from meta
+				$user_email = get_user_meta($user_id, 'user_email', true);
+				$first_name = get_user_meta($user_id, 'first_name', true);
+				$last_name = get_user_meta($user_id, 'last_name', true);
+				$user_login = get_user_meta($user_id, 'user_login', true);
 
 				$data = array(
 					'token' => $token,
 					'user'  => array(
 						'user_id' => $user_id,
-						'user_email' => $user->user_email,
-						'first_name' => $user->first_name,
-						'last_name' => $user->last_name,
-						'username' => $user->user_login,
-						'matchmaking_profile'	=> $is_matchmaking,
+						'user_email' => $user_email,
+						'first_name' => $first_name,
+						'last_name' => $last_name,
+						'username' => $user_login,
+						'matchmaking_profile' => $is_matchmaking,
 						'enable_matchmaking' => $enable_matchmaking,
 						'mobile_menu' => $mobile_menu_status,
-					)					
+					)                    
 				);
-				if ($is_matchmaking && $enable_matchmaking ) {
-					$table = $wpdb->prefix . 'wpem_matchmaking_users';
-					$matchmaking_data = $wpdb->get_row(
-						$wpdb->prepare("SELECT * FROM $table WHERE user_id = %d", $user_id),
-						ARRAY_A
+
+				if ($is_matchmaking && $enable_matchmaking) {
+					// Get matchmaking data from user meta instead of custom table
+					$matchmaking_details = array(
+						'attendeeId'              => $user_id,
+						'firstName'               => $first_name,
+						'lastName'                => $last_name,
+						'email'                   => $user_email,
+						'profilePhoto'            => get_user_meta($user_id, '_profile_photo', true) ?: '',
+						'profession'              => get_user_meta($user_id, '_profession', true) ?: '',
+						'experience'              => get_user_meta($user_id, '_experience', true) ?: '',
+						'companyName'             => get_user_meta($user_id, '_company_name', true) ?: '',
+						'country'                 => get_user_meta($user_id, '_country', true) ?: '',
+						'city'                    => get_user_meta($user_id, '_city', true) ?: '',
+						'about'                   => get_user_meta($user_id, '_about', true) ?: '',
+						'skills'                  => maybe_unserialize(get_user_meta($user_id, '
+						_skills', true)) ?: [],
+						'interests'               => maybe_unserialize(get_user_meta($user_id, '_interests', true)) ?: [],
+						'organizationName'        => get_user_meta($user_id, '_organization_name', true) ?: '',
+						'organizationLogo'        => get_user_meta($user_id, '_organization_logo', true) ?: '',
+						'organizationCity'        => get_user_meta($user_id, '_organization_city', true) ?: '',
+						'organizationCountry'     => get_user_meta($user_id, '_organization_country', true) ?: '',
+						'organizationDescription' => get_user_meta($user_id, 'organization_description', true) ?: '',
+						'messageNotification'     => get_user_meta($user_id, '_message_notification', true) ?: '',
+						'approveProfileStatus'    => get_user_meta($user_id, '_approve_profile_status', true) ?: '',
 					);
 
-					if ($matchmaking_data) {
-						$data['user']['matchmaking_details'] = array(
-							'attendeeId'              => $matchmaking_data['user_id'],
-							'firstName'               => get_user_meta($user_id, 'first_name', true),
-							'lastName'                => get_user_meta($user_id, 'last_name', true),
-							'email'                   => $user->user_email,
-							'profilePhoto'            => $matchmaking_data['profile_photo'] ?? '',
-							'profession'              => $matchmaking_data['profession'] ?? '',
-							'experience'              => $matchmaking_data['experience'] ?? '',
-							'companyName'             => $matchmaking_data['company_name'] ?? '',
-							'country'                 => $matchmaking_data['country'] ?? '',
-							'city'                    => $matchmaking_data['city'] ?? '',
-							'about'                   => $matchmaking_data['about'] ?? '',
-							'skills'                  => !empty($matchmaking_data['skills']) ? maybe_unserialize($matchmaking_data['skills']) : [],
-							'interests'               => !empty($matchmaking_data['interests']) ? maybe_unserialize($matchmaking_data['interests']) : [],
-							'organizationName'        => $matchmaking_data['organization_name'] ?? '',
-							'organizationLogo'        => $matchmaking_data['organization_logo'] ?? '',
-							'organizationCity'        => $matchmaking_data['organization_city'] ?? '',
-							'organizationCountry'     => $matchmaking_data['organization_country'] ?? '',
-							'organizationDescription' => $matchmaking_data['organization_description'] ?? '',
-							'messageNotification'     => $matchmaking_data['message_notification'] ?? '',
-							'approveProfileStatus'    => $matchmaking_data['approve_profile_status'] ?? '',
-						);
-					}
+					$data['user']['matchmaking_details'] = $matchmaking_details;
 				}
+
+				// Keep the API key check logic unchanged
 				$key_data = $wpdb->get_row(
 					$wpdb->prepare(
-						"
-							SELECT *
-							FROM {$wpdb->prefix}wpem_rest_api_keys
-							WHERE user_id = %s
-						",
+						"SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %s",
 						$user_id
 					)
 				);
-				if( !empty( $key_data ) ) {
-					if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
-						$key_data->expiry  = false;
+				
+				if (!empty($key_data)) {
+					if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(date('Y-m-d H:i:s'))) {
+						$key_data->expiry = false;
 					} else {
-						$key_data->expiry  = true;
+						$key_data->expiry = true;
 					}
 					$data['organizer_info'] = $key_data;
 				} 
-				if( empty( $key_data ) && !get_user_meta($user_id, '_matchmaking_profile', true))
+				
+				if (empty($key_data) && !get_user_meta($user_id, '_matchmaking_profile', true)) {
 					return parent::prepare_error_for_response(405);
+				}
+				
 				$response_data = parent::prepare_error_for_response(200);
 				$response_data['data'] = $data;
 				return $response_data;
 			}
-		} else{
+		} else {
 			return parent::prepare_error_for_response(400);
 		}
 	}

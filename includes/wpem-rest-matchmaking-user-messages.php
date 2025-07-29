@@ -48,7 +48,7 @@ class WPEM_REST_Send_Message_Controller {
 			),
 		));
     }
-     public function handle_send_message($request) {
+    public function handle_send_message($request) {
 		global $wpdb;
 
 		if (!get_option('enable_matchmaking', false)) {
@@ -62,7 +62,9 @@ class WPEM_REST_Send_Message_Controller {
 		$sender_id     = intval($request->get_param('senderId'));
 		$receiver_id   = intval($request->get_param('receiverId'));
 		$text_message  = sanitize_textarea_field($request->get_param('message'));
-		$sender_user   = get_user_by('id', $sender_id);
+		
+		// Get minimal user objects just for email addresses
+		$sender_user = get_user_by('id', $sender_id);
 		$receiver_user = get_user_by('id', $receiver_id);
 
 		if (!$sender_user || !$receiver_user) {
@@ -73,9 +75,24 @@ class WPEM_REST_Send_Message_Controller {
 			], 404);
 		}
 
-		$table_users = $wpdb->prefix . 'wpem_matchmaking_users';
-		$sender_notify = $wpdb->get_var($wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $sender_id));
-		$receiver_notify = $wpdb->get_var($wpdb->prepare("SELECT message_notification FROM $table_users WHERE user_id = %d", $receiver_id));
+		// Get other user data from meta
+		$sender_display_name = get_user_meta($sender_id, 'display_name', true);
+		if (empty($sender_display_name)) {
+			$first_name = get_user_meta($sender_id, 'first_name', true);
+			$last_name = get_user_meta($sender_id, 'last_name', true);
+			$sender_display_name = trim("$first_name $last_name");
+		}
+
+		$receiver_display_name = get_user_meta($receiver_id, 'display_name', true);
+		if (empty($receiver_display_name)) {
+			$first_name = get_user_meta($receiver_id, 'first_name', true);
+			$last_name = get_user_meta($receiver_id, 'last_name', true);
+			$receiver_display_name = trim("$first_name $last_name");
+		}
+
+		// Get notification preferences (assuming stored in meta)
+		$sender_notify = get_user_meta($sender_id, '_message_notification', true);
+		$receiver_notify = get_user_meta($receiver_id, '_message_notification', true);
 
 		if ($sender_notify != 1 || $receiver_notify != 1) {
 			return new WP_REST_Response([
@@ -130,9 +147,10 @@ class WPEM_REST_Send_Message_Controller {
 
 		$insert_id = $wpdb->insert_id;
 
+		// Use email from user object
 		wp_mail(
 			$receiver_user->user_email,
-			'New Message from ' . $sender_user->display_name,
+			'New Message from ' . $sender_display_name,
 			$final_message,
 			['Content-Type: text/plain; charset=UTF-8']
 		);
@@ -233,7 +251,6 @@ class WPEM_REST_Send_Message_Controller {
 
 		$postmeta     = $wpdb->postmeta;
 		$messages_tbl = $wpdb->prefix . 'wpem_matchmaking_users_messages';
-		$profile_tbl  = $wpdb->prefix . 'wpem_matchmaking_users';
 
 		// Step 1: Get users registered in the same events (excluding self)
 		$event_placeholders = implode(',', array_fill(0, count($event_ids), '%d'));
@@ -297,7 +314,7 @@ class WPEM_REST_Send_Message_Controller {
 		$offset = ($paged - 1) * $per_page;
 		$paginated_ids = array_slice($valid_user_ids, $offset, $per_page);
 
-		// Step 5: Build user info with last message
+		// Step 5: Build user info with last message (using user meta)
 		$results = [];
 		foreach ($paginated_ids as $uid) {
 			// Get last message exchanged
@@ -309,15 +326,24 @@ class WPEM_REST_Send_Message_Controller {
 				LIMIT 1
 			", $user_id, $uid, $uid, $user_id));
 
+			// Get display name from meta with fallback
+			$display_name = get_user_meta($uid, 'display_name', true);
+			if (empty($display_name)) {
+				$first_name = get_user_meta($uid, 'first_name', true);
+				$last_name = get_user_meta($uid, 'last_name', true);
+				$display_name = trim("$first_name $last_name");
+			}
+
 			$results[] = [
 				'user_id'       => (int) $uid,
 				'first_name'    => get_user_meta($uid, 'first_name', true),
 				'last_name'     => get_user_meta($uid, 'last_name', true),
-				'profile_photo' => $wpdb->get_var($wpdb->prepare("SELECT profile_photo FROM $profile_tbl WHERE user_id = %d", $uid)),
-				'profession'    => $wpdb->get_var($wpdb->prepare("SELECT profession FROM $profile_tbl WHERE user_id = %d", $uid)),
-				'company_name'  => $wpdb->get_var($wpdb->prepare("SELECT company_name FROM $profile_tbl WHERE user_id = %d", $uid)),
+				'display_name'  => $display_name,
+				'profile_photo' => get_user_meta($uid, '_profile_photo', true),
+				'profession'    => get_user_meta($uid, '_profession', true),
+				'company_name'  => get_user_meta($uid, '_company_name', true),
 				'last_message'  => $last_message_row ? $last_message_row->message : null,
-				'message_time'  => $last_message_row ?  date('Y-m-d H:i:s', strtotime($last_message_row->created_at)) : null,
+				'message_time'  => $last_message_row ? date('Y-m-d H:i:s', strtotime($last_message_row->created_at)) : null,
 			];
 		}
 
