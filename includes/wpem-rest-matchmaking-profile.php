@@ -188,15 +188,15 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 
 		// List of all meta fields we can update
 		$meta_fields = [
-			'_profession', '_experience', '_company_name', '_country',
-			'_city', '_about', '_skills', '_interests', '_organization_name', 
-			'_organization_logo', '_organization_city', '_organization_country', 
-			'_organization_description', '_message_notification', '_matchmaking_profile'
+			'profession', 'experience', 'company_name', 'country',
+			'city', 'about', 'skills', 'interests', 'organization_name', 
+			'organization_logo', 'organization_city', 'organization_country', 
+			'organization_description', 'message_notification', 'matchmaking_profile'
 		];
 
 		// Handle normal meta fields
 		foreach ($meta_fields as $field) {
-			$param_name = str_replace('_', '', $field); // Remove underscore for request param
+			
 			if ($request->get_param($param_name) !== null) {
 				$value = $request->get_param($param_name);
 				
@@ -205,12 +205,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					$value = maybe_serialize((array)$value);
 				}
 				
-				// Special handling for numeric fields
-				if ($field === '_experience') {
-					$value = (float)$value;
-				}
-				
-				update_user_meta($user_id, $field, $value);
+				update_user_meta($user_id, '_'.$field, $value);
 			}
 		}
 

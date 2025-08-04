@@ -36,20 +36,14 @@ class WPEM_REST_User_Registered_Events_Controller {
             'posts_per_page' => -1,
             'post_status'    => 'any',
             'fields'         => 'ids',
-            'author'         => $target_user_id,
-            /*'meta_query'     => array(
-                array(
-                    'key'   => '_attendee_user_id',
-                    'value' => $target_user_id,
-                )
-            ),*/
+            'post_author'         => $target_user_id,
         );
 
         $query = new WP_Query($args);
         $event_ids = array();
 
         foreach ($query->posts as $registration_id) {
-            $event_id = get_post_meta($registration_id, '_event_id', true);
+            $event_id = wp_get_post_parent_id($registration_id);
             if (!empty($event_id) && !in_array($event_id, $event_ids)) {
                 $event_ids[] = (int) $event_id;
             }
