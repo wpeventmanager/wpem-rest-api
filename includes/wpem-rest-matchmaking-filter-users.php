@@ -206,11 +206,11 @@ public function handle_filter_users($request) {
 				'post_type'      => 'event_registration',
 				'posts_per_page' => -1,
 				'fields'         => 'ids',
-				'meta_query'     => [['key' => '_event_id', 'value' => $event_id]],
+				'post_parent'    => $event_id,
 			]);
 
 			foreach ($attendee_query->posts as $post_id) {
-				$uid = get_post_meta($post_id, '_attendee_user_id', true);
+				 $uid = wp_get_post_parent_id($post_id);
 				if ($uid && $uid != $current_user_id && !in_array($uid, $user_ids)) {
 					$user_ids[] = (int)$uid;
 				}
