@@ -36,12 +36,13 @@ class WPEM_REST_User_Registered_Events_Controller {
             'posts_per_page' => -1,
             'post_status'    => 'any',
             'fields'         => 'ids',
-            'meta_query'     => array(
+            'author'         => $target_user_id,
+            /*'meta_query'     => array(
                 array(
                     'key'   => '_attendee_user_id',
                     'value' => $target_user_id,
                 )
-            ),
+            ),*/
         );
 
         $query = new WP_Query($args);
