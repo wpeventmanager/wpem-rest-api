@@ -664,89 +664,108 @@ class WPEM_REST_Create_Meeting_Controller {
 		], 200);
 	}
 	public function get_common_availability_slots($request) {
-        $event_id = intval($request->get_param('event_id'));
-        $user_ids = $request->get_param('user_ids');
-        $date     = sanitize_text_field($request->get_param('date'));
+		global $wpdb;
 
-        if (!is_array($user_ids) || empty($user_ids) || !$event_id || !$date) {
-            return new WP_REST_Response([
-                'code'    => 400,
-                'status'  => 'ERROR',
-                'message' => 'Invalid parameters.',
-                'data'    => [],
-            ], 400);
-        }
+		$event_id = intval($request->get_param('event_id'));
+		$user_ids = $request->get_param('user_ids');
+		$date     = sanitize_text_field($request->get_param('date'));
 
-        $all_user_slots = [];
+		if (!is_array($user_ids) || empty($user_ids) || !$event_id || !$date) {
+			return new WP_REST_Response([
+				'code'    => 400,
+				'status'  => 'ERROR',
+				'message' => 'Invalid parameters.',
+				'data'    => [],
+			], 400);
+		}
 
-        foreach ($user_ids as $user_id) {
-            $data = maybe_unserialize(get_user_meta($user_id, '_meeting_availability_slot', true));
+		$all_user_slots = [];
 
-            if (
-                empty($data) ||
-                !isset($data[$event_id]) ||
-                !isset($data[$event_id][$date]) ||
-                !is_array($data[$event_id][$date])
-            ) {
-                return new WP_REST_Response([
-                    'code'    => 200,
-                    'status'  => 'OK',
-                    'message' => 'No common slots found.',
-                    'data'    => ['common_slots' => []],
-                ]);
-            }
+		// Step 1: Get available slots for each user (value === 1)
+		foreach ($user_ids as $user_id) {
+			$raw_data = get_wpem_default_meeting_slots_for_user($user_id, $date);
+			
+			$available_slots = array_keys(array_filter(
+				$raw_data,
+				fn($v) => $v == 1
+			));
+			
+			if (empty($available_slots)) {
+				return new WP_REST_Response([
+					'code'    => 200,
+					'status'  => 'OK',
+					'message' => 'No common slots found.',
+					'data'    => ['common_slots' => []],
+				]);
+			}
 
-            // Filter only available slots (value === 1)
-            $available_slots = array_keys(array_filter($data[$event_id][$date], function($v) {
-                return $v === 1;
-            }));
+			$all_user_slots[] = $available_slots;
+		}
 
-            if (empty($available_slots)) {
-                return new WP_REST_Response([
-                    'code'    => 200,
-                    'status'  => 'OK',
-                    'message' => 'No common slots found.',
-                    'data'    => ['common_slots' => []],
-                ]);
-            }
+		// Step 2: Find intersection of slots between all users
+		$common_slots = array_shift($all_user_slots);
+		foreach ($all_user_slots as $slots) {
+			$common_slots = array_intersect($common_slots, $slots);
+		}
 
-            $all_user_slots[] = $available_slots;
-        }
+		sort($common_slots);
 
-        // Only one user: return their available slots
-        if (count($all_user_slots) === 1) {
-            sort($all_user_slots[0]);
-            return new WP_REST_Response([
-                'code'    => 200,
-                'status'  => 'OK',
-                'message' => 'Availability slots retrieved successfully.',
-                'data'    => [
-                    'event_id'     => $event_id,
-                    'date'         => $date,
-                    'common_slots' => array_values($all_user_slots[0]),
-                ],
-            ]);
-        }
+		// Step 3: Find booked slots for given date
+		$table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
+		$rows = $wpdb->get_results($wpdb->prepare(
+			"SELECT meeting_start_time, participant_ids, user_id 
+			 FROM {$table} 
+			 WHERE meeting_date = %s",
+			$date
+		), ARRAY_A);
 
-        // Multiple users: intersect available time slots
-        $common_slots = array_shift($all_user_slots);
-        foreach ($all_user_slots as $slots) {
-            $common_slots = array_intersect($common_slots, $slots);
-        }
+		$booked_slots = [];
+		foreach ($rows as $row) {
+			$meeting_time    = date('H:i', strtotime($row['meeting_start_time']));
+			$creator_id      = intval($row['user_id']);
+			$participant_ids = maybe_unserialize($row['participant_ids']);
 
-        sort($common_slots);
+			if (!is_array($participant_ids)) {
+				$participant_ids = [];
+			}
 
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => empty($common_slots) ? 'No common slots found.' : 'Common availability slots retrieved successfully.',
-            'data'    => [
-                'event_id'     => $event_id,
-                'date'         => $date,
-                'common_slots' => array_values($common_slots),
-            ],
-        ]);
-    }
+			foreach ($user_ids as $u_id) {
+				$u_id = intval($u_id);
+
+				// Condition 1: Creator is the user
+				if ($creator_id === $u_id) {
+					$booked_slots[] = $meeting_time;
+					break;
+				}
+
+				// Condition 2: User is a participant with status 0 or 1
+				if (isset($participant_ids[$u_id]) && in_array($participant_ids[$u_id], [0, 1], true)) {
+					$booked_slots[] = $meeting_time;
+					break;
+				}
+			}
+		}
+
+		// Step 4: Build combined slot list
+		$combined_slots = [];
+		foreach ($common_slots as $slot) {
+			$combined_slots[] = [
+				'time'      => $slot,
+				'is_booked' => in_array($slot, $booked_slots, true),
+			];
+		}
+
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => count($combined_slots) ? 'Common availability slots retrieved successfully.' : 'No common slots found.',
+			'data'    => [
+				'event_id'     => $event_id,
+				'date'         => $date,
+				'common_slots' => $combined_slots,
+			],
+		], 200);
+	}
 	public function get_matchmaking_settings(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
