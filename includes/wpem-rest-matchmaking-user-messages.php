@@ -233,7 +233,7 @@ class WPEM_REST_Send_Message_Controller {
 			]
 		], 200);
 	}
-    public function handle_get_conversation_list($request) {
+    /*public function handle_get_conversation_list($request) {
 		global $wpdb;
 
 		$user_id   = intval($request->get_param('user_id'));
@@ -361,7 +361,107 @@ class WPEM_REST_Send_Message_Controller {
 				'users'         => $results
 			]
 		], 200);
-	}
+	}*/
+	public function handle_get_conversation_list($request) {
+			global $wpdb;
+
+			$user_id  = intval($request->get_param('user_id'));
+			$paged    = max(1, intval($request->get_param('paged')));
+			$per_page = max(1, intval($request->get_param('per_page')));
+
+			if (empty($user_id)) {
+				return new WP_REST_Response([
+					'code'    => 400,
+					'status'  => 'Bad Request',
+					'message' => 'user_id is required.',
+				], 400);
+			}
+
+			$messages_tbl = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+
+			/**
+			 * Step 1: Get all unique conversation partners
+			 */
+			$conversation_user_ids = $wpdb->get_col($wpdb->prepare("
+				SELECT DISTINCT other_user FROM (
+					SELECT receiver_id AS other_user FROM $messages_tbl WHERE sender_id = %d
+					UNION
+					SELECT sender_id AS other_user FROM $messages_tbl WHERE receiver_id = %d
+				) AS temp
+				WHERE other_user != %d
+			", $user_id, $user_id, $user_id));
+
+			if (empty($conversation_user_ids)) {
+				return new WP_REST_Response([
+					'code'    => 200,
+					'status'  => 'OK',
+					'message' => 'No conversation history found.',
+					'data'    => [
+						'total_users'   => 0,
+						'current_page'  => $paged,
+						'last_page'     => 0,
+						'users'         => []
+					]
+				], 200);
+			}
+
+			/**
+			 * Step 2: Pagination
+			 */
+			$total_count = count($conversation_user_ids);
+			$last_page   = ceil($total_count / $per_page);
+			$offset      = ($paged - 1) * $per_page;
+			$paginated_ids = array_slice($conversation_user_ids, $offset, $per_page);
+
+			/**
+			 * Step 3: Build conversation list with last message
+			 */
+			$results = [];
+			foreach ($paginated_ids as $partner_id) {
+				// Get last message between the two users
+				$last_message_row = $wpdb->get_row($wpdb->prepare("
+					SELECT message, created_at
+					FROM $messages_tbl
+					WHERE (sender_id = %d AND receiver_id = %d)
+					   OR (sender_id = %d AND receiver_id = %d)
+					ORDER BY created_at DESC
+					LIMIT 1
+				", $user_id, $partner_id, $partner_id, $user_id));
+
+				// Build display name
+				$display_name = get_user_meta($partner_id, 'display_name', true);
+				if (empty($display_name)) {
+					$first_name = get_user_meta($partner_id, 'first_name', true);
+					$last_name  = get_user_meta($partner_id, 'last_name', true);
+					$display_name = trim("$first_name $last_name");
+				}
+
+				$results[] = [
+					'user_id'       => (int) $partner_id,
+					'first_name'    => get_user_meta($partner_id, 'first_name', true),
+					'last_name'     => get_user_meta($partner_id, 'last_name', true),
+					'display_name'  => $display_name,
+					'profile_photo' => get_user_meta($partner_id, '_profile_photo', true),
+					'profession'    => get_user_meta($partner_id, '_profession', true),
+					'company_name'  => get_user_meta($partner_id, '_company_name', true),
+					'last_message'  => $last_message_row ? $last_message_row->message : null,
+					'message_time'  => $last_message_row ? date('Y-m-d H:i:s', strtotime($last_message_row->created_at)) : null,
+				];
+			}
+
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'Conversation list retrieved successfully.',
+				'data'    => [
+					'total_users'   => $total_count,
+					'current_page'  => $paged,
+					'per_page'      => $per_page,
+					'last_page'     => $last_page,
+					'users'         => $results
+				]
+			], 200);
+		}
 }
 
 new WPEM_REST_Send_Message_Controller();
