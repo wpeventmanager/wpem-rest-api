@@ -77,7 +77,7 @@ class WPEM_REST_Taxonomy_List_Controller {
     private function format_term_data($term) {
         return array(
             'id'    => $term->term_id,
-            'name'  => $term->name,
+            'name'  => html_entity_decode($term->name, ENT_QUOTES, 'UTF-8'),
             'slug'  => $term->slug,
         );
     }
