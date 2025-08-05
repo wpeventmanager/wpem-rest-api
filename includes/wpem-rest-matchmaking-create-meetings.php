@@ -52,7 +52,7 @@ class WPEM_REST_Create_Meeting_Controller {
 				'status'     => ['required' => true, 'type' => 'integer', 'enum' => [0, 1]],
 			],
 		]);
-		register_rest_route($this->namespace, '/get-availability-slots', [
+	register_rest_route($this->namespace, '/get-availability-slots', [
 			'methods'  => WP_REST_Server::READABLE,
 			'callback' => [$this, 'get_booked_meeting_slots'],
 			'permission_callback' => [$auth_controller, 'check_authentication'],
@@ -68,10 +68,6 @@ class WPEM_REST_Create_Meeting_Controller {
 			'callback' => [$this, 'update_availability_slots_rest'],
 			'permission_callback' => [$auth_controller, 'check_authentication'],
 			'args' => [
-				'event_id' => [
-					'required' => true,
-					'type' => 'integer'
-				],
 				'availability_slots' => [
 					'required' => true,
 					'type' => 'object'  
@@ -640,51 +636,34 @@ class WPEM_REST_Create_Meeting_Controller {
         ], 200);
     }
 	public function update_availability_slots_rest(WP_REST_Request $request) {
-        $event_id              = intval($request->get_param('event_id'));
-        $submitted_slots       = $request->get_param('availability_slots');
-        $available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
-        $user_id               = intval($request->get_param('user_id') ?: get_current_user_id());
+		$submitted_slots       = $request->get_param('availability_slots'); // This is the "slots" array from GET
+		
+		$available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
+		$user_id               = intval($request->get_param('user_id') ?: get_current_user_id());
 
-        if (!$user_id || !$event_id || !is_array($submitted_slots)) {
-            return new WP_REST_Response([
-                'code'    => 400,
-                'status'  => 'ERROR',
-                'message' => 'Missing or invalid parameters.'
-            ], 400);
-        }
+		if (!$user_id || !is_array($submitted_slots)) {
+			return new WP_REST_Response([
+				'code'    => 400,
+				'status'  => 'ERROR',
+				'message' => 'Missing or invalid parameters.'
+			], 400);
+		}
 
-        $current_data = maybe_unserialize(get_user_meta($user_id, '_meeting_availability_slot', true));
-        $availability_data = is_array($current_data) ? $current_data : [];
+		// Save directly in the same structure
+		update_user_meta($user_id, '_meeting_availability_slot', $submitted_slots);
+		update_user_meta($user_id, '_available_for_meeting', $available_for_meeting);
 
-        // Ensure event structure exists
-        if (!isset($availability_data[$event_id])) {
-            $availability_data[$event_id] = [];
-        }
-
-        // Update the passed slots directly
-        foreach ($submitted_slots as $date => $slots) {
-            if (!isset($availability_data[$event_id][$date])) {
-                $availability_data[$event_id][$date] = [];
-            }
-
-            foreach ($slots as $time => $value) {
-                if (in_array($value, [0, 1, 2], true)) {
-                    $availability_data[$event_id][$date][$time] = $value;
-                }
-            }
-        }
-
-        // Update user meta
-        update_user_meta($user_id, '_meeting_availability_slot', $availability_data);
-        update_user_meta($user_id, '_available_for_meeting', $available_for_meeting);
-
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Availability updated successfully.'
-        ], 200);
-    }
-	 public function get_common_availability_slots($request) {
+		return new WP_REST_Response([
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Availability updated successfully.',
+			'data'    => [
+				'available_for_meeting' => $available_for_meeting,
+				'slots' => $submitted_slots
+			]
+		], 200);
+	}
+	public function get_common_availability_slots($request) {
         $event_id = intval($request->get_param('event_id'));
         $user_ids = $request->get_param('user_ids');
         $date     = sanitize_text_field($request->get_param('date'));
