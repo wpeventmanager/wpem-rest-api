@@ -624,10 +624,9 @@ class WPEM_REST_Create_Meeting_Controller {
 
         $saved_data = maybe_unserialize(get_user_meta($user_id, '_meeting_availability_slot', true));
         $available_flag = (int)get_user_meta($user_id, '_available_for_meeting', true);
-        $event_slots = $saved_data[$event_id] ?? [];
 
-        if (is_array($event_slots)) {
-            ksort($event_slots); // sort by date keys
+        if (is_array($saved_data)) {
+            ksort($saved_data); // sort by date keys
         }
 
         return new WP_REST_Response([
