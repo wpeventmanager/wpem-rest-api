@@ -733,8 +733,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 						'country'                 => get_user_meta($user_id, '_country', true) ?: '',
 						'city'                    => get_user_meta($user_id, '_city', true) ?: '',
 						'about'                   => get_user_meta($user_id, '_about', true) ?: '',
-						'skills'                  => maybe_unserialize(get_user_meta($user_id, '
-						_skills', true)) ?: [],
+						'skills'                  => maybe_unserialize(get_user_meta($user_id, '_skills', true)) ?: [],
 						'interests'               => maybe_unserialize(get_user_meta($user_id, '_interests', true)) ?: [],
 						'organizationName'        => get_user_meta($user_id, '_organization_name', true) ?: '',
 						'organizationLogo'        => get_user_meta($user_id, '_organization_logo', true) ?: '',
