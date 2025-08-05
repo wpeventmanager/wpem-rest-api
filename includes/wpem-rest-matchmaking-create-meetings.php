@@ -57,10 +57,6 @@ class WPEM_REST_Create_Meeting_Controller {
 			'callback' => [$this, 'get_booked_meeting_slots'],
 			'permission_callback' => [$auth_controller, 'check_authentication'],
 			'args' => [
-				'event_id' => [
-					'required' => true,
-					'type' => 'integer'
-				],
 				'user_id' => [
 					'required' => false,
 					'type' => 'integer'
@@ -624,21 +620,10 @@ class WPEM_REST_Create_Meeting_Controller {
             ], 403);
         }
 
-        $event_id = intval($request->get_param('event_id'));
         $user_id  = intval($request->get_param('user_id')) ?: get_current_user_id();
-
-        if (!$event_id || !$user_id) {
-            return new WP_REST_Response([
-                'code' => 400,
-                'status' => 'error',
-                'message' => 'Missing event_id or unauthorized access.',
-                'data' => null
-            ], 400);
-        }
 
         $saved_data = maybe_unserialize(get_user_meta($user_id, '_meeting_availability_slot', true));
         $available_flag = (int)get_user_meta($user_id, '_available_for_meeting', true);
-
         $event_slots = $saved_data[$event_id] ?? [];
 
         if (is_array($event_slots)) {
@@ -651,7 +636,7 @@ class WPEM_REST_Create_Meeting_Controller {
             'message' => 'Availability slots fetched successfully.',
             'data' => [
                 'available_for_meeting' => $available_flag,
-                'slots' => $event_slots
+                'slots' => $saved_data
             ]
         ], 200);
     }
