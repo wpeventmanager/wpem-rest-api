@@ -344,7 +344,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			'status' => 'OK',
 			'message' => 'File uploaded and stored successfully.',
 			'data' => [
-				'file_url' => $file_url,
+				'profile_photo' => $file_url,
 				'meta_updated' => true
 			]
 		], 200);

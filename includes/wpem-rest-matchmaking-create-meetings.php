@@ -330,9 +330,9 @@ class WPEM_REST_Create_Meeting_Controller {
 					'id'         => (int)$pid,
 					'status'     => (int)$status,
 					'name'       => $display_name,
-					'image'      => !empty($profile_photo) ? esc_url($profile_photo) : '',
+					'profile_photo'      => !empty($profile_photo) ? esc_url($profile_photo) : '',
 					'profession' => !empty($profession) ? esc_html($profession) : '',
-					'company'    => !empty($company_name) ? esc_html($company_name) : '',
+					'company_name'    => !empty($company_name) ? esc_html($company_name) : '',
 				];
 			}
 			
@@ -353,9 +353,9 @@ class WPEM_REST_Create_Meeting_Controller {
 			$host_info = [
 				'id'         => $host_id,
 				'name'       => $host_display_name,
-				'image'      => !empty($host_profile_photo) ? esc_url($host_profile_photo) : '',
+				'profile_photo'      => !empty($host_profile_photo) ? esc_url($host_profile_photo) : '',
 				'profession' => !empty($host_profession) ? esc_html($host_profession) : '',
-				'company'    => !empty($host_company_name) ? esc_html($host_company_name) : '',
+				'company_name'    => !empty($host_company_name) ? esc_html($host_company_name) : '',
 			];
 			
 			$meeting_data[] = [
