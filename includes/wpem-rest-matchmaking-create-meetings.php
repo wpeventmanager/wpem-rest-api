@@ -185,7 +185,7 @@ class WPEM_REST_Create_Meeting_Controller {
                 $participant_details[] = [
                     'name'            => $participant_name,
                     'profession'      => $participant_meta['_profession'][0] ?? '',
-                    'profile_picture' => esc_url($profile_picture)
+                    'profile_photo' => esc_url($profile_picture)
                 ];
 
                 // Email to participant
