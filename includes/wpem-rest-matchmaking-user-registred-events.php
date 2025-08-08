@@ -29,58 +29,76 @@ class WPEM_REST_User_Registered_Events_Controller {
     }
 
     public function get_user_registered_events($request) {
-        $target_user_id = intval($request->get_param('user_id'));
+		$target_user_id = intval($request->get_param('user_id'));
 
-        $args = array(
-            'post_type'      => 'event_registration',
-            'posts_per_page' => -1,
-            'post_status'    => 'any',
-            'fields'         => 'ids',
-            'post_author'         => $target_user_id,
-        );
+		// Get user's email from ID
+		$user_info = get_userdata($target_user_id);
+		if (!$user_info) {
+			return new WP_REST_Response(array(
+				'code'    => 404,
+				'status'  => 'ERROR',
+				'message' => 'User not found.',
+				'data'    => []
+			), 404);
+		}
 
-        $query = new WP_Query($args);
-        $event_ids = array();
+		$user_email = $user_info->user_email;
 
-        foreach ($query->posts as $registration_id) {
-            $event_id = wp_get_post_parent_id($registration_id);
-            if (!empty($event_id) && !in_array($event_id, $event_ids)) {
-                $event_ids[] = (int) $event_id;
-            }
-        }
+		// Get all event registrations where attendee email matches
+		$args = array(
+			'post_type'      => 'event_registration',
+			'posts_per_page' => -1,
+			'meta_query'     => array(
+				array(
+					'key'     => '_attendee_email',
+					'value'   => $user_email,
+					'compare' => '='
+				)
+			)
+		);
 
-        if (empty($event_ids)) {
-            return new WP_REST_Response(array(
-                'code'    => 200,
-                'status'  => 'OK',
-                'message' => 'No registered events found.',
-                'data'    => []
-            ), 200);
-        }
+		$query = new WP_Query($args);
 
-        $events = array();
-        foreach ($event_ids as $event_id) {
-            $post = get_post($event_id);
-            if ($post && $post->post_type === 'event_listing') {
-                $events[] = array(
-                    'event_id'    => $event_id,
-                    'title'       => get_the_title($event_id),
-                    'status'      => $post->post_status,
-                    'start_date'  => get_post_meta($event_id, '_event_start_date', true),
-                    'end_date'    => get_post_meta($event_id, '_event_end_date', true),
-                    'location'    => get_post_meta($event_id, '_event_location', true),
-                    'banner'	=> get_post_meta($event_id, '_event_banner', true),
-                );
-            }
-        }
+		$event_ids = array();
+		foreach ($query->posts as $registration_post) {
+			$event_id = wp_get_post_parent_id($registration_post->ID);
+			if (!empty($event_id) && !in_array($event_id, $event_ids)) {
+				$event_ids[] = (int) $event_id;
+			}
+		}
 
-        return new WP_REST_Response(array(
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Events retrieved successfully.',
-            'data'    => $events
-        ), 200);
-    }
+		if (empty($event_ids)) {
+			return new WP_REST_Response(array(
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'No registered events found.',
+				'data'    => []
+			), 200);
+		}
+
+		$events = array();
+		foreach ($event_ids as $event_id) {
+			$post = get_post($event_id);
+			if ($post && $post->post_type === 'event_listing') {
+				$events[] = array(
+					'event_id'    => $event_id,
+					'title'       => get_the_title($event_id),
+					'status'      => $post->post_status,
+					'start_date'  => get_post_meta($event_id, '_event_start_date', true),
+					'end_date'    => get_post_meta($event_id, '_event_end_date', true),
+					'location'    => get_post_meta($event_id, '_event_location', true),
+					'banner'      => get_post_meta($event_id, '_event_banner', true),
+				);
+			}
+		}
+
+		return new WP_REST_Response(array(
+			'code'    => 200,
+			'status'  => 'OK',
+			'message' => 'Events retrieved successfully.',
+			'data'    => $events
+		), 200);
+	}
 }
 
 new WPEM_REST_User_Registered_Events_Controller();
