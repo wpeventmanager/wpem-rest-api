@@ -230,6 +230,9 @@ class WPEM_REST_Filter_Users_Controller {
 		// Step 2: Build the full user data from usermeta
 		$users_data = [];
 		foreach ($registered_user_ids as $uid) {
+			if($uid == $user_id){
+				continue;
+			}
 			$users_data[] = [
 				'user_id'               => $uid,
 				'display_name'          => get_the_author_meta('display_name', $uid),
