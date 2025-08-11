@@ -219,20 +219,23 @@ class WPEM_REST_Send_Message_Controller {
 		), ARRAY_A);
 		// Separate text and image
 		foreach ($messages as &$msg) {
-			$msg['text'] = null;
 			$msg['image'] = null;
 
 			// Break message into lines
 			$parts = preg_split("/\n+/", trim($msg['message']));
+			$text_parts = [];
 
 			foreach ($parts as $part) {
 				$part = trim($part);
 				if (filter_var($part, FILTER_VALIDATE_URL) && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $part)) {
 					$msg['image'] = $part;
 				} elseif (!empty($part)) {
-					$msg['text'] = isset($msg['text']) && $msg['text'] ? $msg['text'] . " " . $part : $part;
+					$text_parts[] = $part;
 				}
 			}
+
+			// Replace message with text only
+			$msg['message'] = implode(' ', $text_parts);
 		}
 
 		$total_pages = ceil($total_messages / $per_page);
