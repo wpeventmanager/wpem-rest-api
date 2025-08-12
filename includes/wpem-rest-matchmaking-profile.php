@@ -109,6 +109,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 				'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 				'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : ''
+				'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int)$user_meta['_approve_profile_status'][0] : 0
 			);
 
 			return new WP_REST_Response(array(
@@ -150,7 +151,8 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'organization_logo' => isset($user_meta['_organization_logo'][0]) ? maybe_unserialize($user_meta['_organization_logo'][0]) : array(),
 					'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 					'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
-					'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : ''
+					'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
+					'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int)$user_meta['_approve_profile_status'][0] : 0
 				);
 			}
 
