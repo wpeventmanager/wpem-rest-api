@@ -197,16 +197,10 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 		];
 
 		// Handle normal meta fields
+		
 		foreach ($meta_fields as $field) {
-			
 			if ($request->get_param($field) !== null) {
 				$value = $request->get_param($field);
-				
-				// Special handling for array fields
-				if (in_array($field, ['skills', 'interests'])) {
-					$value = maybe_serialize((array)$value);
-				}
-				
 				update_user_meta($user_id, '_'.$field, $value);
 			}
 		}
