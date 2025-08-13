@@ -105,7 +105,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
 				'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 				'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
-				'organization_logo' => isset($user_meta['_organization_logo'][0]) ? maybe_unserialize($user_meta['_organization_logo'][0]) : array(),
+				'organization_logo' => isset($user_meta['_organization_logo'][0]) ? $user_meta['_organization_logo'][0] : '',
 				'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 				'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 				'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
@@ -148,7 +148,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
 					'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 					'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
-					'organization_logo' => isset($user_meta['_organization_logo'][0]) ? maybe_unserialize($user_meta['_organization_logo'][0]) : array(),
+					'organization_logo' => isset($user_meta['_organization_logo'][0]) ? maybe_unserialize($user_meta['_organization_logo'][0]) : '',
 					'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 					'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 					'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
@@ -233,7 +233,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			$movefile = wp_handle_upload($_FILES['organization_logo'], $upload_overrides);
 
 			if (isset($movefile['url'])) {
-				update_user_meta($user_id, '_organization_logo', [$movefile['url']]);
+				update_user_meta($user_id, '_organization_logo', esc_url_raw($movefile['url']));
 			} else {
 				return new WP_REST_Response([
 					'code' => 500, 
@@ -242,7 +242,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				], 500);
 			}
 		} elseif ($request->get_param('organization_logo')) {
-			update_user_meta($user_id, '_organization_logo', $request->get_param('organization_logo'));
+			update_user_meta($user_id, '_organization_logo', esc_url_raw($request->get_param('organization_logo')));
 		}
 
 		// Update basic WP user fields
