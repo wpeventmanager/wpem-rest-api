@@ -233,6 +233,16 @@ class WPEM_REST_Filter_Users_Controller {
 			if($uid == $user_id){
 				continue;
 			}
+			$photo = get_user_meta( $uid, '_profile_photo', true );
+			$photo = maybe_unserialize( $photo );
+						if (is_array($photo)) {
+				$photo = reset($photo); // get first value in the array
+			}
+			$organization_logo = get_user_meta( $uid, '_organization_logo', true );
+			$organization_logo = maybe_unserialize( $organization_logo );
+			if (is_array($organization_logo)) {
+				$organization_logo = reset($organization_logo); // get first value in the array
+			}
 			$users_data[] = [
 				'user_id'               => $uid,
 				'display_name'          => get_the_author_meta('display_name', $uid),
@@ -240,18 +250,18 @@ class WPEM_REST_Filter_Users_Controller {
 				'last_name'             => get_user_meta($uid, 'last_name', true),
 				'email'                 => get_userdata($uid)->user_email,
 				'matchmaking_profile'   => get_user_meta($uid, '_matchmaking_profile', true),
-				'profile_photo'         => get_user_meta($uid, '_profile_photo', true),
+				'profile_photo'         => $photo,
 				'profession'            => get_user_meta($uid, '_profession', true),
 				'experience'            => get_user_meta($uid, '_experience', true),
 				'company_name'          => get_user_meta($uid, '_company_name', true),
 				'country'               => get_user_meta($uid, '_country', true),
 				'city'                  => get_user_meta($uid, '_city', true),
 				'about'                 => get_user_meta($uid, '_about', true),
-				'skills'                => get_user_meta($uid, '_skills', true),
-				'interests'             => get_user_meta($uid, '_interests', true),
+				'skills'                => maybe_serialize(get_user_meta($uid, '_skills', true)),
+				'interests'             => maybe_serialize(get_user_meta($uid, '_interests', true)),
 				'message_notification'  => get_user_meta($uid, '_message_notification', true),
 				'organization_name'     => get_user_meta($uid, '_organization_name', true),
-				'organization_logo'     => get_user_meta($uid, '_organization_logo', true),
+				'organization_logo'     => $organization_logo,
 				'organization_country'  => get_user_meta($uid, '_organization_country', true),
 				'organization_city'     => get_user_meta($uid, '_organization_city', true),
 				'organization_description'=> get_user_meta($uid, '_organization_description', true),
