@@ -289,7 +289,7 @@ class WPEM_REST_Filter_Users_Controller {
 				'organization_country'  => get_user_meta($uid, '_organization_country', true),
 				'organization_city'     => get_user_meta($uid, '_organization_city', true),
 				'organization_description'=> get_user_meta($uid, '_organization_description', true),
-				'organization_website'	=> get_user_meta($uid, 'organization_website', true),
+				'organization_website'	=> get_user_meta($uid, '_organization_website', true),
 
 				'available_for_meeting'  => get_user_meta($uid, '_available_for_meeting', true),
 				'approve_profile_status' => get_user_meta($uid, '_approve_profile_status', true),
