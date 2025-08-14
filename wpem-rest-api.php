@@ -71,6 +71,7 @@ class WPEM_Rest_API{
 		include 'includes/wpem-rest-matchmaking-get-texonomy.php';
         include 'includes/wpem-rest-matchmaking-user-messages.php';
         include 'includes/wpem-rest-matchmaking-filter-users.php';
+        include 'includes/wpem-rest-matchmaking-users-settings.php';
         include 'includes/wpem-rest-matchmaking-create-meetings.php';
         include 'includes/wpem-rest-matchmaking-user-registred-events.php';
 
