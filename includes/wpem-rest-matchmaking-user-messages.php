@@ -327,6 +327,11 @@ class WPEM_REST_Send_Message_Controller {
 					$display_name = trim("$first_name $last_name");
 				}
 
+				$is_image = 0;
+				if ($last_message_row && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $last_message_row->message)) {
+					$is_image = 1;
+				}
+
 				$results[] = [
 					'user_id'       => (int) $partner_id,
 					'first_name'    => get_user_meta($partner_id, 'first_name', true),
@@ -337,6 +342,7 @@ class WPEM_REST_Send_Message_Controller {
 					'company_name'  => get_user_meta($partner_id, '_company_name', true),
 					'last_message'  => $last_message_row ? $last_message_row->message : null,
 					'message_time'  => $last_message_row ? date('Y-m-d H:i:s', strtotime($last_message_row->created_at)) : null,
+					'last_message_is_image' => $is_image,
 				];
 			}
 
