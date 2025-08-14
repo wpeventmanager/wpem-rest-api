@@ -85,7 +85,12 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 
 			// Get all user meta
 			$user_meta = get_user_meta($attendee_id);
-			
+			$photo = get_wpem_user_profile_photo($attendee_id);
+			$organization_logo = get_user_meta( $attendee_id, '_organization_logo', true );
+			$organization_logo = maybe_unserialize( $organization_logo );
+			if (is_array($organization_logo)) {
+				$organization_logo = reset($organization_logo); // get first value in the array
+			}
 			// Format the profile data
 			$profile = array(
 				'user_id' => $attendee_id,
@@ -94,7 +99,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'last_name' => isset($user_meta['last_name'][0]) ? sanitize_text_field($user_meta['last_name'][0]) : '',
 				'email' => $user->user_email,
 				'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int)$user_meta['_matchmaking_profile'][0] : 0,
-				'profile_photo' => isset($user_meta['_profile_photo'][0]) ? esc_url($user_meta['_profile_photo'][0]) : '',
+				'profile_photo' => $photo,
 				'profession' => isset($user_meta['_profession'][0]) ? sanitize_text_field($user_meta['_profession'][0]) : '',
 				'experience' => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
 				'company_name' => isset($user_meta['_company_name'][0]) ? sanitize_text_field($user_meta['_company_name'][0]) : '',
@@ -105,7 +110,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
 				'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 				'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
-				'organization_logo' => isset($user_meta['_organization_logo'][0]) ? $user_meta['_organization_logo'][0] : '',
+				'organization_logo' => $organization_logo,
 				'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 				'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 				'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
@@ -131,6 +136,12 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			$profiles = array();
 			foreach ($users as $user) {
 				$user_meta = get_user_meta($user->ID);
+				$photo = get_wpem_user_profile_photo($user->ID);
+				$organization_logo = get_user_meta($user->ID, '_organization_logo', true);
+				$organization_logo = maybe_unserialize($organization_logo);
+				if (is_array($organization_logo)) {
+					$organization_logo = reset($organization_logo);
+				}
 				$profiles[] = array(
 					'user_id' => $user->ID,
 					'display_name' => $user->display_name,
@@ -138,7 +149,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'last_name' => isset($user_meta['last_name'][0]) ? sanitize_text_field($user_meta['last_name'][0]) : '',
 					'email' => $user->user_email,
 					'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int)$user_meta['_matchmaking_profile'][0] : 0,
-					'profile_photo' => isset($user_meta['_profile_photo'][0]) ? esc_url($user_meta['_profile_photo'][0]) : '',
+					'profile_photo' => $photo,
 					'profession' => isset($user_meta['_profession'][0]) ? sanitize_text_field($user_meta['_profession'][0]) : '',
 					'experience' => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
 					'company_name' => isset($user_meta['_company_name'][0]) ? sanitize_text_field($user_meta['_company_name'][0]) : '',
@@ -149,7 +160,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
 					'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 					'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
-					'organization_logo' => isset($user_meta['_organization_logo'][0]) ? maybe_unserialize($user_meta['_organization_logo'][0]) : '',
+					'organization_logo' => $organization_logo,
 					'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 					'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 					'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',

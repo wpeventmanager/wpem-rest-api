@@ -233,11 +233,7 @@ class WPEM_REST_Filter_Users_Controller {
 			if($uid == $user_id){
 				continue;
 			}
-			$photo = get_user_meta( $uid, '_profile_photo', true );
-			$photo = maybe_unserialize( $photo );
-						if (is_array($photo)) {
-				$photo = reset($photo); // get first value in the array
-			}
+			$photo = get_wpem_user_profile_photo($uid);
 			$organization_logo = get_user_meta( $uid, '_organization_logo', true );
 			$organization_logo = maybe_unserialize( $organization_logo );
 			if (is_array($organization_logo)) {
