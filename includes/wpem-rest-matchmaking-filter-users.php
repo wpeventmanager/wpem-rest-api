@@ -8,6 +8,10 @@ class WPEM_REST_Filter_Users_Controller {
         add_action('rest_api_init', array($this, 'register_routes'));
     }
 
+	/**
+	 * This function used to register routes
+	 * @since 1.1.0
+	 */
     public function register_routes() {
         $auth_controller = new WPEM_REST_Authentication();
         // General filter
@@ -43,6 +47,10 @@ class WPEM_REST_Filter_Users_Controller {
         ));
     }
 
+	/**
+	 * This function used to filter users
+	 * @since 1.1.0
+	 */
     public function handle_your_matches($request) {
         global $wpdb;
 
@@ -156,8 +164,13 @@ class WPEM_REST_Filter_Users_Controller {
         return $response;
     }
 
+	/**
+	 * This function used to filter users
+	 * @since 1.1.0
+	 * @param $request
+	 * @return WP_REST_Response
+	 */
 	public function handle_filter_users($request) {
-		
 		global $wpdb;
 
 		if (!get_option('enable_matchmaking', false)) {
@@ -207,7 +220,6 @@ class WPEM_REST_Filter_Users_Controller {
 			]);
 			
 			foreach ($attendee_query->posts as $registration_id) {
-				
 				if (wp_get_post_parent_id($registration_id) == $event_id) {
 					$uid = get_post_field('post_author', $registration_id);
 					if ($uid && !in_array($uid, $registered_user_ids)) {
@@ -215,7 +227,6 @@ class WPEM_REST_Filter_Users_Controller {
 					}
 				}
 			}
-			
 		}
 
 		if (empty($registered_user_ids)) {
@@ -239,6 +250,23 @@ class WPEM_REST_Filter_Users_Controller {
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo); // get first value in the array
 			}
+			$skills    = get_user_meta($uid, '_skills', true);
+			$interests = get_user_meta($uid, '_interests', true);
+
+			// Remove empty values so [""] becomes []
+			$skills    = array_filter((array)$skills, 'strlen');
+			$interests = array_filter((array)$interests, 'strlen');
+
+			// Serialize empty array if nothing remains
+			$skills    = !empty($skills) ? maybe_serialize($skills) : serialize(array());
+			$interests = !empty($interests) ? maybe_serialize($interests) : serialize(array());
+
+			$photo = get_wpem_user_profile_photo($uid);
+			$organization_logo = get_user_meta( $uid, '_organization_logo', true );
+			$organization_logo = maybe_unserialize( $organization_logo );
+			if (is_array($organization_logo)) {
+				$organization_logo = reset($organization_logo);
+			}
 			$users_data[] = [
 				'user_id'               => $uid,
 				'display_name'          => get_the_author_meta('display_name', $uid),
@@ -253,8 +281,8 @@ class WPEM_REST_Filter_Users_Controller {
 				'country'               => get_user_meta($uid, '_country', true),
 				'city'                  => get_user_meta($uid, '_city', true),
 				'about'                 => get_user_meta($uid, '_about', true),
-				'skills'                => maybe_serialize(get_user_meta($uid, '_skills', true)),
-				'interests'             => maybe_serialize(get_user_meta($uid, '_interests', true)),
+				'skills'                => $skills,
+				'interests'             => $interests,
 				'message_notification'  => get_user_meta($uid, '_message_notification', true),
 				'organization_name'     => get_user_meta($uid, '_organization_name', true),
 				'organization_logo'     => $organization_logo,
@@ -262,8 +290,9 @@ class WPEM_REST_Filter_Users_Controller {
 				'organization_city'     => get_user_meta($uid, '_organization_city', true),
 				'organization_description'=> get_user_meta($uid, '_organization_description', true),
 				'organization_website'	=> get_user_meta($uid, 'organization_website', true),
+
 				'available_for_meeting'  => get_user_meta($uid, '_available_for_meeting', true),
-				'approve_profile_status' => get_user_meta($uid, '_approve_profile_status', true), // participant activation setting
+				'approve_profile_status' => get_user_meta($uid, '_approve_profile_status', true),
 			];
 		}
 
