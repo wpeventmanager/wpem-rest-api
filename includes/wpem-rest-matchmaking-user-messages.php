@@ -331,13 +331,13 @@ class WPEM_REST_Send_Message_Controller {
 				if ($last_message_row && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $last_message_row->message)) {
 					$is_image = 1;
 				}
-
+				$photo = get_wpem_user_profile_photo($partner_id);
 				$results[] = [
 					'user_id'       => (int) $partner_id,
 					'first_name'    => get_user_meta($partner_id, 'first_name', true),
 					'last_name'     => get_user_meta($partner_id, 'last_name', true),
 					'display_name'  => $display_name,
-					'profile_photo' => get_user_meta($partner_id, '_profile_photo', true),
+					'profile_photo' => $photo,
 					'profession'    => get_user_meta($partner_id, '_profession', true),
 					'company_name'  => get_user_meta($partner_id, '_company_name', true),
 					'last_message'  => $last_message_row ? $last_message_row->message : null,
