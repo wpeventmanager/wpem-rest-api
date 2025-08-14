@@ -208,7 +208,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			'profession', 'experience', 'company_name', 'country',
 			'city', 'about', 'skills', 'interests', 'organization_name', 
 			'organization_logo', 'organization_city', 'organization_country', 
-			'organization_description', 'message_notification', 'matchmaking_profile'
+			'organization_description', 'organization_website', 'message_notification', 'matchmaking_profile'
 		];
 
 		// Handle normal meta fields
