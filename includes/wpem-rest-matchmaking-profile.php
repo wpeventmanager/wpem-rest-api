@@ -91,6 +91,15 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo); // get first value in the array
 			}
+			$country_value = isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '';
+			$country_code = '';
+			if ($country_value) {
+				if (isset($countries[$country_value])) {
+					$country_code = $country_value;
+				} else {
+					$country_code = array_search($country_value, $countries);
+				}
+			}
 			// Format the profile data
 			$profile = array(
 				'user_id' => $attendee_id,
@@ -103,7 +112,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'profession' => isset($user_meta['_profession'][0]) ? sanitize_text_field($user_meta['_profession'][0]) : '',
 				'experience' => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
 				'company_name' => isset($user_meta['_company_name'][0]) ? sanitize_text_field($user_meta['_company_name'][0]) : '',
-				'country' => isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '',
+				'country' => $country_code,
 				'city' => isset($user_meta['_city'][0]) ? sanitize_text_field($user_meta['_city'][0]) : '',
 				'about' => isset($user_meta['_about'][0]) ? sanitize_textarea_field($user_meta['_about'][0]) : '',
 				'skills' => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
@@ -142,6 +151,15 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				$organization_logo = maybe_unserialize($organization_logo);
 				if (is_array($organization_logo)) {
 					$organization_logo = reset($organization_logo);
+				}
+				$country_value = isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '';
+				$country_code = '';
+				if ($country_value) {
+					if (isset($countries[$country_value])) {
+						$country_code = $country_value;
+					} else {
+						$country_code = array_search($country_value, $countries);
+					}
 				}
 				$profiles[] = array(
 					'user_id' => $user->ID,
