@@ -54,7 +54,7 @@ class WPEM_REST_Create_Meeting_Controller {
 		]);
 	register_rest_route($this->namespace, '/get-availability-slots', [
 			'methods'  => WP_REST_Server::READABLE,
-			'callback' => [$this, 'get_booked_meeting_slots'],
+			'callback' => [$this, 'get_available_meeting_slots'],
 			'permission_callback' => [$auth_controller, 'check_authentication'],
 			'args' => [
 				'user_id' => [
@@ -606,7 +606,14 @@ class WPEM_REST_Create_Meeting_Controller {
             ]
         ], 200);
     }
-    public function get_booked_meeting_slots(WP_REST_Request $request) {
+
+    /**
+     * Get available meeting slots
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.1.0
+     */
+    public function get_available_meeting_slots(WP_REST_Request $request) {
         if (!get_option('enable_matchmaking', false)) {
             return new WP_REST_Response([
                 'code' => 403,
@@ -617,21 +624,17 @@ class WPEM_REST_Create_Meeting_Controller {
         }
 
         $user_id  = intval($request->get_param('user_id')) ?: get_current_user_id();
-
-        $saved_data = maybe_unserialize(get_user_meta($user_id, '_meeting_availability_slot', true));
-        $available_flag = (int)get_user_meta($user_id, '_available_for_meeting', true);
-
-        if (is_array($saved_data)) {
-            ksort($saved_data); // sort by date keys
-        }
+        $default_slots = get_wpem_default_meeting_slots_for_user($user_id);
+        $meta = get_user_meta($user_id, '_available_for_meeting', true);
+		$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
 
         return new WP_REST_Response([
             'code' => 200,
             'status' => 'OK',
             'message' => 'Availability slots fetched successfully.',
             'data' => [
-                'available_for_meeting' => $available_flag,
-                'slots' => $saved_data
+                'available_for_meeting' => $meeting_available,
+                'slots' => $default_slots
             ]
         ], 200);
     }
