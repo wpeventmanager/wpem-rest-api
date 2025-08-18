@@ -70,7 +70,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 		}
 
 		$attendee_id = $request->get_param('attendeeId');
-
+		$countries = wpem_get_all_countries();
 		if ($attendee_id) {
 			// Check if user exists
 			$user = get_user_by('ID', $attendee_id);
@@ -91,6 +91,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo); // get first value in the array
 			}
+
 			$country_value = isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '';
 			$country_code = '';
 			if ($country_value) {
@@ -100,6 +101,9 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					$country_code = array_search($country_value, $countries);
 				}
 			}
+			$meta = get_user_meta($attendee_id, '_available_for_meeting', true);
+			$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+
 			// Format the profile data
 			$profile = array(
 				'user_id' => $attendee_id,
@@ -123,9 +127,10 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 				'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 				'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
-				'organization_website' =>  isset($user_meta['organization_website'][0]) ? sanitize_text_field($user_meta['organization_website'][0]) : '',
+				'organization_website' =>  isset($user_meta['_organization_website'][0]) ? sanitize_text_field($user_meta['_organization_website'][0]) : '',
 				'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int)$user_meta['_approve_profile_status'][0] : 0,
 				'wpem_meeting_request_mode' => isset($user_meta['_wpem_meeting_request_mode'][0]) ? $user_meta['_wpem_meeting_request_mode'][0] : 'approval',
+				'available_for_meeting' => (int)$meeting_available,
 			);
 
 			return new WP_REST_Response(array(
@@ -147,8 +152,8 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			foreach ($users as $user) {
 				$user_meta = get_user_meta($user->ID);
 				$photo = get_wpem_user_profile_photo($user->ID);
-				$organization_logo = get_user_meta($user->ID, '_organization_logo', true);
-				$organization_logo = maybe_unserialize($organization_logo);
+				$organization_logo = get_user_meta( $user->ID, '_organization_logo', true );
+				$organization_logo = maybe_unserialize( $organization_logo );
 				if (is_array($organization_logo)) {
 					$organization_logo = reset($organization_logo);
 				}
@@ -161,6 +166,9 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 						$country_code = array_search($country_value, $countries);
 					}
 				}
+				$meta = get_user_meta($user->ID, '_available_for_meeting', true);
+				$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+
 				$profiles[] = array(
 					'user_id' => $user->ID,
 					'display_name' => $user->display_name,
@@ -172,7 +180,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'profession' => isset($user_meta['_profession'][0]) ? sanitize_text_field($user_meta['_profession'][0]) : '',
 					'experience' => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
 					'company_name' => isset($user_meta['_company_name'][0]) ? sanitize_text_field($user_meta['_company_name'][0]) : '',
-					'country' => isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '',
+					'country' => $country_code,
 					'city' => isset($user_meta['_city'][0]) ? sanitize_text_field($user_meta['_city'][0]) : '',
 					'about' => isset($user_meta['_about'][0]) ? sanitize_textarea_field($user_meta['_about'][0]) : '',
 					'skills'    => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
@@ -183,9 +191,10 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
 					'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 					'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
-					'organization_website' =>  isset($user_meta['organization_website'][0]) ? sanitize_text_field($user_meta['organization_website'][0]) : '',
+					'organization_website' =>  isset($user_meta['_organization_website'][0]) ? sanitize_text_field($user_meta['_organization_website'][0]) : '',
 					'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int)$user_meta['_approve_profile_status'][0] : 0,
-					'wpem_meeting_request_mode' => isset($user_meta['_wpem_meeting_request_mode'][0]) ? $user_meta['_wpem_meeting_request_mode'][0] : 'approval'
+					'wpem_meeting_request_mode' => isset($user_meta['_wpem_meeting_request_mode'][0]) ? $user_meta['_wpem_meeting_request_mode'][0] : 'approval',
+					'available_for_meeting' => (int)$meeting_available,
 				);
 			}
 
