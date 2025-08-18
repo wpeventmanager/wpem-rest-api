@@ -244,6 +244,9 @@ class WPEM_REST_Filter_Users_Controller {
 			if($uid == $user_id){
 				continue;
 			}
+			if(!get_user_meta($uid, '_matchmaking_profile', true)) {
+				continue;
+			}
 			$photo = get_wpem_user_profile_photo($uid);
 			$organization_logo = get_user_meta( $uid, '_organization_logo', true );
 			$organization_logo = maybe_unserialize( $organization_logo );
@@ -267,19 +270,6 @@ class WPEM_REST_Filter_Users_Controller {
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo);
 			}
-			// Get country value from user meta
-			$country_value = get_user_meta($uid, '_country', true);
-
-			// Inline logic to always get country code
-			$countries = wpem_get_all_countries(); // [code => name]
-			$country_code = $country_value;
-			if (!isset($countries[$country_value])) {
-				// If not a code, try to find code by name
-				$found_code = array_search($country_value, $countries);
-				if ($found_code) {
-					$country_code = $found_code;
-				}
-			}
 			$users_data[] = [
 				'user_id'               => $uid,
 				'display_name'          => get_the_author_meta('display_name', $uid),
@@ -291,7 +281,7 @@ class WPEM_REST_Filter_Users_Controller {
 				'profession'            => get_user_meta($uid, '_profession', true),
 				'experience'            => get_user_meta($uid, '_experience', true),
 				'company_name'          => get_user_meta($uid, '_company_name', true),
-				'country'               => $country_code,
+				'country'               => get_user_meta($uid, '_country', true),
 				'city'                  => get_user_meta($uid, '_city', true),
 				'about'                 => get_user_meta($uid, '_about', true),
 				'skills'                => $skills,
