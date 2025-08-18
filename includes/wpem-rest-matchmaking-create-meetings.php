@@ -322,7 +322,7 @@ class WPEM_REST_Create_Meeting_Controller {
 				}
 
 				// Get profile data from user meta (assuming these are stored as meta)
-				$profile_photo = get_user_meta($pid, '_profile_photo', true);
+				$profile_photo = get_wpem_user_profile_photo($pid);  
 				$profession = get_user_meta($pid, '_profession', true); // Note: Typo in 'profession'?
 				$company_name = get_user_meta($pid, '_company_name', true);
 
@@ -346,7 +346,7 @@ class WPEM_REST_Create_Meeting_Controller {
 			}
 
 			// Get host profile data from user meta
-			$host_profile_photo = get_user_meta($host_id, '_profile_photo', true);
+			$host_profile_photo = get_wpem_user_profile_photo($host_id);
 			$host_profession = get_user_meta($host_id, '_profession', true);
 			$host_company_name = get_user_meta($host_id, '_company_name', true);
 
