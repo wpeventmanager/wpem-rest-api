@@ -720,28 +720,43 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				);
 
 				if ($is_matchmaking && $enable_matchmaking) {
+					$user_meta = get_user_meta($user_id);
+					$organization_logo = get_user_meta( $user_id, '_organization_logo', true );
+					$organization_logo = maybe_unserialize( $organization_logo );
+					if (is_array($organization_logo)) {
+						$organization_logo = reset($organization_logo); // get first value in the array
+					}
+					$meta = get_user_meta($user_id, '_available_for_meeting', true);
+					$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+
+					$photo = get_wpem_user_profile_photo($user_id);
 					// Get matchmaking data from user meta instead of custom table
 					$matchmaking_details = array(
 						'attendeeId'              => $user_id,
 						'first_name'               => $first_name, 
 						'last_name'                => $last_name,
-						'email'                   => $user_email,
-						'profile_photo'            => get_user_meta($user_id, '_profile_photo', true) ?: '',
+						'email'                  => $user->user_email,
+						'display_name'           => $user->display_name,
+						'profile_photo'           => $photo,
 						'profession'              => get_user_meta($user_id, '_profession', true) ?: '',
 						'experience'              => get_user_meta($user_id, '_experience', true) ?: '',
 						'company_name'             => get_user_meta($user_id, '_company_name', true) ?: '',
 						'country'                 => get_user_meta($user_id, '_country', true) ?: '',
 						'city'                    => get_user_meta($user_id, '_city', true) ?: '',
 						'about'                   => get_user_meta($user_id, '_about', true) ?: '',
-						'skills'                  => get_user_meta($user_id, '_skills', true) ?: [],
-						'interests'               => get_user_meta($user_id, '_interests', true) ?: [],
+						'skills' => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
+						'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
 						'organization_name'        => get_user_meta($user_id, '_organization_name', true) ?: '',
-						'organization_logo'        => get_user_meta($user_id, '_organization_logo', true) ?: '',
+						'organization_logo'        => $organization_logo,
 						'organization_city'        => get_user_meta($user_id, '_organization_city', true) ?: '',
 						'organization_country'     => get_user_meta($user_id, '_organization_country', true) ?: '',
 						'organization_description' => get_user_meta($user_id, '_organization_description', true) ?: '',
 						'message_notification'     => get_user_meta($user_id, '_message_notification', true) ?: '',
 						'approve_profile_status'   => get_user_meta($user_id, '_approve_profile_status', true) ?: '',
+						'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int)$user_meta['_matchmaking_profile'][0] : 0,
+						'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int)$user_meta['_approve_profile_status'][0] : 0,
+						'wpem_meeting_request_mode' => isset($user_meta['_wpem_meeting_request_mode'][0]) ? $user_meta['_wpem_meeting_request_mode'][0] : 'approval',
+						'available_for_meeting' => (int)$meeting_available,
 					);
 
 					$data['user']['matchmaking_details'] = $matchmaking_details;
