@@ -243,7 +243,20 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 		foreach ($meta_fields as $field) {
 			if ($request->get_param($field) !== null) {
 				$value = $request->get_param($field);
-				update_user_meta($user_id, '_'.$field, $value);
+				 // If it's an array, filter out blanks
+				if (is_array($value)) {
+					$value = array_filter($value, function($v) {
+						return $v !== null && $v !== '';
+					});
+					$value = array_values($value); // reindex after filtering
+				}
+
+				// Only update if not completely empty
+				if (!empty($value)) {
+					update_user_meta($user_id, '_' . $field, $value);
+				} else {
+					update_user_meta($user_id, '_' . $field, ''); // cleanup if blank
+				}
 			}
 		}
 
