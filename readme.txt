@@ -3,9 +3,9 @@
 Contributors: wpeventmanager,ashokdudhat,krinay
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
-Requires at least: 6.0.1
+Requires at least: 6.5.1
 Tested up to: 6.8
-Stable tag: 1.0.10
+Stable tag: 1.1.0
 Requires PHP: 8.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -119,6 +119,13 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
+
+= 1.1.0 [ 19th August 2025 ] =
+
+Fixed : Change the Plugin name
+Fixed : After password change the user will auto logout from mobile app
+Fixed : Without Active license some section of the app will not work
+Added : Match making functionality
 
 = 1.0.10 [ 09th May 2025 ] =
 
