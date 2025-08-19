@@ -203,7 +203,7 @@ class WPEM_REST_Create_Meeting_Controller {
                     <p><strong>{$sender_user->display_name}</strong> has requested a meeting with you.</p>
                     <p><strong>Event:</strong> {$event_name}</p>
                     <p><strong>Date:</strong> {$formatted_date}</p>
-                    <p><strong>Time:</strong> {$formatted_time} {$timezone_abbr}</p>
+                    <p><strong>Time:</strong> {$formatted_time}</p>
                     <p><strong>Company:</strong> {$host_company}<br>
                        <strong>City:</strong> {$host_city}<br>
                        <strong>Country:</strong> {$host_country}</p>
