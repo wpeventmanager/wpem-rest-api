@@ -41,6 +41,24 @@ var WPEMRestAPIAdmin = (function () {
 					jQuery('#select-events-row').hide();
 				}
 			}
+            jQuery('.wp_event_manager_upload_file_button').on('click', function(e){
+				e.preventDefault();
+				var button = jQuery(this);
+				var input = button.closest('.file_url').find('#wpem_rest_api_app_logo');
+				console.log(input);
+				var custom_uploader = wp.media({
+					title: 'Select or Upload Image',
+					button: {
+						text: 'Use this image'
+					},
+					multiple: false
+				})
+				.on('select', function() {
+					var attachment = custom_uploader.state().get('selection').first().toJSON();
+					input.val(attachment.url); // Set image URL in input
+				})
+				.open();
+			});
         },
         actions: {
             saveApiKey: function (e) {
