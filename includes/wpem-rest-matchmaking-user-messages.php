@@ -196,7 +196,7 @@ class WPEM_REST_Send_Message_Controller {
 			]
 		], 200);
 	}
-    public function handle_get_messages($request) {
+     public function handle_get_messages($request) {
 		global $wpdb;
 
 		if (!get_option('enable_matchmaking', false)) {
@@ -245,8 +245,6 @@ class WPEM_REST_Send_Message_Controller {
 		), ARRAY_A);
 		// Separate text and image
 		foreach ($messages as &$msg) {
-			$msg['image'] = null;
-
 			// Break message into lines
 			$parts = preg_split("/\n+/", trim($msg['message']));
 			$text_parts = [];
@@ -275,12 +273,15 @@ class WPEM_REST_Send_Message_Controller {
 				'current_page'     => $page,
 				'last_page'        => $total_pages,
 				'total_pages'      => $total_pages,
-				'messages'         => $messages,
+				'messages'         => array_filter($messages, function ($msg) {
+					unset($msg['image']);
+					return $msg;
+				}),
 			]
 		], 200);
 	}
 	public function handle_get_conversation_list($request) {
-			global $wpdb;
+		global $wpdb;
 
 			$user_id  = intval($request->get_param('user_id'));
 			$paged    = max(1, intval($request->get_param('paged')));
