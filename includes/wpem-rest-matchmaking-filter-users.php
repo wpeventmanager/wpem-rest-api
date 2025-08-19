@@ -270,6 +270,46 @@ class WPEM_REST_Filter_Users_Controller {
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo);
 			}
+			// Get taxonomy lists
+			$profession_terms = get_event_registration_taxonomy_list('event_registration_professions'); // [slug => name]
+			$skills_terms     = get_event_registration_taxonomy_list('event_registration_skills');
+			$interests_terms  = get_event_registration_taxonomy_list('event_registration_interests');
+
+			// Profession slug
+			$profession_value = get_user_meta($uid, '_profession', true);
+			$profession_slug = $profession_value;
+			if ($profession_value && !isset($profession_terms[$profession_value])) {
+				$found_slug = array_search($profession_value, $profession_terms);
+				if ($found_slug) {
+					$profession_slug = $found_slug;
+				}
+			}
+
+			// Skills slugs
+			$skills_raw = get_user_meta($uid, '_skills', true);
+			$skills_arr = is_array($skills_raw) ? $skills_raw : maybe_unserialize($skills_raw);
+			$skills_slugs = [];
+			foreach ((array)$skills_arr as $skill) {
+				if ($skill && !isset($skills_terms[$skill])) {
+					$found_slug = array_search($skill, $skills_terms);
+					$skills_slugs[] = $found_slug ? $found_slug : $skill;
+				} else {
+					$skills_slugs[] = $skill;
+				}
+			}
+
+			// Interests slugs
+			$interests_raw = get_user_meta($uid, '_interests', true);
+			$interests_arr = is_array($interests_raw) ? $interests_raw : maybe_unserialize($interests_raw);
+			$interests_slugs = [];
+			foreach ((array)$interests_arr as $interest) {
+				if ($interest && !isset($interests_terms[$interest])) {
+					$found_slug = array_search($interest, $interests_terms);
+					$interests_slugs[] = $found_slug ? $found_slug : $interest;
+				} else {
+					$interests_slugs[] = $interest;
+				}
+			}
 			$users_data[] = [
 				'user_id'               => $uid,
 				'display_name'          => get_the_author_meta('display_name', $uid),
@@ -278,14 +318,14 @@ class WPEM_REST_Filter_Users_Controller {
 				'email'                 => get_userdata($uid)->user_email,
 				'matchmaking_profile'   => get_user_meta($uid, '_matchmaking_profile', true),
 				'profile_photo'         => $photo,
-				'profession'            => get_user_meta($uid, '_profession', true),
+				'profession'            => $profession_slug,
 				'experience'            => get_user_meta($uid, '_experience', true),
 				'company_name'          => get_user_meta($uid, '_company_name', true),
 				'country'               => get_user_meta($uid, '_country', true),
 				'city'                  => get_user_meta($uid, '_city', true),
 				'about'                 => get_user_meta($uid, '_about', true),
-				'skills'                => $skills,
-				'interests'             => $interests,
+				'skills'    			=> maybe_serialize($skills_slugs),
+				'interests' 			=> maybe_serialize($interests_slugs),
 				'message_notification'  => get_user_meta($uid, '_message_notification', true),
 				'organization_name'     => get_user_meta($uid, '_organization_name', true),
 				'organization_logo'     => $organization_logo,
@@ -293,7 +333,6 @@ class WPEM_REST_Filter_Users_Controller {
 				'organization_city'     => get_user_meta($uid, '_organization_city', true),
 				'organization_description'=> get_user_meta($uid, '_organization_description', true),
 				'organization_website'	=> get_user_meta($uid, '_organization_website', true),
-
 				'available_for_meeting'  => get_user_meta($uid, '_available_for_meeting', true),
 				'approve_profile_status' => get_user_meta($uid, '_approve_profile_status', true),
 			];
