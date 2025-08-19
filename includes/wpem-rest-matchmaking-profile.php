@@ -117,6 +117,40 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					$profession_slug = $found_slug;
 				}
 			}
+			// Convert skills (names or IDs) to slugs
+			$skills_slugs = array();
+			if (!empty($user_meta['_skills'][0])) {
+				$skills = maybe_unserialize($user_meta['_skills'][0]);
+				if (is_array($skills)) {
+					foreach ($skills as $skill) {
+						$term = get_term_by('name', $skill, 'event_registration_skills');
+						if (!$term) {
+							$term = get_term_by('id', $skill, 'event_registration_skills');
+						}
+						if ($term) {
+							$skills_slugs[] = $term->slug;
+						}
+					}
+				}
+			}
+
+			// Convert interests (names or IDs) to slugs
+			$interests_slugs = array();
+			if (!empty($user_meta['_interests'][0])) {
+				$interests = maybe_unserialize($user_meta['_interests'][0]);
+				if (is_array($interests)) {
+					foreach ($interests as $interest) {
+						$term = get_term_by('name', $interest, 'event_registration_interests');
+						if (!$term) {
+							$term = get_term_by('id', $interest, 'event_registration_interests');
+						}
+						if ($term) {
+							$interests_slugs[] = $term->slug;
+						}
+					}
+				}
+			}
+			
 			// Format the profile data
 			$profile = array(
 				'user_id' => $attendee_id,
@@ -132,8 +166,8 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'country' => $country_code,
 				'city' => isset($user_meta['_city'][0]) ? sanitize_text_field($user_meta['_city'][0]) : '',
 				'about' => isset($user_meta['_about'][0]) ? sanitize_textarea_field($user_meta['_about'][0]) : '',
-				'skills' => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
-				'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
+				'skills'    => maybe_serialize($skills_slugs),
+				'interests' => maybe_serialize($interests_slugs),
 				'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 				'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
 				'organization_logo' => $organization_logo,
@@ -191,6 +225,38 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 						$profession_slug = $found_slug;
 					}
 				}
+				// Convert skills (names or IDs) to slugs
+				$skills_slugs = array();
+				if (!empty($user_meta['_skills'][0])) {
+					$skills = maybe_unserialize($user_meta['_skills'][0]);
+					if (is_array($skills)) {
+						foreach ($skills as $skill) {
+							$term = get_term_by('name', $skill, 'event_registration_skills');
+							if (!$term) {
+								$term = get_term_by('id', $skill, 'event_registration_skills');
+							}
+							if ($term) {
+								$skills_slugs[] = $term->slug;
+							}
+						}
+					}
+				}
+				// Convert interests (names or IDs) to slugs
+				$interests_slugs = array();
+				if (!empty($user_meta['_interests'][0])) {
+					$interests = maybe_unserialize($user_meta['_interests'][0]);
+					if (is_array($interests)) {
+						foreach ($interests as $interest) {
+							$term = get_term_by('name', $interest, 'event_registration_interests');
+							if (!$term) {
+								$term = get_term_by('id', $interest, 'event_registration_interests');
+							}
+							if ($term) {
+								$interests_slugs[] = $term->slug;
+							}
+						}
+					}
+				}
 				$profiles[] = array(
 					'user_id' => $user->ID,
 					'display_name' => $user->display_name,
@@ -205,8 +271,8 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'country' => $country_code,
 					'city' => isset($user_meta['_city'][0]) ? sanitize_text_field($user_meta['_city'][0]) : '',
 					'about' => isset($user_meta['_about'][0]) ? sanitize_textarea_field($user_meta['_about'][0]) : '',
-					'skills'    => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
-					'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
+					'skills'    => maybe_serialize($skills_slugs),
+					'interests' => maybe_serialize($interests_slugs),
 					'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 					'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
 					'organization_logo' => $organization_logo,
