@@ -186,9 +186,21 @@ class WPEM_REST_Create_Meeting_Controller {
 				$participant_email = $participant_user->user_email ?? '';
 				$profile_picture = $participant_meta['_profile_photo'][0] ?? EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 
+				// Get all profession terms [slug => name]
+				$profession_terms = get_event_registration_taxonomy_list('event_registration_professions');
+				// Get saved profession value
+				$profession_value = $participant_meta['_profession'][0] ?? '';
+				$profession_slug = $profession_value;
+				// If it's a name, convert to slug
+				if ($profession_value && !isset($profession_terms[$profession_value])) {
+					$found_slug = array_search($profession_value, $profession_terms);
+					if ($found_slug) {
+						$profession_slug = $found_slug;
+					}
+				}
 				$participant_details[] = [
 					'name'        => $participant_name,
-					'profession'  => $participant_meta['_profession'][0] ?? '',
+					'profession'  => $profession_slug,
 					'profile_photo' => esc_url($profile_picture)
 				];
 
