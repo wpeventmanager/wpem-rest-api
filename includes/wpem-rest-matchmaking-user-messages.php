@@ -64,7 +64,7 @@ class WPEM_REST_Send_Message_Controller {
 		$text_message  = sanitize_textarea_field($request->get_param('message'));
 		
 		// Get minimal user objects just for email addresses
-		$sender_user = get_user_by('id', $sender_id);
+		$sender_user   = get_user_by('id', $sender_id);
 		$receiver_user = get_user_by('id', $receiver_id);
 
 		if (!$sender_user || !$receiver_user) {
@@ -76,22 +76,16 @@ class WPEM_REST_Send_Message_Controller {
 		}
 
 		// Get other user data from meta
-		$sender_display_name = get_user_meta($sender_id, 'display_name', true);
-		if (empty($sender_display_name)) {
-			$first_name = get_user_meta($sender_id, 'first_name', true);
-			$last_name = get_user_meta($sender_id, 'last_name', true);
-			$sender_display_name = trim("$first_name $last_name");
-		}
+		$sender_first  = get_user_meta($sender_id, 'first_name', true);
+		$sender_last   = get_user_meta($sender_id, 'last_name', true);
+		$sender_display_name = trim("$sender_first $sender_last");
 
-		$receiver_display_name = get_user_meta($receiver_id, 'display_name', true);
-		if (empty($receiver_display_name)) {
-			$first_name = get_user_meta($receiver_id, 'first_name', true);
-			$last_name = get_user_meta($receiver_id, 'last_name', true);
-			$receiver_display_name = trim("$first_name $last_name");
-		}
+		$receiver_first = get_user_meta($receiver_id, 'first_name', true);
+		$receiver_last  = get_user_meta($receiver_id, 'last_name', true);
+		$receiver_display_name = trim("$receiver_first $receiver_last");
 
-		// Get notification preferences (assuming stored in meta)
-		$sender_notify = get_user_meta($sender_id, '_message_notification', true);
+		// Get notification preferences
+		$sender_notify   = get_user_meta($sender_id, '_message_notification', true);
 		$receiver_notify = get_user_meta($receiver_id, '_message_notification', true);
 
 		if ($sender_notify != 1 || $receiver_notify != 1) {
@@ -126,6 +120,7 @@ class WPEM_REST_Send_Message_Controller {
 			], 400);
 		}
 
+		// Insert into DB
 		$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
 		$first_message_id = $wpdb->get_var($wpdb->prepare(
 			"SELECT id FROM $table 
@@ -147,13 +142,44 @@ class WPEM_REST_Send_Message_Controller {
 
 		$insert_id = $wpdb->insert_id;
 
-		// Use email from user object
+		// --- EMAIL SECTION ---
+		$headers = ['Content-Type: text/html; charset=UTF-8'];
+
+		// Build email body for receiver (your format)
+		$receiver_body  = "Hello, this is a message from {$sender_first}<br><br>";
+		$receiver_body .= "First Name: {$sender_first}<br>";
+		$receiver_body .= "Last Name: {$sender_last}<br>";
+		$receiver_body .= "Message:<br>" . nl2br(esc_html($text_message)) . "<br><br>";
+		if ($image_url) {
+			$receiver_body .= "<p><img src='{$image_url}' alt='Attachment' style='max-width:400px;'></p>";
+		}
+		$receiver_body .= "Thank you.";
+
 		wp_mail(
 			$receiver_user->user_email,
-			'New Message from ' . $sender_display_name,
-			$final_message,
-			['Content-Type: text/plain; charset=UTF-8']
+			'New Message from ' . $sender_first,
+			$receiver_body,
+			$headers
 		);
+
+		// Build confirmation email for sender
+		$sender_body  = "Hello, this is a confirmation of your message to {$receiver_first}<br><br>";
+		$sender_body .= "First Name: {$sender_first}<br>";
+		$sender_body .= "Last Name: {$sender_last}<br>";
+		$sender_body .= "Message:<br>" . nl2br(esc_html($text_message)) . "<br><br>";
+		if ($image_url) {
+			$sender_body .= "<p><img src='{$image_url}' alt='Attachment' style='max-width:400px;'></p>";
+		}
+		$sender_body .= "Thank you.";
+
+		wp_mail(
+			$sender_user->user_email,
+			'Your Message to ' . $receiver_first,
+			$sender_body,
+			$headers
+		);
+
+		// --- END EMAIL SECTION ---
 
 		return new WP_REST_Response([
 			'code'    => 200,
