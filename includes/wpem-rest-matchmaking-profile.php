@@ -103,7 +103,20 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			}
 			$meta = get_user_meta($attendee_id, '_available_for_meeting', true);
 			$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+			// Get all profession terms [slug => name]
+			$professions = get_event_registration_taxonomy_list('event_registration_professions');
 
+			// Get saved profession value
+			$profession_value = isset($user_meta['_profession'][0]) ? sanitize_text_field($user_meta['_profession'][0]) : '';
+			$profession_slug = $profession_value;
+
+			// If it's a name, convert to slug
+			if ($profession_value && !isset($professions[$profession_value])) {
+				$found_slug = array_search($profession_value, $professions);
+				if ($found_slug) {
+					$profession_slug = $found_slug;
+				}
+			}
 			// Format the profile data
 			$profile = array(
 				'user_id' => $attendee_id,
@@ -113,7 +126,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'email' => $user->user_email,
 				'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int)$user_meta['_matchmaking_profile'][0] : 0,
 				'profile_photo' => $photo,
-				'profession' => isset($user_meta['_profession'][0]) ? sanitize_text_field($user_meta['_profession'][0]) : '',
+				'profession' => $profession_slug,
 				'experience' => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
 				'company_name' => isset($user_meta['_company_name'][0]) ? sanitize_text_field($user_meta['_company_name'][0]) : '',
 				'country' => $country_code,
