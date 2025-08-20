@@ -730,22 +730,74 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 					$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
 
 					$photo = get_wpem_user_profile_photo($user_id);
+
+					// --- Skills ---
+					$skills_slugs = [];
+					$skills_arr = maybe_unserialize(isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : []);
+					if (is_array($skills_arr)) {
+						foreach ($skills_arr as $skill) {
+							$term = get_term_by('slug', $skill, 'event_registration_skills');
+							if (!$term) {
+								$term = get_term_by('name', $skill, 'event_registration_skills');
+							}
+							if (!$term) {
+								$term = get_term_by('id', $skill, 'event_registration_skills');
+							}
+							if ($term) {
+								$skills_slugs[] = $term->slug;
+							}
+						}
+					}
+					$skills_slugs = array_filter($skills_slugs);
+					$skills_serialized = serialize($skills_slugs);
+
+					// --- Interests ---
+					$interests_slugs = [];
+					$interests_arr = maybe_unserialize(isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : []);
+					if (is_array($interests_arr)) {
+						foreach ($interests_arr as $interest) {
+							$term = get_term_by('slug', $interest, 'event_registration_interests');
+							if (!$term) {
+								$term = get_term_by('name', $interest, 'event_registration_interests');
+							}
+							if (!$term) {
+								$term = get_term_by('id', $interest, 'event_registration_interests');
+							}
+							if ($term) {
+								$interests_slugs[] = $term->slug;
+							}
+						}
+					}
+
+					$interests_slugs = array_filter($interests_slugs);
+					$interests_serialized = serialize($interests_slugs);
+					$profession = get_user_meta($user_id, '_profession', true) ?: '';
+					if (!empty($profession)) {
+						$term = get_term_by('name', $profession, 'event_registration_professions');
+						if (!$term) {
+							$term = get_term_by('slug', $profession, 'event_registration_professions');
+						}
+						$profession_slug = $term ? $term->slug : $profession;
+					} else {
+						$profession_slug = '';
+					}
+
 					// Get matchmaking data from user meta instead of custom table
 					$matchmaking_details = array(
-						'attendeeId'              => $user_id,
-						'first_name'               => $first_name, 
-						'last_name'                => $last_name,
-						'email'                  => $user->user_email,
-						'display_name'           => $user->display_name,
-						'profile_photo'           => $photo,
-						'profession'              => get_user_meta($user_id, '_profession', true) ?: '',
-						'experience'              => get_user_meta($user_id, '_experience', true) ?: '',
-						'company_name'             => get_user_meta($user_id, '_company_name', true) ?: '',
-						'country'                 => get_user_meta($user_id, '_country', true) ?: '',
-						'city'                    => get_user_meta($user_id, '_city', true) ?: '',
-						'about'                   => get_user_meta($user_id, '_about', true) ?: '',
-						'skills' => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
-						'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
+						'attendeeId'              	=> $user_id,
+						'first_name'               	=> $first_name, 
+						'last_name'                	=> $last_name,
+						'email'                  	=> $user->user_email,
+						'display_name'           	=> $user->display_name,
+						'profile_photo'           	=> $photo,
+						'profession'              	=> $profession_slug,
+						'experience'              	=> get_user_meta($user_id, '_experience', true) ?: '',
+						'company_name'             	=> get_user_meta($user_id, '_company_name', true) ?: '',
+						'country'                 	=> get_user_meta($user_id, '_country', true) ?: '',
+						'city'                    	=> get_user_meta($user_id, '_city', true) ?: '',
+						'about'                   	=> get_user_meta($user_id, '_about', true) ?: '',
+						'skills' 					=> isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
+						'interests' 				=> isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
 						'organization_name'        => get_user_meta($user_id, '_organization_name', true) ?: '',
 						'organization_logo'        => $organization_logo,
 						'organization_city'        => get_user_meta($user_id, '_organization_city', true) ?: '',
