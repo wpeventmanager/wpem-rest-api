@@ -59,7 +59,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
         );
     }
 
-    public function get_attendee_profile($request) {
+   public function get_attendee_profile($request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response(array(
 				'code' => 403,
@@ -117,7 +117,6 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					$profession_slug = $found_slug;
 				}
 			}
-			// Convert skills (names or IDs) to slugs
 			$skills_slugs = array();
 			if (!empty($user_meta['_skills'][0])) {
 				$skills = maybe_unserialize($user_meta['_skills'][0]);
@@ -133,8 +132,10 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					}
 				}
 			}
+			$skills_slugs = array_filter($skills_slugs); // remove blanks
+			$skills_serialized = serialize($skills_slugs);
 
-			// Convert interests (names or IDs) to slugs
+			// Convert interests to slugs and serialize
 			$interests_slugs = array();
 			if (!empty($user_meta['_interests'][0])) {
 				$interests = maybe_unserialize($user_meta['_interests'][0]);
@@ -150,6 +151,8 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					}
 				}
 			}
+			$interests_slugs = array_filter($interests_slugs);
+			$interests_serialized = serialize($interests_slugs);
 			
 			// Format the profile data
 			$profile = array(
@@ -166,8 +169,10 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'country' => $country_code,
 				'city' => isset($user_meta['_city'][0]) ? sanitize_text_field($user_meta['_city'][0]) : '',
 				'about' => isset($user_meta['_about'][0]) ? sanitize_textarea_field($user_meta['_about'][0]) : '',
-				'skills'    => maybe_serialize($skills_slugs),
-				'interests' => maybe_serialize($interests_slugs),
+				//'skills'    => maybe_serialize($skills_slugs),
+				//'interests' => maybe_serialize($interests_slugs),
+				'skills'    => $skills_serialized,
+				'interests' => $interests_serialized,
 				'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 				'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
 				'organization_logo' => $organization_logo,
@@ -225,7 +230,6 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 						$profession_slug = $found_slug;
 					}
 				}
-				// Convert skills (names or IDs) to slugs
 				$skills_slugs = array();
 				if (!empty($user_meta['_skills'][0])) {
 					$skills = maybe_unserialize($user_meta['_skills'][0]);
@@ -241,7 +245,10 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 						}
 					}
 				}
-				// Convert interests (names or IDs) to slugs
+				$skills_slugs = array_filter($skills_slugs);
+				$skills_serialized = serialize($skills_slugs);
+
+				// Convert interests
 				$interests_slugs = array();
 				if (!empty($user_meta['_interests'][0])) {
 					$interests = maybe_unserialize($user_meta['_interests'][0]);
@@ -257,6 +264,8 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 						}
 					}
 				}
+				$interests_slugs = array_filter($interests_slugs);
+				$interests_serialized = serialize($interests_slugs);
 				$profiles[] = array(
 					'user_id' => $user->ID,
 					'display_name' => $user->display_name,
@@ -265,14 +274,14 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'email' => $user->user_email,
 					'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int)$user_meta['_matchmaking_profile'][0] : 0,
 					'profile_photo' => $photo,
-					'profession' => $profession_slug,
+					'profession' => $profession_slug ,
 					'experience' => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
 					'company_name' => isset($user_meta['_company_name'][0]) ? sanitize_text_field($user_meta['_company_name'][0]) : '',
 					'country' => $country_code,
 					'city' => isset($user_meta['_city'][0]) ? sanitize_text_field($user_meta['_city'][0]) : '',
 					'about' => isset($user_meta['_about'][0]) ? sanitize_textarea_field($user_meta['_about'][0]) : '',
-					'skills'    => maybe_serialize($skills_slugs),
-					'interests' => maybe_serialize($interests_slugs),
+					'skills'    => $skills_serialized,
+					'interests' => $interests_serialized,
 					'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 					'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
 					'organization_logo' => $organization_logo,

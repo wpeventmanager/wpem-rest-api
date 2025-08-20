@@ -267,29 +267,45 @@ class WPEM_REST_Filter_Users_Controller {
 				}
 			}
 
-			// Skills
-			$skills_arr = (array) maybe_unserialize(get_user_meta($uid, '_skills', true));
+			// --- Skills ---
 			$skills_slugs = [];
-			foreach ($skills_arr as $skill) {
-				if ($skill && !isset($skills_terms[$skill])) {
-					$found_slug = array_search($skill, $skills_terms);
-					$skills_slugs[] = $found_slug ?: $skill;
-				} else {
-					$skills_slugs[] = $skill;
+			$skills_arr = maybe_unserialize(get_user_meta($uid, '_skills', true));
+			if (is_array($skills_arr)) {
+				foreach ($skills_arr as $skill) {
+					$term = get_term_by('slug', $skill, 'event_registration_skills');
+					if (!$term) {
+						$term = get_term_by('name', $skill, 'event_registration_skills');
+					}
+					if (!$term) {
+						$term = get_term_by('id', $skill, 'event_registration_skills');
+					}
+					if ($term) {
+						$skills_slugs[] = $term->slug;
+					}
 				}
 			}
+			$skills_slugs = array_filter($skills_slugs); // remove blanks
+			$skills_serialized = serialize($skills_slugs);
 
-			// Interests
-			$interests_arr = (array) maybe_unserialize(get_user_meta($uid, '_interests', true));
+			// --- Interests ---
 			$interests_slugs = [];
-			foreach ($interests_arr as $interest) {
-				if ($interest && !isset($interests_terms[$interest])) {
-					$found_slug = array_search($interest, $interests_terms);
-					$interests_slugs[] = $found_slug ?: $interest;
-				} else {
-					$interests_slugs[] = $interest;
+			$interests_arr = maybe_unserialize(get_user_meta($uid, '_interests', true));
+			if (is_array($interests_arr)) {
+				foreach ($interests_arr as $interest) {
+					$term = get_term_by('slug', $interest, 'event_registration_interests');
+					if (!$term) {
+						$term = get_term_by('name', $interest, 'event_registration_interests');
+					}
+					if (!$term) {
+						$term = get_term_by('id', $interest, 'event_registration_interests');
+					}
+					if ($term) {
+						$interests_slugs[] = $term->slug;
+					}
 				}
 			}
+			$interests_slugs = array_filter($interests_slugs);
+			$interests_serialized = serialize($interests_slugs);
 
 			$users_data[] = [
 				'user_id'               => $uid,
@@ -305,8 +321,8 @@ class WPEM_REST_Filter_Users_Controller {
 				'country'               => get_user_meta($uid, '_country', true),
 				'city'                  => get_user_meta($uid, '_city', true),
 				'about'                 => get_user_meta($uid, '_about', true),
-				'skills'                => maybe_serialize($skills_slugs),
-				'interests'             => maybe_serialize($interests_slugs),
+				'skills'    => $skills_serialized,
+				'interests' => $interests_serialized,
 				'message_notification'  => get_user_meta($uid, '_message_notification', true),
 				'organization_name'     => get_user_meta($uid, '_organization_name', true),
 				'organization_logo'     => $organization_logo,
