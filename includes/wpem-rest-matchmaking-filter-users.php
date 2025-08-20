@@ -182,17 +182,17 @@ class WPEM_REST_Filter_Users_Controller {
 			], 403);
 		}
 
-		$event_id         = intval($request->get_param('event_id'));
+		$event_id = intval($request->get_param('event_id'));
 		$user_id  = intval($request->get_param('user_id'));
 
-		// Step 1: Get all registered user IDs for this event (from post_parent)
+		// Step 1: Validate registration
 		$registered_user_ids = [];
 		if ($event_id && $user_id) {
 			$registration_query = new WP_Query([
 				'post_type'      => 'event_registration',
 				'posts_per_page' => -1,
 				'fields'         => 'ids',
-				'post_author'         => $user_id,
+				'post_author'    => $user_id,
 			]);
 
 			$has_registration = false;
@@ -212,7 +212,7 @@ class WPEM_REST_Filter_Users_Controller {
 				], 403);
 			}
 
-			// Now get all users for this event
+			// Collect all registered users for this event
 			$attendee_query = new WP_Query([
 				'post_type'      => 'event_registration',
 				'posts_per_page' => -1,
@@ -221,9 +221,9 @@ class WPEM_REST_Filter_Users_Controller {
 			
 			foreach ($attendee_query->posts as $registration_id) {
 				if (wp_get_post_parent_id($registration_id) == $event_id) {
-					$uid = get_post_field('post_author', $registration_id);
+					$uid = intval(get_post_field('post_author', $registration_id));
 					if ($uid && !in_array($uid, $registered_user_ids)) {
-						$registered_user_ids[] = intval($uid);
+						$registered_user_ids[] = $uid;
 					}
 				}
 			}
@@ -238,46 +238,28 @@ class WPEM_REST_Filter_Users_Controller {
 			], 200);
 		}
 
-		// Step 2: Build the full user data from usermeta
+		// Step 2: Build user data
+		$profession_terms = get_event_registration_taxonomy_list('event_registration_professions'); // [slug => name]
+		$skills_terms     = get_event_registration_taxonomy_list('event_registration_skills');
+		$interests_terms  = get_event_registration_taxonomy_list('event_registration_interests');
+
 		$users_data = [];
 		foreach ($registered_user_ids as $uid) {
-			if($uid == $user_id){
-				continue;
-			}
-			if(!get_user_meta($uid, '_matchmaking_profile', true)) {
-				continue;
-			}
-			$photo = get_wpem_user_profile_photo($uid);
-			$organization_logo = get_user_meta( $uid, '_organization_logo', true );
-			$organization_logo = maybe_unserialize( $organization_logo );
-			if (is_array($organization_logo)) {
-				$organization_logo = reset($organization_logo); // get first value in the array
-			}
-			$skills    = get_user_meta($uid, '_skills', true);
-			$interests = get_user_meta($uid, '_interests', true);
-
-			// Remove empty values so [""] becomes []
-			$skills    = array_filter((array)$skills, 'strlen');
-			$interests = array_filter((array)$interests, 'strlen');
-
-			// Serialize empty array if nothing remains
-			$skills    = !empty($skills) ? maybe_serialize($skills) : serialize(array());
-			$interests = !empty($interests) ? maybe_serialize($interests) : serialize(array());
+			if ($uid == $user_id) continue;
+			if (!get_user_meta($uid, '_matchmaking_profile', true)) continue;
 
 			$photo = get_wpem_user_profile_photo($uid);
-			$organization_logo = get_user_meta( $uid, '_organization_logo', true );
-			$organization_logo = maybe_unserialize( $organization_logo );
+
+			// Normalize organization logo
+			$organization_logo = get_user_meta($uid, '_organization_logo', true);
+			$organization_logo = maybe_unserialize($organization_logo);
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo);
 			}
-			// Get taxonomy lists
-			$profession_terms = get_event_registration_taxonomy_list('event_registration_professions'); // [slug => name]
-			$skills_terms     = get_event_registration_taxonomy_list('event_registration_skills');
-			$interests_terms  = get_event_registration_taxonomy_list('event_registration_interests');
 
-			// Profession slug
+			// Profession
 			$profession_value = get_user_meta($uid, '_profession', true);
-			$profession_slug = $profession_value;
+			$profession_slug  = $profession_value;
 			if ($profession_value && !isset($profession_terms[$profession_value])) {
 				$found_slug = array_search($profession_value, $profession_terms);
 				if ($found_slug) {
@@ -285,31 +267,30 @@ class WPEM_REST_Filter_Users_Controller {
 				}
 			}
 
-			// Skills slugs
-			$skills_raw = get_user_meta($uid, '_skills', true);
-			$skills_arr = is_array($skills_raw) ? $skills_raw : maybe_unserialize($skills_raw);
+			// Skills
+			$skills_arr = (array) maybe_unserialize(get_user_meta($uid, '_skills', true));
 			$skills_slugs = [];
-			foreach ((array)$skills_arr as $skill) {
+			foreach ($skills_arr as $skill) {
 				if ($skill && !isset($skills_terms[$skill])) {
 					$found_slug = array_search($skill, $skills_terms);
-					$skills_slugs[] = $found_slug ? $found_slug : $skill;
+					$skills_slugs[] = $found_slug ?: $skill;
 				} else {
 					$skills_slugs[] = $skill;
 				}
 			}
 
-			// Interests slugs
-			$interests_raw = get_user_meta($uid, '_interests', true);
-			$interests_arr = is_array($interests_raw) ? $interests_raw : maybe_unserialize($interests_raw);
+			// Interests
+			$interests_arr = (array) maybe_unserialize(get_user_meta($uid, '_interests', true));
 			$interests_slugs = [];
-			foreach ((array)$interests_arr as $interest) {
+			foreach ($interests_arr as $interest) {
 				if ($interest && !isset($interests_terms[$interest])) {
 					$found_slug = array_search($interest, $interests_terms);
-					$interests_slugs[] = $found_slug ? $found_slug : $interest;
+					$interests_slugs[] = $found_slug ?: $interest;
 				} else {
 					$interests_slugs[] = $interest;
 				}
 			}
+
 			$users_data[] = [
 				'user_id'               => $uid,
 				'display_name'          => get_the_author_meta('display_name', $uid),
@@ -324,17 +305,17 @@ class WPEM_REST_Filter_Users_Controller {
 				'country'               => get_user_meta($uid, '_country', true),
 				'city'                  => get_user_meta($uid, '_city', true),
 				'about'                 => get_user_meta($uid, '_about', true),
-				'skills'    			=> maybe_serialize($skills_slugs),
-				'interests' 			=> maybe_serialize($interests_slugs),
+				'skills'                => maybe_serialize($skills_slugs),
+				'interests'             => maybe_serialize($interests_slugs),
 				'message_notification'  => get_user_meta($uid, '_message_notification', true),
 				'organization_name'     => get_user_meta($uid, '_organization_name', true),
 				'organization_logo'     => $organization_logo,
 				'organization_country'  => get_user_meta($uid, '_organization_country', true),
 				'organization_city'     => get_user_meta($uid, '_organization_city', true),
 				'organization_description'=> get_user_meta($uid, '_organization_description', true),
-				'organization_website'	=> get_user_meta($uid, '_organization_website', true),
-				'available_for_meeting'  => get_user_meta($uid, '_available_for_meeting', true),
-				'approve_profile_status' => get_user_meta($uid, '_approve_profile_status', true),
+				'organization_website'  => get_user_meta($uid, '_organization_website', true),
+				'available_for_meeting' => get_user_meta($uid, '_available_for_meeting', true),
+				'approve_profile_status'=> get_user_meta($uid, '_approve_profile_status', true),
 			];
 		}
 
@@ -353,19 +334,25 @@ class WPEM_REST_Filter_Users_Controller {
 				return false;
 			}
 			if (!empty($skills) && is_array($skills)) {
-				$user_skills = maybe_unserialize($user['skills']);
-				if (!array_intersect($skills, $user_skills)) {
+				if (!array_intersect($skills, $user['skills'])) {
 					return false;
 				}
 			}
 			if (!empty($interests) && is_array($interests)) {
-				$user_interests = maybe_unserialize($user['interests']);
-				if (!array_intersect($interests, $user_interests)) {
+				if (!array_intersect($interests, $user['interests'])) {
 					return false;
 				}
 			}
 			if ($search) {
-				$haystack = strtolower(implode(' ', $user));
+				$haystack_parts = [];
+				foreach ($user as $key => $val) {
+					if (is_array($val)) {
+						$haystack_parts = array_merge($haystack_parts, $val);
+					} else {
+						$haystack_parts[] = $val;
+					}
+				}
+				$haystack = strtolower(implode(' ', $haystack_parts));
 				if (strpos($haystack, strtolower($search)) === false) {
 					return false;
 				}
