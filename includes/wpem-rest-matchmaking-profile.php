@@ -246,7 +246,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					}
 				}
 				$skills_slugs = array_filter($skills_slugs);
-				$skills_serialized = serialize($skills_slugs);
+				$skills_serialized = maybe_serialize($skills_slugs);
 
 				// Convert interests
 				$interests_slugs = array();
@@ -265,7 +265,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					}
 				}
 				$interests_slugs = array_filter($interests_slugs);
-				$interests_serialized = serialize($interests_slugs);
+				$interests_serialized = maybe_serialize($interests_slugs);
 				$profiles[] = array(
 					'user_id' => $user->ID,
 					'display_name' => $user->display_name,
