@@ -317,7 +317,7 @@ class WPEM_REST_Create_Meeting_Controller {
 		}
 
 		// Update booked slot (same as before)
-		$slot_data = maybe_unserialize(get_user_meta($user_id, '_meeting_availability_slot', true));
+		/*$slot_data = maybe_unserialize(get_user_meta($user_id, '_meeting_availability_slot', true));
 		if (!is_array($slot_data)) {
 			$slot_data = [];
 		}
@@ -328,7 +328,7 @@ class WPEM_REST_Create_Meeting_Controller {
 			$slot_data[$event_id][$meeting_date] = [];
 		}
 		$slot_data[$event_id][$meeting_date][$slot] = 2;
-		update_user_meta($user_id, '_meeting_availability_slot', $slot_data);
+		update_user_meta($user_id, '_meeting_availability_slot', $slot_data);*/
 
 		return new WP_REST_Response([
 			'code'    => 200,
@@ -526,7 +526,7 @@ class WPEM_REST_Create_Meeting_Controller {
         $participant_ids = array_unique($participant_ids);
 
         // === Availability reset ===
-        $event_id     = (int)$meeting['event_id'];
+       /* $event_id     = (int)$meeting['event_id'];
         $meeting_date = $meeting['meeting_date'];
         $start_time   = date('H:i', strtotime($meeting['meeting_start_time']));
 
@@ -543,7 +543,7 @@ class WPEM_REST_Create_Meeting_Controller {
                 $slot_data[$event_id][$meeting_date][$start_time] = 1;
                 update_user_meta($pid, '_meeting_availability_slot', $slot_data);
             }
-        }
+        }*/
 
         // Notify participants
         foreach ($participant_ids as $pid) {
