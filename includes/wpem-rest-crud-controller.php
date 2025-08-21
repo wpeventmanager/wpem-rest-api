@@ -434,18 +434,8 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 		if ($auth_check) {
 			return self::prepare_error_for_response(405);
 		} else {
-			/*$settings_row = $wpdb->get_row("SELECT event_show_by, selected_events FROM {$wpdb->prefix}wpem_rest_api_keys LIMIT 1", ARRAY_A);
-
-			$event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
-			$selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];*/
-	 
+		
 			$query_args = $this->prepare_objects_query($request);
-
-			/*if ($event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
-				$query_args['post__in'] = array_map('intval', $selected_events);
-				$query_args['orderby'] = 'post__in';
-				unset($query_args['author']);
-			}*/
 
 			$query_results = $this->get_objects($query_args);
 
