@@ -239,8 +239,27 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
         $args['author'] = wpem_rest_get_current_user_id();
         $args['post_type'] = $this->post_type;
+         // --- Event selection logic ---
+        // Get current user ID
+        $current_user_id = wpem_rest_get_current_user_id();
+        if ($current_user_id) {
+            $settings_row = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT event_show_by, selected_events FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",
+                    $current_user_id
+                ),
+                ARRAY_A
+            );
+            $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
+            $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];
 
-        return $args;
+            if ($event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
+                $args['post__in'] = array_map('intval', $selected_events);
+                $args['orderby'] = 'post__in';
+                unset($args['author']);
+            }
+        }
+        return $args; 
     }
 
     /**

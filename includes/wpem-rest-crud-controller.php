@@ -441,11 +441,11 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 	 
 			$query_args = $this->prepare_objects_query($request);
 
-			if ($event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
+			/*if ($event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
 				$query_args['post__in'] = array_map('intval', $selected_events);
 				$query_args['orderby'] = 'post__in';
 				unset($query_args['author']);
-			}
+			}*/
 
 			$query_results = $this->get_objects($query_args);
 
