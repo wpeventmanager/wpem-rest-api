@@ -360,19 +360,37 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 		foreach ($meta_fields as $field) {
 			if ($request->get_param($field) !== null) {
 				$value = $request->get_param($field);
-				 // If it's an array, filter out blanks
-				if (is_array($value)) {
+
+				// For skills and interests, always save as serialized array
+				if (in_array($field, ['skills', 'interests'])) {
+					// Ensure value is always an array
+					if (!is_array($value)) {
+						$value = [$value];
+					}
 					$value = array_filter($value, function($v) {
 						return $v !== null && $v !== '';
 					});
 					$value = array_values($value); // reindex after filtering
-				}
 
-				// Only update if not completely empty
-				if (!empty($value)) {
-					update_user_meta($user_id, '_' . $field, $value);
+					// Save as serialized array (produces a:2:{i:0;s:...;i:1;s:...;} format)
+					if (!empty($value)) {
+						update_user_meta($user_id, '_' . $field, $value);
+					} else {
+						update_user_meta($user_id, '_' . $field, '');
+					}
 				} else {
-					update_user_meta($user_id, '_' . $field, ''); // cleanup if blank
+					// For other fields
+					if (is_array($value)) {
+						$value = array_filter($value, function($v) {
+							return $v !== null && $v !== '';
+						});
+						$value = array_values($value); // reindex after filtering
+					}
+					if (!empty($value)) {
+						update_user_meta($user_id, '_' . $field, $value);
+					} else {
+						update_user_meta($user_id, '_' . $field, ''); // cleanup if blank
+					}
 				}
 			}
 		}
