@@ -101,6 +101,16 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					$country_code = array_search($country_value, $countries);
 				}
 			}
+			// Get organization country value from user meta
+			$org_country_value = isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '';
+			$org_country_code = '';
+			if ($org_country_value) {
+				if (isset($countries[$org_country_value])) {
+					$org_country_code = $org_country_value;
+				} else {
+					$org_country_code = array_search($org_country_value, $countries);
+				}
+			}
 			$meta = get_user_meta($attendee_id, '_available_for_meeting', true);
 			$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
 			// Get all profession terms [slug => name]
@@ -176,7 +186,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 				'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 				'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
 				'organization_logo' => $organization_logo,
-				'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
+				'organization_country' => $org_country_code,
 				'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 				'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
 				'organization_website' =>  isset($user_meta['_organization_website'][0]) ? sanitize_text_field($user_meta['_organization_website'][0]) : '',
@@ -216,6 +226,15 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 						$country_code = $country_value;
 					} else {
 						$country_code = array_search($country_value, $countries);
+					}
+				}
+				$org_country_value = isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '';
+				$org_country_code = '';
+				if ($org_country_value) {
+					if (isset($countries[$org_country_value])) {
+						$org_country_code = $org_country_value;
+					} else {
+						$org_country_code = array_search($org_country_value, $countries);
 					}
 				}
 				$meta = get_user_meta($user->ID, '_available_for_meeting', true);
@@ -285,7 +304,7 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 					'message_notification' => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
 					'organization_name' => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
 					'organization_logo' => $organization_logo,
-					'organization_country' => isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '',
+					'organization_country' => $org_country_code,
 					'organization_city' => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
 					'organization_description' => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
 					'organization_website' =>  isset($user_meta['_organization_website'][0]) ? sanitize_text_field($user_meta['_organization_website'][0]) : '',
