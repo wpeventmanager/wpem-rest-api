@@ -726,10 +726,11 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 					if (is_array($organization_logo)) {
 						$organization_logo = reset($organization_logo); // get first value in the array
 					}
+					$organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 					$meta = get_user_meta($user_id, '_available_for_meeting', true);
 					$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
 
-					$photo = get_wpem_user_profile_photo($user_id);
+					$photo = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 
 					// --- Skills ---
 					$skills_slugs = [];

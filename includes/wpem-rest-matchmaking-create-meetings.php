@@ -404,16 +404,23 @@ class WPEM_REST_Create_Meeting_Controller {
 				}
 
 				// Get profile data from user meta (assuming these are stored as meta)
-				$profile_photo = get_wpem_user_profile_photo($pid);  
-				$profession = get_user_meta($pid, '_profession', true); // Note: Typo in 'profession'?
+				$profile_photo = get_wpem_user_profile_photo($pid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 				$company_name = get_user_meta($pid, '_company_name', true);
-
+				$profession_terms = get_event_registration_taxonomy_list('event_registration_professions');
+				$profession_value = get_user_meta($pid, '_profession', true);
+				$profession_slug = $profession_value;
+				if ($profession_value && !isset($profession_terms[$profession_value])) {
+					$found_slug = array_search($profession_value, $profession_terms);
+					if ($found_slug) {
+						$profession_slug = $found_slug;
+					}
+				}
 				$participants_info[] = [
 					'id'         => (int)$pid,
 					'status'     => (int)$status,
 					'name'       => $display_name,
-					'profile_photo'      => !empty($profile_photo) ? esc_url($profile_photo) : '',
-					'profession' => !empty($profession) ? esc_html($profession) : '',
+					'profile_photo'      => $profile_photo,
+					'profession' => $profession_slug,
 					'company_name'    => !empty($company_name) ? esc_html($company_name) : '',
 				];
 			}
@@ -428,15 +435,22 @@ class WPEM_REST_Create_Meeting_Controller {
 			}
 
 			// Get host profile data from user meta
-			$host_profile_photo = get_wpem_user_profile_photo($host_id);
-			$host_profession = get_user_meta($host_id, '_profession', true);
+			$host_profile_photo = get_wpem_user_profile_photo($host_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+			$host_profession_value = get_user_meta($host_id, '_profession', true);
+			$host_profession_slug = $host_profession_value;
+			if ($host_profession_value && !isset($profession_terms[$host_profession_value])) {
+				$found_slug = array_search($host_profession_value, $profession_terms);
+				if ($found_slug) {
+					$host_profession_slug = $found_slug;
+				}
+			}
 			$host_company_name = get_user_meta($host_id, '_company_name', true);
 
 			$host_info = [
 				'id'         => $host_id,
 				'name'       => $host_display_name,
 				'profile_photo'      => !empty($host_profile_photo) ? esc_url($host_profile_photo) : '',
-				'profession' => !empty($host_profession) ? esc_html($host_profession) : '',
+				'profession' => $host_profession_slug,
 				'company_name'    => !empty($host_company_name) ? esc_html($host_company_name) : '',
 			];
 			

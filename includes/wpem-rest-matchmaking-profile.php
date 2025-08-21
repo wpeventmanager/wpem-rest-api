@@ -85,13 +85,13 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 
 			// Get all user meta
 			$user_meta = get_user_meta($attendee_id);
-			$photo = get_wpem_user_profile_photo($attendee_id);
+			$photo =  get_wpem_user_profile_photo($attendee_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 			$organization_logo = get_user_meta( $attendee_id, '_organization_logo', true );
 			$organization_logo = maybe_unserialize( $organization_logo );
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo); // get first value in the array
 			}
-
+			$organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 			$country_value = isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '';
 			$country_code = '';
 			if ($country_value) {
@@ -213,12 +213,13 @@ class WPEM_REST_Attendee_Profile_Controller_All {
 			$profiles = array();
 			foreach ($users as $user) {
 				$user_meta = get_user_meta($user->ID);
-				$photo = get_wpem_user_profile_photo($user->ID);
+				$photo = get_wpem_user_profile_photo($user->ID) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 				$organization_logo = get_user_meta( $user->ID, '_organization_logo', true );
 				$organization_logo = maybe_unserialize( $organization_logo );
 				if (is_array($organization_logo)) {
 					$organization_logo = reset($organization_logo);
 				}
+				$organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 				$country_value = isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '';
 				$country_code = '';
 				if ($country_value) {

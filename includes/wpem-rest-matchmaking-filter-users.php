@@ -248,7 +248,7 @@ class WPEM_REST_Filter_Users_Controller {
 			if ($uid == $user_id) continue;
 			if (!get_user_meta($uid, '_matchmaking_profile', true)) continue;
 
-			$photo = get_wpem_user_profile_photo($uid);
+			$photo = get_wpem_user_profile_photo($uid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 
 			// Normalize organization logo
 			$organization_logo = get_user_meta($uid, '_organization_logo', true);
@@ -256,7 +256,7 @@ class WPEM_REST_Filter_Users_Controller {
 			if (is_array($organization_logo)) {
 				$organization_logo = reset($organization_logo);
 			}
-
+			$organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 			// Profession
 			$profession_value = get_user_meta($uid, '_profession', true);
 			$profession_slug  = $profession_value;
