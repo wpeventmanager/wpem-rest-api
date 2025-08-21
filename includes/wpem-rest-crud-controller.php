@@ -430,12 +430,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
     public function get_items( $request ) {
 		global $wpdb;
-
 		$auth_check = $this->wpem_check_authorized_user();
 		if ($auth_check) {
 			return self::prepare_error_for_response(405);
 		} else {
-		   
 			$settings_row = $wpdb->get_row("SELECT event_show_by, selected_events FROM {$wpdb->prefix}wpem_rest_api_keys LIMIT 1", ARRAY_A);
 
 			$event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
@@ -726,19 +724,23 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         }
         $user = get_userdata($user_data['id']);
 
-        if($user){ 
-            $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
-            if($user_info){ 
-                $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
-                if( $user_info->permissions == 'write'){
-                    return self::prepare_error_for_response(203);
-                } else if( $date_expires < date('Y-m-d') ){
-                    return self::prepare_error_for_response(503);
-                } else {
-                    return false;
-                }
-            } else {
+        if($user){
+            if (!wp_check_password($user_data['password'], $user->user_pass, $user->ID)) {
                 return self::prepare_error_for_response(405);
+            } else {
+                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
+                if($user_info){ 
+                    $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
+                    if( $user_info->permissions == 'write'){
+                        return self::prepare_error_for_response(203);
+                    } else if( $date_expires < date('Y-m-d') ){
+                        return self::prepare_error_for_response(503);
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return self::prepare_error_for_response(405);
+                }
             }
         } else {
             return self::prepare_error_for_response(405);
@@ -757,7 +759,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
         $expected_signature = wpem_base64url_encode(
             hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true)
-        );
+        ); 
 
         if (!hash_equals($expected_signature, $signature)) {
             return false;
@@ -771,7 +773,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
 
         // Clean up keys (defensive)
         $user = array_change_key_case(array_map('trim', $payload_data['user']));
-
+        
         return $user;
     }
 
@@ -805,5 +807,4 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             return null;  // Or handle the case where code 400 is not found
         }
     }
-    
 }
