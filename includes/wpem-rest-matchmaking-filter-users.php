@@ -306,7 +306,27 @@ class WPEM_REST_Filter_Users_Controller {
 			}
 			$interests_slugs = array_filter($interests_slugs);
 			$interests_serialized = serialize($interests_slugs);
-
+			
+			$countries = wpem_get_all_countries();
+			$country_value = get_user_meta($uid, '_country', true);
+			$country_code = '';
+			if ($country_value) {
+				if (isset($countries[$country_value])) {
+					$country_code = $country_value;
+				} else {
+					$country_code = array_search($country_value, $countries);
+				}
+			}
+			// Get organization country value from user meta
+			$org_country_value = get_user_meta($uid, '_organization_country', true);
+			$org_country_code = '';
+			if ($org_country_value) {
+				if (isset($countries[$org_country_value])) {
+					$org_country_code = $org_country_value;
+				} else {
+					$org_country_code = array_search($org_country_value, $countries);
+				}
+			}
 			$users_data[] = [
 				'user_id'               => $uid,
 				'display_name'          => get_the_author_meta('display_name', $uid),
@@ -318,15 +338,15 @@ class WPEM_REST_Filter_Users_Controller {
 				'profession'            => $profession_slug,
 				'experience'            => get_user_meta($uid, '_experience', true),
 				'company_name'          => get_user_meta($uid, '_company_name', true),
-				'country'               => get_user_meta($uid, '_country', true),
+				'country'               => $country_code,
 				'city'                  => get_user_meta($uid, '_city', true),
 				'about'                 => get_user_meta($uid, '_about', true),
-				'skills'    => $skills_serialized,
-				'interests' => $interests_serialized,
+				'skills'    			=> $skills_serialized,
+				'interests' 			=> $interests_serialized,
 				'message_notification'  => get_user_meta($uid, '_message_notification', true),
 				'organization_name'     => get_user_meta($uid, '_organization_name', true),
 				'organization_logo'     => $organization_logo,
-				'organization_country'  => get_user_meta($uid, '_organization_country', true),
+				'organization_country'  => $org_country_code,
 				'organization_city'     => get_user_meta($uid, '_organization_city', true),
 				'organization_description'=> get_user_meta($uid, '_organization_description', true),
 				'organization_website'  => get_user_meta($uid, '_organization_website', true),
