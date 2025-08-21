@@ -59,7 +59,7 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         );
     }
 
-   public function get_attendee_profile($request) {
+    public function get_attendee_profile($request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response(array(
 				'code' => 403,
@@ -127,37 +127,39 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 					$profession_slug = $found_slug;
 				}
 			}
-			$skills_slugs = array();
-			if (!empty($user_meta['_skills'][0])) {
-				$skills = maybe_unserialize($user_meta['_skills'][0]);
-				if (is_array($skills)) {
-					foreach ($skills as $skill) {
+			$skills_slugs = [];
+			$skills_arr = maybe_unserialize($user_meta['_skills'][0]);
+			if (is_array($skills_arr)) {
+				foreach ($skills_arr as $skill) {
+					$term = get_term_by('slug', $skill, 'event_registration_skills');
+					if (!$term) {
 						$term = get_term_by('name', $skill, 'event_registration_skills');
-						if (!$term) {
-							$term = get_term_by('id', $skill, 'event_registration_skills');
-						}
-						if ($term) {
-							$skills_slugs[] = $term->slug;
-						}
+					}
+					if (!$term) {
+						$term = get_term_by('id', $skill, 'event_registration_skills');
+					}
+					if ($term) {
+						$skills_slugs[] = $term->slug;
 					}
 				}
 			}
 			$skills_slugs = array_filter($skills_slugs); // remove blanks
 			$skills_serialized = serialize($skills_slugs);
 
-			// Convert interests to slugs and serialize
-			$interests_slugs = array();
-			if (!empty($user_meta['_interests'][0])) {
-				$interests = maybe_unserialize($user_meta['_interests'][0]);
-				if (is_array($interests)) {
-					foreach ($interests as $interest) {
+			// --- Interests ---
+			$interests_slugs = [];
+			$interests_arr = maybe_unserialize($user_meta['_interests'][0]);
+			if (is_array($interests_arr)) {
+				foreach ($interests_arr as $interest) {
+					$term = get_term_by('slug', $interest, 'event_registration_interests');
+					if (!$term) {
 						$term = get_term_by('name', $interest, 'event_registration_interests');
-						if (!$term) {
-							$term = get_term_by('id', $interest, 'event_registration_interests');
-						}
-						if ($term) {
-							$interests_slugs[] = $term->slug;
-						}
+					}
+					if (!$term) {
+						$term = get_term_by('id', $interest, 'event_registration_interests');
+					}
+					if ($term) {
+						$interests_slugs[] = $term->slug;
 					}
 				}
 			}
@@ -250,42 +252,45 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 						$profession_slug = $found_slug;
 					}
 				}
-				$skills_slugs = array();
-				if (!empty($user_meta['_skills'][0])) {
-					$skills = maybe_unserialize($user_meta['_skills'][0]);
-					if (is_array($skills)) {
-						foreach ($skills as $skill) {
-							$term = get_term_by('name', $skill, 'event_registration_skills');
-							if (!$term) {
-								$term = get_term_by('id', $skill, 'event_registration_skills');
-							}
-							if ($term) {
-								$skills_slugs[] = $term->slug;
-							}
-						}
+				$skills_slugs = [];
+			$skills_arr = maybe_unserialize($user_meta['_skills'][0]);
+			if (is_array($skills_arr)) {
+				foreach ($skills_arr as $skill) {
+					$term = get_term_by('slug', $skill, 'event_registration_skills');
+					if (!$term) {
+						$term = get_term_by('name', $skill, 'event_registration_skills');
+					}
+					if (!$term) {
+						$term = get_term_by('id', $skill, 'event_registration_skills');
+					}
+					if ($term) {
+						$skills_slugs[] = $term->slug;
 					}
 				}
-				$skills_slugs = array_filter($skills_slugs);
-				$skills_serialized = maybe_serialize($skills_slugs);
+			}
+			$skills_slugs = array_filter($skills_slugs); // remove blanks
+			$skills_serialized = serialize($skills_slugs);
 
-				// Convert interests
-				$interests_slugs = array();
-				if (!empty($user_meta['_interests'][0])) {
-					$interests = maybe_unserialize($user_meta['_interests'][0]);
-					if (is_array($interests)) {
-						foreach ($interests as $interest) {
-							$term = get_term_by('name', $interest, 'event_registration_interests');
-							if (!$term) {
-								$term = get_term_by('id', $interest, 'event_registration_interests');
-							}
-							if ($term) {
-								$interests_slugs[] = $term->slug;
-							}
-						}
+			// --- Interests ---
+			$interests_slugs = [];
+			$interests_arr = maybe_unserialize($user_meta['_interests'][0]);
+			if (is_array($interests_arr)) {
+				foreach ($interests_arr as $interest) {
+					$term = get_term_by('slug', $interest, 'event_registration_interests');
+					if (!$term) {
+						$term = get_term_by('name', $interest, 'event_registration_interests');
+					}
+					if (!$term) {
+						$term = get_term_by('id', $interest, 'event_registration_interests');
+					}
+					if ($term) {
+						$interests_slugs[] = $term->slug;
 					}
 				}
-				$interests_slugs = array_filter($interests_slugs);
-				$interests_serialized = maybe_serialize($interests_slugs);
+			}
+			$interests_slugs = array_filter($interests_slugs);
+			$interests_serialized = serialize($interests_slugs);
+
 				$profiles[] = array(
 					'user_id' => $user->ID,
 					'display_name' => $user->display_name,
@@ -323,7 +328,6 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			), 200);
 		}
 	}
-
     /**
      * Update profile including handling file upload from device for profile_photo
      */
