@@ -526,7 +526,7 @@ class WPEM_REST_Create_Meeting_Controller {
         $participant_ids = array_unique($participant_ids);
 
         // === Availability reset ===
-        $event_id     = (int)$meeting['event_id'];
+       /* $event_id     = (int)$meeting['event_id'];
         $meeting_date = $meeting['meeting_date'];
         $start_time   = date('H:i', strtotime($meeting['meeting_start_time']));
 
@@ -543,7 +543,7 @@ class WPEM_REST_Create_Meeting_Controller {
                 $slot_data[$event_id][$meeting_date][$start_time] = 1;
                 update_user_meta($pid, '_meeting_availability_slot', $slot_data);
             }
-        }
+        }*/
 
         // Notify participants
         foreach ($participant_ids as $pid) {
