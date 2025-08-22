@@ -243,7 +243,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         // Get current user ID
         $current_user_id = wpem_rest_get_current_user_id();
         if ($current_user_id) {
-            global $wpdb;
             $settings_row = $wpdb->get_row(
                 $wpdb->prepare(
                     "SELECT event_show_by, selected_events FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",
