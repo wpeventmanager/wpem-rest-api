@@ -140,10 +140,9 @@ class WPEM_Rest_API_Settings {
 						</div>
 						<?php 
 							$mode = get_option('wpem_active_mode');
+							$class = "wpem-light-mode";
 							if( $mode == 'dark' ){
 								$class = "wpem-dark-mode";
-							}else if( $mode == 'light' ){
-								$class = "wpem-light-mode";
 							}
 						?>
 						<div class="wpem-admin-right-container wpem-<?php echo esc_html( $current_tab ); ?> wpem-app-branding-mode <?php if($current_tab == 'app-branding' ){ echo esc_attr( $class ); } ?>">
