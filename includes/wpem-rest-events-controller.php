@@ -204,7 +204,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
      */
     protected function prepare_objects_query( $request ) {
         $args = parent::prepare_objects_query( $request );
-
+        // Get current user ID
+        $current_user_id = wpem_rest_get_current_user_id();
         // Set post_status.
         if( isset( $request['status'] ) && $request['status'] !== 'any' ) {
             $args['post_status'] = $request['status'];
@@ -237,11 +238,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             $args['tax_query'] = $tax_query; // WPCS: slow query ok.
         }
 
-        $args['author'] = wpem_rest_get_current_user_id();
         $args['post_type'] = $this->post_type;
-         // --- Event selection logic ---
-        // Get current user ID
-        $current_user_id = wpem_rest_get_current_user_id();
+        // --- Event selection logic ---
         if ($current_user_id) {
             global $wpdb;
             $settings_row = $wpdb->get_row(
@@ -258,7 +256,11 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
                 $args['post__in'] = array_map('intval', $selected_events);
                 $args['orderby'] = 'post__in';
                 unset($args['author']);
+            } else {
+                $args['author'] = $current_user_id;
             }
+        } else {
+            $args['author'] = $current_user_id;
         }
         return $args; 
     }
