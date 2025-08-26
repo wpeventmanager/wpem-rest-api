@@ -417,7 +417,8 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			}
 		} elseif ($request->get_param('profile_photo')) {
 			update_user_meta($user_id, '_profile_photo', esc_url_raw($request->get_param('profile_photo')));
-			
+		} elseif (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['full_path'] == '') {
+			update_user_meta($user_id, '_profile_photo', EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png');
 		}
 
 		// Handle organization_logo file upload
@@ -437,6 +438,8 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			}
 		} elseif ($request->get_param('organization_logo')) {
 			update_user_meta($user_id, '_organization_logo', esc_url_raw($request->get_param('organization_logo')));
+		} elseif (isset($_FILES['organization_logo']) && $_FILES['organization_logo']['full_path'] == '') {
+			update_user_meta($user_id, '_organization_logo', EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg');
 		}
 
 		// Update basic WP user fields
