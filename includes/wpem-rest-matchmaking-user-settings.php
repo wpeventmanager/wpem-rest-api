@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
-class WPEM_REST_Attendee_Settings_Controller {
+class WPEM_REST_Attendee_Settings_Controller extends WPEM_REST_CRUD_Controller{
     protected $namespace = 'wpem';
 
     public function __construct() {

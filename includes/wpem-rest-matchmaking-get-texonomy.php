@@ -1,5 +1,5 @@
 <?php
-class WPEM_REST_Taxonomy_List_Controller {
+class WPEM_REST_Taxonomy_List_Controller extends WPEM_REST_CRUD_Controller {
 
     protected $namespace = 'wpem';
     protected $rest_base = 'taxonomy-list';
@@ -16,7 +16,6 @@ class WPEM_REST_Taxonomy_List_Controller {
             array(
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => array($this, 'get_taxonomy_terms'),
-                'permission_callback' => array($auth_controller, 'check_authentication'),
                 'args'                => array(
                     'taxonomy' => array(
                         'required'    => true,
@@ -38,40 +37,44 @@ class WPEM_REST_Taxonomy_List_Controller {
                 'data'    => null
             ), 403);
         }
+        $auth_check = $this->wpem_check_authorized_user();
+		if ($auth_check) {
+			return self::prepare_error_for_response(405);
+		} else {
+            $taxonomy = sanitize_text_field($request->get_param('taxonomy'));
 
-        $taxonomy = sanitize_text_field($request->get_param('taxonomy'));
+            if (!taxonomy_exists($taxonomy)) {
+                return new WP_REST_Response(array(
+                    'code'    => 400,
+                    'status'  => 'Bad Request',
+                    'message' => 'Invalid taxonomy.',
+                    'data'    => null
+                ), 400);
+            }
 
-        if (!taxonomy_exists($taxonomy)) {
+            $terms = get_terms(array(
+                'taxonomy'   => $taxonomy,
+                'hide_empty' => false,
+            ));
+
+            if (is_wp_error($terms)) {
+                return new WP_REST_Response(array(
+                    'code'    => 500,
+                    'status'  => 'Server Error',
+                    'message' => 'Failed to fetch terms.',
+                    'data'    => null
+                ), 500);
+            }
+
+            $term_list = array_map(array($this, 'format_term_data'), $terms);
+
             return new WP_REST_Response(array(
-                'code'    => 400,
-                'status'  => 'Bad Request',
-                'message' => 'Invalid taxonomy.',
-                'data'    => null
-            ), 400);
+                'code'    => 200,
+                'status'  => 'OK',
+                'message' => 'Taxonomy terms retrieved successfully.',
+                'data'    => $term_list
+            ), 200);
         }
-
-        $terms = get_terms(array(
-            'taxonomy'   => $taxonomy,
-            'hide_empty' => false,
-        ));
-
-        if (is_wp_error($terms)) {
-            return new WP_REST_Response(array(
-                'code'    => 500,
-                'status'  => 'Server Error',
-                'message' => 'Failed to fetch terms.',
-                'data'    => null
-            ), 500);
-        }
-
-        $term_list = array_map(array($this, 'format_term_data'), $terms);
-
-        return new WP_REST_Response(array(
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Taxonomy terms retrieved successfully.',
-            'data'    => $term_list
-        ), 200);
     }
 
     private function format_term_data($term) {

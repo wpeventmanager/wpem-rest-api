@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
-class WPEM_REST_Send_Message_Controller {
+class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 
     protected $namespace = 'wpem';
     protected $rest_base = 'send-message';
@@ -15,7 +15,7 @@ class WPEM_REST_Send_Message_Controller {
        register_rest_route($this->namespace, '/' . $this->rest_base, array(
 			'methods'  => WP_REST_Server::CREATABLE,
 			'callback' => array($this, 'handle_send_message'),
-			'permission_callback' => array($auth_controller, 'check_authentication'),
+			//'permission_callback' => array($auth_controller, 'check_authentication'),
 			'args' => array(
 				'senderId'   => array('required' => true),
 				'receiverId' => array('required' => true),
@@ -27,7 +27,7 @@ class WPEM_REST_Send_Message_Controller {
         register_rest_route($this->namespace, '/get-messages', array(
             'methods'  => WP_REST_Server::READABLE,
             'callback' => array($this, 'handle_get_messages'),
-            'permission_callback' => array($auth_controller, 'check_authentication'),
+            //'permission_callback' => array($auth_controller, 'check_authentication'),
             'args' => array(
                 'senderId'   => array('required' => true, 'type' => 'integer'),
                 'receiverId' => array('required' => true, 'type' => 'integer'),
@@ -39,7 +39,7 @@ class WPEM_REST_Send_Message_Controller {
 		register_rest_route($this->namespace, '/get-conversation-list', array(
 			'methods'  => WP_REST_Server::READABLE,
 			'callback' => array($this, 'handle_get_conversation_list'),
-			'permission_callback' => array($auth_controller, 'check_authentication'),
+			//'permission_callback' => array($auth_controller, 'check_authentication'),
 			'args' => array(
 				'user_id'   => array('required' => true, 'type' => 'integer'),
 				'event_ids' => array('required' => true, 'type' => 'array', 'items' => array('type' => 'integer')),
@@ -58,143 +58,147 @@ class WPEM_REST_Send_Message_Controller {
 				'message' => 'Matchmaking functionality is not enabled.',
 			], 403);
 		}
-
-		$sender_id     = intval($request->get_param('senderId'));
-		$receiver_id   = intval($request->get_param('receiverId'));
-		$text_message  = sanitize_textarea_field($request->get_param('message'));
-		
-		// Get minimal user objects just for email addresses
-		$sender_user   = get_user_by('id', $sender_id);
-		$receiver_user = get_user_by('id', $receiver_id);
-
-		if (!$sender_user || !$receiver_user) {
-			return new WP_REST_Response([
-				'code'    => 404,
-				'status'  => 'Not Found',
-				'message' => 'Sender or Receiver not found.',
-			], 404);
-		}
-
-		// Get other user data from meta
-		$sender_first  = get_user_meta($sender_id, 'first_name', true);
-		$sender_last   = get_user_meta($sender_id, 'last_name', true);
-		$sender_display_name = trim("$sender_first $sender_last");
-
-		$receiver_first = get_user_meta($receiver_id, 'first_name', true);
-		$receiver_last  = get_user_meta($receiver_id, 'last_name', true);
-		$receiver_display_name = trim("$receiver_first $receiver_last");
-
-		// Get notification preferences
-		$sender_notify   = get_user_meta($sender_id, '_message_notification', true);
-		$receiver_notify = get_user_meta($receiver_id, '_message_notification', true);
-
-		if ($sender_notify != 1 || $receiver_notify != 1) {
-			return new WP_REST_Response([
-				'code'    => 403,
-				'status'  => 'Forbidden',
-				'message' => 'Both sender and receiver must have message notifications enabled.',
-			], 403);
-		}
-
-		$image_url = '';
-		if (!empty($_FILES['image']['tmp_name'])) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-			$uploaded = wp_handle_upload($_FILES['image'], ['test_form' => false]);
-			if (!isset($uploaded['error'])) {
-				$image_url = esc_url_raw($uploaded['url']);
-			}
-		}
-		
-		$final_message = '';
-		if ($text_message && $image_url) {
-			$final_message = $text_message . "\n\n" . $image_url;
-		} elseif ($text_message) {
-			$final_message = $text_message;
-		} elseif ($image_url) {
-			$final_message = $image_url;
+		$auth_check = $this->wpem_check_authorized_user();
+		if ($auth_check) {
+			return self::prepare_error_for_response(405);
 		} else {
+			$sender_id     = intval($request->get_param('senderId'));
+			$receiver_id   = intval($request->get_param('receiverId'));
+			$text_message  = sanitize_textarea_field($request->get_param('message'));
+			
+			// Get minimal user objects just for email addresses
+			$sender_user   = get_user_by('id', $sender_id);
+			$receiver_user = get_user_by('id', $receiver_id);
+
+			if (!$sender_user || !$receiver_user) {
+				return new WP_REST_Response([
+					'code'    => 404,
+					'status'  => 'Not Found',
+					'message' => 'Sender or Receiver not found.',
+				], 404);
+			}
+
+			// Get other user data from meta
+			$sender_first  = get_user_meta($sender_id, 'first_name', true);
+			$sender_last   = get_user_meta($sender_id, 'last_name', true);
+			$sender_display_name = trim("$sender_first $sender_last");
+
+			$receiver_first = get_user_meta($receiver_id, 'first_name', true);
+			$receiver_last  = get_user_meta($receiver_id, 'last_name', true);
+			$receiver_display_name = trim("$receiver_first $receiver_last");
+
+			// Get notification preferences
+			$sender_notify   = get_user_meta($sender_id, '_message_notification', true);
+			$receiver_notify = get_user_meta($receiver_id, '_message_notification', true);
+
+			if ($sender_notify != 1 || $receiver_notify != 1) {
+				return new WP_REST_Response([
+					'code'    => 403,
+					'status'  => 'Forbidden',
+					'message' => 'Both sender and receiver must have message notifications enabled.',
+				], 403);
+			}
+
+			$image_url = '';
+			if (!empty($_FILES['image']['tmp_name'])) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+				$uploaded = wp_handle_upload($_FILES['image'], ['test_form' => false]);
+				if (!isset($uploaded['error'])) {
+					$image_url = esc_url_raw($uploaded['url']);
+				}
+			}
+			
+			$final_message = '';
+			if ($text_message && $image_url) {
+				$final_message = $text_message . "\n\n" . $image_url;
+			} elseif ($text_message) {
+				$final_message = $text_message;
+			} elseif ($image_url) {
+				$final_message = $image_url;
+			} else {
+				return new WP_REST_Response([
+					'code'    => 400,
+					'status'  => 'Bad Request',
+					'message' => 'Either message or image is required.',
+				], 400);
+			}
+
+			// Insert into DB
+			$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+			$first_message_id = $wpdb->get_var($wpdb->prepare(
+				"SELECT id FROM $table 
+				WHERE (sender_id = %d AND receiver_id = %d)
+					OR (sender_id = %d AND receiver_id = %d)
+				ORDER BY created_at ASC LIMIT 1",
+				$sender_id, $receiver_id,
+				$receiver_id, $sender_id
+			));
+			$parent_id = $first_message_id ?: 0;
+
+			$wpdb->insert($table, [
+				'parent_id'   => $parent_id,
+				'sender_id'   => $sender_id,
+				'receiver_id' => $receiver_id,
+				'message'     => $final_message,
+				'created_at'  => current_time('mysql')
+			], ['%d', '%d', '%d', '%s', '%s']);
+
+			$insert_id = $wpdb->insert_id;
+
+			// --- EMAIL SECTION ---
+			$headers = ['Content-Type: text/html; charset=UTF-8'];
+
+			// Build email body for receiver (your format)
+			$receiver_body  = "Hello, this is a message from {$sender_first}<br><br>";
+			$receiver_body .= "First Name: {$sender_first}<br>";
+			$receiver_body .= "Last Name: {$sender_last}<br>";
+			$receiver_body .= "Message:<br>" . nl2br(esc_html($text_message)) . "<br><br>";
+			if ($image_url) {
+				$receiver_body .= "<p><img src='{$image_url}' alt='Attachment' style='max-width:400px;'></p>";
+			}
+			$receiver_body .= "Thank you.";
+
+			wp_mail(
+				$receiver_user->user_email,
+				'New Message from ' . $sender_first,
+				$receiver_body,
+				$headers
+			);
+
+			// Build confirmation email for sender
+			$sender_body  = "Hello, this is a confirmation of your message to {$receiver_first}<br><br>";
+			$sender_body .= "First Name: {$sender_first}<br>";
+			$sender_body .= "Last Name: {$sender_last}<br>";
+			$sender_body .= "Message:<br>" . nl2br(esc_html($text_message)) . "<br><br>";
+			if ($image_url) {
+				$sender_body .= "<p><img src='{$image_url}' alt='Attachment' style='max-width:400px;'></p>";
+			}
+			$sender_body .= "Thank you.";
+
+			wp_mail(
+				$sender_user->user_email,
+				'Your Message to ' . $receiver_first,
+				$sender_body,
+				$headers
+			);
+
+			// --- END EMAIL SECTION ---
+
 			return new WP_REST_Response([
-				'code'    => 400,
-				'status'  => 'Bad Request',
-				'message' => 'Either message or image is required.',
-			], 400);
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'Message sent successfully.',
+				'data'    => [
+					'id'         => $insert_id,
+					'parent_id'  => $parent_id,
+					'sender_id'  => $sender_id,
+					'receiver_id'=> $receiver_id,
+					'message'    => $text_message ?: null,
+					'image'      => $image_url ?: null,
+					'created_at' => current_time('mysql'),
+				]
+			], 200);
 		}
-
-		// Insert into DB
-		$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
-		$first_message_id = $wpdb->get_var($wpdb->prepare(
-			"SELECT id FROM $table 
-			 WHERE (sender_id = %d AND receiver_id = %d)
-				OR (sender_id = %d AND receiver_id = %d)
-			 ORDER BY created_at ASC LIMIT 1",
-			$sender_id, $receiver_id,
-			$receiver_id, $sender_id
-		));
-		$parent_id = $first_message_id ?: 0;
-
-		$wpdb->insert($table, [
-			'parent_id'   => $parent_id,
-			'sender_id'   => $sender_id,
-			'receiver_id' => $receiver_id,
-			'message'     => $final_message,
-			'created_at'  => current_time('mysql')
-		], ['%d', '%d', '%d', '%s', '%s']);
-
-		$insert_id = $wpdb->insert_id;
-
-		// --- EMAIL SECTION ---
-		$headers = ['Content-Type: text/html; charset=UTF-8'];
-
-		// Build email body for receiver (your format)
-		$receiver_body  = "Hello, this is a message from {$sender_first}<br><br>";
-		$receiver_body .= "First Name: {$sender_first}<br>";
-		$receiver_body .= "Last Name: {$sender_last}<br>";
-		$receiver_body .= "Message:<br>" . nl2br(esc_html($text_message)) . "<br><br>";
-		if ($image_url) {
-			$receiver_body .= "<p><img src='{$image_url}' alt='Attachment' style='max-width:400px;'></p>";
-		}
-		$receiver_body .= "Thank you.";
-
-		wp_mail(
-			$receiver_user->user_email,
-			'New Message from ' . $sender_first,
-			$receiver_body,
-			$headers
-		);
-
-		// Build confirmation email for sender
-		$sender_body  = "Hello, this is a confirmation of your message to {$receiver_first}<br><br>";
-		$sender_body .= "First Name: {$sender_first}<br>";
-		$sender_body .= "Last Name: {$sender_last}<br>";
-		$sender_body .= "Message:<br>" . nl2br(esc_html($text_message)) . "<br><br>";
-		if ($image_url) {
-			$sender_body .= "<p><img src='{$image_url}' alt='Attachment' style='max-width:400px;'></p>";
-		}
-		$sender_body .= "Thank you.";
-
-		wp_mail(
-			$sender_user->user_email,
-			'Your Message to ' . $receiver_first,
-			$sender_body,
-			$headers
-		);
-
-		// --- END EMAIL SECTION ---
-
-		return new WP_REST_Response([
-			'code'    => 200,
-			'status'  => 'OK',
-			'message' => 'Message sent successfully.',
-			'data'    => [
-				'id'         => $insert_id,
-				'parent_id'  => $parent_id,
-				'sender_id'  => $sender_id,
-				'receiver_id'=> $receiver_id,
-				'message'    => $text_message ?: null,
-				'image'      => $image_url ?: null,
-				'created_at' => current_time('mysql'),
-			]
-		], 200);
 	}
      public function handle_get_messages($request) {
 		global $wpdb;
@@ -207,82 +211,97 @@ class WPEM_REST_Send_Message_Controller {
 				'data'    => null
 			), 403);
 		}
+		$auth_check = $this->wpem_check_authorized_user();
+		if ($auth_check) {
+			return self::prepare_error_for_response(405);
+		} else {
+			$sender_id   = intval($request->get_param('senderId'));
+			$receiver_id = intval($request->get_param('receiverId'));
+			$page        = max(1, intval($request->get_param('page')));
+			$per_page    = max(1, intval($request->get_param('per_page')));
 
-		$sender_id   = intval($request->get_param('senderId'));
-		$receiver_id = intval($request->get_param('receiverId'));
-		$page        = max(1, intval($request->get_param('page')));
-		$per_page    = max(1, intval($request->get_param('per_page')));
-
-		if (!$sender_id || !$receiver_id) {
-			return new WP_REST_Response([
-				'code'    => 400,
-				'status'  => 'Bad Request',
-				'message' => 'senderId and receiverId are required.',
-				'data'    => null
-			], 400);
-		}
-
-		$offset = ($page - 1) * $per_page;
-		$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
-
-		// Get total message count
-		$total_messages = $wpdb->get_var($wpdb->prepare(
-			"SELECT COUNT(*) FROM $table 
-			 WHERE (sender_id = %d AND receiver_id = %d) 
-				OR (sender_id = %d AND receiver_id = %d)",
-			$sender_id, $receiver_id, $receiver_id, $sender_id
-		));
-
-		// Get paginated messages
-		$messages = $wpdb->get_results($wpdb->prepare(
-			"SELECT * FROM $table 
-			 WHERE (sender_id = %d AND receiver_id = %d) 
-				OR (sender_id = %d AND receiver_id = %d)
-			 ORDER BY created_at DESC
-			 LIMIT %d OFFSET %d",
-			$sender_id, $receiver_id, $receiver_id, $sender_id,
-			$per_page, $offset
-		), ARRAY_A);
-		// Separate text and image
-		foreach ($messages as &$msg) {
-			// Break message into lines
-			$parts = preg_split("/\n+/", trim($msg['message']));
-			$text_parts = [];
-
-			foreach ($parts as $part) {
-				$part = trim($part);
-				if (filter_var($part, FILTER_VALIDATE_URL) && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $part)) {
-					$msg['image'] = $part;
-				} elseif (!empty($part)) {
-					$text_parts[] = $part;
-				}
+			if (!$sender_id || !$receiver_id) {
+				return new WP_REST_Response([
+					'code'    => 400,
+					'status'  => 'Bad Request',
+					'message' => 'senderId and receiverId are required.',
+					'data'    => null
+				], 400);
 			}
 
-			// Replace message with text only
-			$msg['message'] = implode(' ', $text_parts);
+			$offset = ($page - 1) * $per_page;
+			$table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+
+			// Get total message count
+			$total_messages = $wpdb->get_var($wpdb->prepare(
+				"SELECT COUNT(*) FROM $table 
+				WHERE (sender_id = %d AND receiver_id = %d) 
+					OR (sender_id = %d AND receiver_id = %d)",
+				$sender_id, $receiver_id, $receiver_id, $sender_id
+			));
+
+			// Get paginated messages
+			$messages = $wpdb->get_results($wpdb->prepare(
+				"SELECT * FROM $table 
+				WHERE (sender_id = %d AND receiver_id = %d) 
+					OR (sender_id = %d AND receiver_id = %d)
+				ORDER BY created_at DESC
+				LIMIT %d OFFSET %d",
+				$sender_id, $receiver_id, $receiver_id, $sender_id,
+				$per_page, $offset
+			), ARRAY_A);
+			// Separate text and image
+			foreach ($messages as &$msg) {
+				// Break message into lines
+				$parts = preg_split("/\n+/", trim($msg['message']));
+				$text_parts = [];
+
+				foreach ($parts as $part) {
+					$part = trim($part);
+					if (filter_var($part, FILTER_VALIDATE_URL) && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $part)) {
+						$msg['image'] = $part;
+					} elseif (!empty($part)) {
+						$text_parts[] = $part;
+					}
+				}
+
+				// Replace message with text only
+				$msg['message'] = implode(' ', $text_parts);
+			}
+
+			$total_pages = ceil($total_messages / $per_page);
+
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'Messages retrieved successfully.',
+				'data'    => [
+					'total_page_count' => intval($total_messages),
+					'current_page'     => $page,
+					'last_page'        => $total_pages,
+					'total_pages'      => $total_pages,
+					'messages'         => array_filter($messages, function ($msg) {
+						unset($msg['image']);
+						return $msg;
+					}),
+				]
+			], 200);
 		}
-
-		$total_pages = ceil($total_messages / $per_page);
-
-		return new WP_REST_Response([
-			'code'    => 200,
-			'status'  => 'OK',
-			'message' => 'Messages retrieved successfully.',
-			'data'    => [
-				'total_page_count' => intval($total_messages),
-				'current_page'     => $page,
-				'last_page'        => $total_pages,
-				'total_pages'      => $total_pages,
-				'messages'         => array_filter($messages, function ($msg) {
-					unset($msg['image']);
-					return $msg;
-				}),
-			]
-		], 200);
 	}
 	public function handle_get_conversation_list($request) {
 		global $wpdb;
-
+		if (!get_option('enable_matchmaking', false)) {
+			return new WP_REST_Response(array(
+				'code'    => 403,
+				'status'  => 'Disabled',
+				'message' => 'Matchmaking functionality is not enabled.',
+				'data'    => null
+			), 403);
+		}
+		$auth_check = $this->wpem_check_authorized_user();
+		if ($auth_check) {
+			return self::prepare_error_for_response(405);
+		} else {
 			$user_id  = intval($request->get_param('user_id'));
 			$paged    = max(1, intval($request->get_param('paged')));
 			$per_page = max(1, intval($request->get_param('per_page')));
@@ -386,6 +405,7 @@ class WPEM_REST_Send_Message_Controller {
 				]
 			], 200);
 		}
+	}
 }
 
 new WPEM_REST_Send_Message_Controller();
