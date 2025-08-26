@@ -8,6 +8,11 @@ class WPEM_REST_User_Registered_Events_Controller extends WPEM_REST_CRUD_Control
         add_action('rest_api_init', array($this, 'register_routes'), 10);
     }
 
+    /**
+     * Register the routes for the objects of the controller.
+     *
+     * @since 1.1.0
+     */
     public function register_routes() {
         $auth_controller = new WPEM_REST_Authentication();
         register_rest_route(
@@ -15,7 +20,7 @@ class WPEM_REST_User_Registered_Events_Controller extends WPEM_REST_CRUD_Control
             '/' . $this->rest_base,
             array(
                 'methods'             => WP_REST_Server::READABLE,
-                'callback'            => array($this, 'get_user_registered_events'),
+                'callback'            => array($this, 'wpem_get_user_registered_events'),
                 'args' => array(
                     'user_id' => array(
                         'required'    => true,
@@ -27,7 +32,14 @@ class WPEM_REST_User_Registered_Events_Controller extends WPEM_REST_CRUD_Control
         );
     }
 
-    public function get_user_registered_events($request) {
+	/**
+	 * Retrieve all events that a user is registered to.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 * @since 1.1.0
+	 */
+    public function wpem_get_user_registered_events($request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
 				'code'    => 403,

@@ -10,12 +10,16 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
         add_action('rest_api_init', array($this, 'register_routes'), 10);
     }
 
+    /**
+     * Register the routes for the objects of the controller.
+     *
+     * @since 1.1.0
+     */
     public function register_routes() {
         $auth_controller = new WPEM_REST_Authentication();
        register_rest_route($this->namespace, '/' . $this->rest_base, array(
 			'methods'  => WP_REST_Server::CREATABLE,
-			'callback' => array($this, 'handle_send_message'),
-			//'permission_callback' => array($auth_controller, 'check_authentication'),
+			'callback' => array($this, 'wpem_send_matchmaking_messages'),
 			'args' => array(
 				'senderId'   => array('required' => true),
 				'receiverId' => array('required' => true),
@@ -26,8 +30,7 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 
         register_rest_route($this->namespace, '/get-messages', array(
             'methods'  => WP_REST_Server::READABLE,
-            'callback' => array($this, 'handle_get_messages'),
-            //'permission_callback' => array($auth_controller, 'check_authentication'),
+            'callback' => array($this, 'wpem_get_matchmaking_messages'),
             'args' => array(
                 'senderId'   => array('required' => true, 'type' => 'integer'),
                 'receiverId' => array('required' => true, 'type' => 'integer'),
@@ -38,8 +41,7 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
         // Get conversation list endpoint
 		register_rest_route($this->namespace, '/get-conversation-list', array(
 			'methods'  => WP_REST_Server::READABLE,
-			'callback' => array($this, 'handle_get_conversation_list'),
-			//'permission_callback' => array($auth_controller, 'check_authentication'),
+			'callback' => array($this, 'wpem_get_matchmaking_conversation_list'),
 			'args' => array(
 				'user_id'   => array('required' => true, 'type' => 'integer'),
 				'event_ids' => array('required' => true, 'type' => 'array', 'items' => array('type' => 'integer')),
@@ -48,7 +50,20 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 			),
 		));
     }
-    public function handle_send_message($request) {
+    /**
+     * Handles sending a message to a user.
+     *
+     * @param WP_REST_Request $request {
+     *     @type int    $senderId   The ID of the user sending the message.
+     *     @type int    $receiverId The ID of the user receiving the message.
+     *     @type string $message    The message being sent. Optional.
+     *     @type string $image      The image being sent. Optional.
+     * }
+     *
+     * @return WP_REST_Response
+	 * @since 1.1.0
+     */
+    public function wpem_send_matchmaking_messages($request) {
 		global $wpdb;
 
 		if (!get_option('enable_matchmaking', false)) {
@@ -183,7 +198,6 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 			);
 
 			// --- END EMAIL SECTION ---
-
 			return new WP_REST_Response([
 				'code'    => 200,
 				'status'  => 'OK',
@@ -200,7 +214,16 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
 	}
-     public function handle_get_messages($request) {
+	/**
+	 * Retrieve messages between two users
+	 * 
+	 * Retrieves a list of messages between the sender and receiver, paginated
+	 * 
+	 * @param WP_REST_Request $request The request object.
+	 * @since 1.1.0
+	 * @return WP_REST_Response
+	 */
+     public function wpem_get_matchmaking_messages($request) {
 		global $wpdb;
 
 		if (!get_option('enable_matchmaking', false)) {
@@ -268,7 +291,6 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 				// Replace message with text only
 				$msg['message'] = implode(' ', $text_parts);
 			}
-
 			$total_pages = ceil($total_messages / $per_page);
 
 			return new WP_REST_Response([
@@ -288,7 +310,17 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
 	}
-	public function handle_get_conversation_list($request) {
+	/**
+	 * Retrieve a paginated list of conversation partners for a given user_id
+	 * 
+	 * Returns a list of users with their profile photos, names, last message, and
+	 * last message time. The list is sorted by last message time in descending order.
+	 * 
+	 * @param WP_REST_Request $request The request object.
+	 * @since 1.1.0
+	 * @return WP_REST_Response
+	 */
+	public function wpem_get_matchmaking_conversation_list($request) {
 		global $wpdb;
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response(array(
@@ -407,5 +439,4 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 		}
 	}
 }
-
 new WPEM_REST_Send_Message_Controller();

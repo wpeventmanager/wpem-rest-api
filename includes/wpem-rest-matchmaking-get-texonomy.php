@@ -27,6 +27,14 @@ class WPEM_REST_Taxonomy_List_Controller extends WPEM_REST_CRUD_Controller {
         );
     }
 
+    /**
+     * Get the list of terms for a given taxonomy.
+     *
+     * @param WP_REST_Request $request Full details about the request.
+     *
+     * @return WP_REST_Response $response The response object.
+     * @since 1.1.0
+     */
     public function get_taxonomy_terms($request) {
         // Check if matchmaking is enabled
         if (!get_option('enable_matchmaking', false)) {

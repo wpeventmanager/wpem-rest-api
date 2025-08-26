@@ -17,7 +17,7 @@ class WPEM_REST_Filter_Users_Controller extends WPEM_REST_CRUD_Controller{
         // General filter
         register_rest_route($this->namespace, '/' . $this->rest_base, array(
             'methods'  => WP_REST_Server::CREATABLE,
-            'callback' => array($this, 'handle_filter_users'),
+            'callback' => array($this, 'wpem_matchmaking_filter_users'),
             'args' => array(
                 'profession'    => array('required' => false, 'type' => 'string'),
                 'company_name'  => array('required' => false, 'type' => 'string'),
@@ -42,7 +42,7 @@ class WPEM_REST_Filter_Users_Controller extends WPEM_REST_CRUD_Controller{
 	 * @param $request
 	 * @return WP_REST_Response
 	 */
-	public function handle_filter_users($request) {
+	public function wpem_matchmaking_filter_users($request) {
 		global $wpdb;
 
 		if (!get_option('enable_matchmaking', false)) {

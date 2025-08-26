@@ -7,7 +7,11 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'), 10);
     }
-
+    /**
+     * Register the routes for the objects of the controller.
+     *
+     * @since 1.1.0
+    */
     public function register_routes() {
         $auth_controller = new WPEM_REST_Authentication();
         register_rest_route(
@@ -15,8 +19,7 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             '/attendee-profile',
             array(
                 'methods' => WP_REST_Server::READABLE,
-                'callback' => array($this, 'get_attendee_profile'),
-                //'permission_callback' => array($auth_controller, 'check_authentication'),
+                'callback' => array($this, 'wpem_get_matchmaking_profile_data'),
                 'args' => array(
                     'attendeeId' => array(
                         'required' => false,
@@ -31,8 +34,7 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             '/attendee-profile/update',
             array(
                 'methods' => WP_REST_Server::EDITABLE,
-                'callback' => array($this, 'update_attendee_profile'),
-               // 'permission_callback' => array($auth_controller, 'check_authentication'),
+                'callback' => array($this, 'wpem_update_matchmaking_profile'),
                 'args' => array(
                     'user_id' => array(
                         'required' => true,
@@ -59,7 +61,16 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         );
     }
 
-    public function get_attendee_profile($request) {
+	/**
+	 * Get Matchmaking Profile Data
+	 * 
+	 * Returns a WP_REST_Response with the given status code and data.
+	 * 
+	 * @param WP_REST_Request $request
+	 * @since 1.1.0
+	 * @return WP_REST_Response
+	 */
+    public function wpem_get_matchmaking_profile_data($request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response(array(
 				'code' => 403,
@@ -254,43 +265,43 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 						}
 					}
 					$skills_slugs = [];
-				$skills_arr = maybe_unserialize($user_meta['_skills'][0]);
-				if (is_array($skills_arr)) {
-					foreach ($skills_arr as $skill) {
-						$term = get_term_by('slug', $skill, 'event_registration_skills');
-						if (!$term) {
-							$term = get_term_by('name', $skill, 'event_registration_skills');
-						}
-						if (!$term) {
-							$term = get_term_by('id', $skill, 'event_registration_skills');
-						}
-						if ($term) {
-							$skills_slugs[] = $term->slug;
+					$skills_arr = maybe_unserialize($user_meta['_skills'][0]);
+					if (is_array($skills_arr)) {
+						foreach ($skills_arr as $skill) {
+							$term = get_term_by('slug', $skill, 'event_registration_skills');
+							if (!$term) {
+								$term = get_term_by('name', $skill, 'event_registration_skills');
+							}
+							if (!$term) {
+								$term = get_term_by('id', $skill, 'event_registration_skills');
+							}
+							if ($term) {
+								$skills_slugs[] = $term->slug;
+							}
 						}
 					}
-				}
-				$skills_slugs = array_filter($skills_slugs); // remove blanks
-				$skills_serialized = serialize($skills_slugs);
+					$skills_slugs = array_filter($skills_slugs); // remove blanks
+					$skills_serialized = serialize($skills_slugs);
 
-				// --- Interests ---
-				$interests_slugs = [];
-				$interests_arr = maybe_unserialize($user_meta['_interests'][0]);
-				if (is_array($interests_arr)) {
-					foreach ($interests_arr as $interest) {
-						$term = get_term_by('slug', $interest, 'event_registration_interests');
-						if (!$term) {
-							$term = get_term_by('name', $interest, 'event_registration_interests');
-						}
-						if (!$term) {
-							$term = get_term_by('id', $interest, 'event_registration_interests');
-						}
-						if ($term) {
-							$interests_slugs[] = $term->slug;
+					// --- Interests ---
+					$interests_slugs = [];
+					$interests_arr = maybe_unserialize($user_meta['_interests'][0]);
+					if (is_array($interests_arr)) {
+						foreach ($interests_arr as $interest) {
+							$term = get_term_by('slug', $interest, 'event_registration_interests');
+							if (!$term) {
+								$term = get_term_by('name', $interest, 'event_registration_interests');
+							}
+							if (!$term) {
+								$term = get_term_by('id', $interest, 'event_registration_interests');
+							}
+							if ($term) {
+								$interests_slugs[] = $term->slug;
+							}
 						}
 					}
-				}
-				$interests_slugs = array_filter($interests_slugs);
-				$interests_serialized = serialize($interests_slugs);
+					$interests_slugs = array_filter($interests_slugs);
+					$interests_serialized = serialize($interests_slugs);
 
 					$profiles[] = array(
 						'user_id' => $user->ID,
@@ -330,10 +341,14 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			}
 		}
 	}
-    /**
-     * Update profile including handling file upload from device for profile_photo
-     */
-    public function update_attendee_profile($request) {
+	/**
+	 * Update a user's matchmaking profile.
+	 *
+	 * @param WP_REST_Request $request The request object.
+	 * @since 1.1.0
+	 * @return WP_REST_Response
+	 */
+    public function wpem_update_matchmaking_profile($request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
 				'code' => 403,
@@ -365,7 +380,6 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			];
 
 			// Handle normal meta fields
-			
 			foreach ($meta_fields as $field) {
 				if ($request->get_param($field) !== null) {
 					$value = $request->get_param($field);
@@ -403,7 +417,6 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 					}
 				}
 			}
-
 			// Handle profile_photo file upload
 			if (!empty($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
 				require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -489,7 +502,13 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			], 200);
 		}
 	}
-
+	/**
+	 * Upload a file for the user with the given ID
+	 * 
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 * @since 1.1.0
+	 */
     public function upload_user_file($request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
@@ -540,7 +559,6 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			// Update both profile photo meta fields
 			update_user_meta($user_id, '_profile_photo', $file_url);
 			
-
 			return new WP_REST_Response([
 				'code' => 200,
 				'status' => 'OK',
@@ -552,6 +570,5 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 			], 200);
 		}
 	}
-
 }
 new WPEM_REST_MatchMaking_Profile_Controller();
