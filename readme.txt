@@ -6,6 +6,7 @@ Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.5.1
 Tested up to: 6.8
 Stable tag: 1.1.2
+
 Requires PHP: 8.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -130,6 +131,10 @@ Fixed : Add API related to visibility setting
 Fixed : Add API for meeting setting
 Fixed : Password change then user will auto logout from mobile application
 Fixed : Various bug fixes and code Improvements
+
+= 1.1.1 [ 25th August 2025 ] =
+
+Fixed : Warnings of undefined variables
 
 = 1.1.1 [ 25th August 2025 ] =
 
