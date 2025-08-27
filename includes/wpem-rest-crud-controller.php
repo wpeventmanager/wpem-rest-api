@@ -728,7 +728,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             if (!wp_check_password($user_data['password'], $user->user_pass, $user->ID)) {
                 return self::prepare_error_for_response(405);
             } else {
-                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
+                 $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
                 $user_meta = get_user_meta( $user->ID, '_matchmaking_profile', true );
                 if($user_info){ 
                     $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
@@ -739,7 +739,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
                     } else {
                         return false;
                     }
-                } else if(empty( $user_meta ) || $user_meta != 1){ 
+                } else if(!empty( $user_meta ) && $user_meta == 1){ 
                     return false;
                 } else {
                     return self::prepare_error_for_response(405);
