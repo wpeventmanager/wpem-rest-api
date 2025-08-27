@@ -5,7 +5,8 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.5.1
 Tested up to: 6.8
-Stable tag: 1.1.1
+Stable tag: 1.1.2
+
 Requires PHP: 8.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -119,6 +120,21 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
+= 1.1.2 [ 27th August 2025 ] =
+
+Fixed : Not able to create rest API access key
+Fixed : Taxonomy API Not working
+Fixed : When Passing empty profile photo then set to default User Image
+Fixed : Access to API always open to everyone everytime
+Fixed : Add API for matchmaking setting GET and POST
+Fixed : Add API related to visibility setting
+Fixed : Add API for meeting setting
+Fixed : Password change then user will auto logout from mobile application
+Fixed : Various bug fixes and code Improvements
+
+= 1.1.1 [ 25th August 2025 ] =
+
+Fixed : Warnings of undefined variables
 
 = 1.1.1 [ 25th August 2025 ] =
 

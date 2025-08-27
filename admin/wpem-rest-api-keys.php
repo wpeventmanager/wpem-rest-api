@@ -88,11 +88,23 @@ class WPEM_Rest_API_Keys {
      */
     private static function table_list_output() {
         global $wpdb, $keys_table_list;
+ 		$keys_table_list = new WPEM_API_Keys_Table_List();
 
-        $keys_table_list = new WPEM_API_Keys_Table_List();
-
-        echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wpem-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ) . '" class="add-new-h2 wpem-backend-theme-button">' . esc_html__( 'Add Key', 'wpem-rest-api' ) . '</a></h3>';
-
+        $add_key = false;
+        $all_users = get_wpem_event_users();
+        global $wpdb;
+        $app_user = $wpdb->get_col("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys");
+        $user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
+        foreach ( $all_users as $user ) { 
+			if(!in_array($user['ID'], $app_user) || $user_id == $user['ID']) {
+                $add_key = true;
+                break;
+            }
+        }
+        if($add_key)
+            echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wpem-rest-api' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&create-key=1' ) ) . '" class="add-new-h2 wpem-backend-theme-button">' . esc_html__( 'Add Key', 'wpem-rest-api' ) . '</a></h3>';
+        else
+            echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wpem-rest-api' ) . '</h3>';
         // Get the API keys count.
         $count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1;" );
 

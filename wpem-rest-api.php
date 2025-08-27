@@ -9,7 +9,7 @@
 * 
 * Text Domain: wpem-rest-api
 * Domain Path: /languages
-* Version: 1.1.1
+* Version: 1.1.2
 * Since: 1.0.0
 * 
 * Requires WordPress Version at least: 6.5.1
@@ -40,7 +40,7 @@ class WPEM_Rest_API{
         }
 
         // Define constants
-        define( 'WPEM_REST_API_VERSION', '1.1.1' );
+        define( 'WPEM_REST_API_VERSION', '1.1.2' );
         define( 'WPEM_REST_API_FILE', __FILE__ );
         define( 'WPEM_REST_API_PLUGIN_DIR', untrailingslashit( plugin_dir_path(__FILE__ ) ) );
         define( 'WPEM_REST_API_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path(__FILE__) ), basename(__FILE__) ) ) );
@@ -80,6 +80,9 @@ class WPEM_Rest_API{
 
         // Add actions
         add_action( 'init', array( $this, 'load_plugin_textdomain' ), 12 );
+
+        // Call when update plugin
+        add_action('admin_init', array($this, 'updater'));
     }
 
     /**
@@ -93,10 +96,23 @@ class WPEM_Rest_API{
     }
 
     /**
-     * Install
+	 * Handle Updates.
+	 * @since 1.1.2
+	 */
+	public function updater() {
+        if(version_compare(get_option('wpem_rest_api_version', WPEM_REST_API_VERSION), '1.0.9', '<')) {
+			$this->check_rest_api_table();
+			flush_rewrite_rules();
+		}
+	}
+
+    /**
+     * Check rest api table
+     * @since 1.1.2
+     * @return void
      */
-    public function install(){
-        global $wpdb;
+    public function check_rest_api_table() {
+         global $wpdb;
 
         $wpdb->hide_errors();
         $collate = '';
@@ -157,6 +173,12 @@ class WPEM_Rest_API{
         if( empty( get_option( 'wpem_rest_api_app_name' ) ) ) {
             update_option( 'wpem_rest_api_app_name', 'WP Event Manager' );
         };
+    }
+    /**
+     * Install
+     */
+    public function install(){
+       $this->check_rest_api_table();
     }
 }
 
