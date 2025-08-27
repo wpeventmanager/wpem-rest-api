@@ -41,7 +41,7 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 
         register_rest_route($this->namespace, '/update-meeting-status', [
 			'methods'  => WP_REST_Server::CREATABLE,
-			'callback' => [$this, 'update_meeting_status'],
+			'callback' => [$this, 'wpem_update_matchmaking_meeting_status'],
 			'args' => [
 				'meeting_id' => ['required' => true, 'type' => 'integer'],
 				'user_id'    => ['required' => true, 'type' => 'integer'],
