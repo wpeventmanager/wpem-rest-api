@@ -2,18 +2,18 @@ var WPEMRestAPIAdmin = (function () {
     return {
         init: function () {
             jQuery("#update_api_key").on("click", WPEMRestAPIAdmin.actions.saveApiKey),
-                jQuery("select#key_user").chosen(),
-                jQuery("select#event_id").chosen(),
-				jQuery("#select_events").chosen();
-                jQuery("input#date_expires").datepicker({dateFormat: "yy-mm-dd",minDate: 0}),
-                jQuery("table#app-branding-color-dark").hide(),
-                jQuery(".wpem-app-branding-mode .app-branding-mode .wpem-light-mode").click(function () {
-                    jQuery(".wpem-app-branding-mode").removeClass("wpem-dark-mode").addClass("wpem-light-mode"), jQuery("table#app-branding-color").show(), jQuery("table#app-branding-color-dark").hide();
-                }),
-                jQuery(".wpem-app-branding-mode .app-branding-mode .wpem-dark-mode").click(function () {
-                    jQuery("table#app-branding-color").hide(), jQuery("table#app-branding-color-dark").show(), jQuery(".wpem-app-branding-mode").removeClass("wpem-light-mode").addClass("wpem-dark-mode");
-                }),
-                jQuery("#update_app_branding").on("click", WPEMRestAPIAdmin.actions.saveAppBranding);
+            jQuery("select#key_user").chosen(),
+            jQuery("select#event_id").chosen(),
+            jQuery("#select_events").chosen();
+            jQuery("input#date_expires").datepicker({dateFormat: "yy-mm-dd",minDate: 0}),
+            jQuery("table#app-branding-color-dark").hide(),
+            jQuery(".wpem-app-branding-mode .app-branding-mode .wpem-light-mode").click(function () {
+                jQuery(".wpem-app-branding-mode").removeClass("wpem-dark-mode").addClass("wpem-light-mode"), jQuery("table#app-branding-color").show(), jQuery("table#app-branding-color-dark").hide();
+            }),
+            jQuery(".wpem-app-branding-mode .app-branding-mode .wpem-dark-mode").click(function () {
+                jQuery("table#app-branding-color").hide(), jQuery("table#app-branding-color-dark").show(), jQuery(".wpem-app-branding-mode").removeClass("wpem-light-mode").addClass("wpem-dark-mode");
+            }),
+            jQuery("#update_app_branding").on("click", WPEMRestAPIAdmin.actions.saveAppBranding);
             var t;
             jQuery(".wpem-colorpicker").wpColorPicker({
                 defaultColor: !0,
@@ -25,46 +25,47 @@ var WPEMRestAPIAdmin = (function () {
                         }, 500));
                 },
             });
-			
-			// show events by radio button toggle
-			toggleEventsRow();
-			jQuery('input[name="event_show_by"]').change(function() {
-				
-				toggleEventsRow();
-			});
-			
-			function toggleEventsRow() {
-				if (jQuery('input[name="event_show_by"]:checked').val() === 'selected') {
-					jQuery('#select-events-row').show();
-					jQuery('#select_events').chosen('destroy').chosen();
-				} else {
-					jQuery('#select-events-row').hide();
-				}
-			}
+            
+            // show events by radio button toggle
+            toggleEventsRow();
+            jQuery('input[name="event_show_by"]').change(function() {
+                
+                toggleEventsRow();
+            });
+            
+            function toggleEventsRow() {
+                if (jQuery('input[name="event_show_by"]:checked').val() === 'selected') {
+                    jQuery('#select-events-row').show();
+                    jQuery('#select_events').chosen('destroy').chosen();
+                } else {
+                    jQuery('#select-events-row').hide();
+                }
+            }
             jQuery('.wp_event_manager_upload_file_button').on('click', function(e){
-				e.preventDefault();
-				var button = jQuery(this);
-				var input = button.closest('.file_url').find('#wpem_rest_api_app_logo');
-				console.log(input);
-				var custom_uploader = wp.media({
-					title: 'Select or Upload Image',
-					button: {
-						text: 'Use this image'
-					},
-					multiple: false
-				})
-				.on('select', function() {
-					var attachment = custom_uploader.state().get('selection').first().toJSON();
-					input.val(attachment.url); // Set image URL in input
-				})
-				.open();
-			});
+                e.preventDefault();
+                var button = jQuery(this);
+                var input = button.closest('.file_url').find('#wpem_rest_api_app_logo');
+                console.log(input);
+                var custom_uploader = wp.media({
+                    title: 'Select or Upload Image',
+                    button: {
+                        text: 'Use this image'
+                    },
+                    multiple: false
+                })
+                .on('select', function() {
+                    var attachment = custom_uploader.state().get('selection').first().toJSON();
+                    input.val(attachment.url); // Set image URL in input
+                })
+                .open();
+            });
         },
         actions: {
             saveApiKey: function (e) {
                 e.preventDefault();
                 var a = this;
-                jQuery("#api_key_loader").show(),
+                if(jQuery("#key_user").val() !== "" && jQuery("#key_user").val() !== "0" && jQuery("#key_user").val() !== null) {
+                    jQuery("#api_key_loader").show(),
                     jQuery("#update_api_key").attr("disabled", !0),
                     jQuery.ajax({
                         type: "POST",
@@ -79,11 +80,11 @@ var WPEMRestAPIAdmin = (function () {
                             event_id: jQuery("#event_id").val(),
                             date_expires: jQuery("#date_expires").val(),
                             restrict_check_in: jQuery('input[name="restrict_check_in"]').attr("checked") ? 0 : 1,
-							event_show_by: jQuery('input[name="event_show_by"]:checked').val(),
-							select_events: jQuery('#select_events').val() || [],
+                            event_show_by: jQuery('input[name="event_show_by"]:checked').val(),
+                            select_events: jQuery('#select_events').val() || [],
                             mobile_menu: jQuery('input[name="mobile_menu[]"]:checked').map(function () {
-								return this.value;
-							}).get()
+                                return this.value;
+                            }).get()
                         },
                         beforeSend: function (e) {},
                         success: function (e) {
@@ -96,17 +97,17 @@ var WPEMRestAPIAdmin = (function () {
                                         jQuery("p.submit", a.el).empty().append(e.data.revoke_url),
                                         jQuery("#key-fields p.submit", a.el).before(wp.template("api-keys-template")({ consumer_key: e.data.consumer_key, consumer_secret: e.data.consumer_secret, app_key: e.data.app_key })))
                                       : (jQuery("#key_description", a.el).val(e.data.description), jQuery("#key_user", a.el).val(e.data.user_id), jQuery("#key_permissions", a.el).val(e.data.permissions),jQuery('input[name="event_show_by"][value="' + e.data.event_show_by + '"]').prop('checked', true),
-									jQuery('#select_events').val(e.data.selected_events).trigger('chosen:updated')))
+                                    jQuery('#select_events').val(e.data.selected_events).trigger('chosen:updated')))
                                 : jQuery("h2, h3", a.el)
                                       .first()
                                       .append('<div class="wpem-api-message error"><p>' + e.errorThrown + "</p></div>");
-									  
+                                      
                                 if (e.data.mobile_menu) {
-									jQuery('input[name="mobile_menu[]"]').prop('checked', false);
-									e.data.mobile_menu.forEach(function (val) {
-										jQuery('input[name="mobile_menu[]"][value="' + val + '"]').prop('checked', true);
-									});
-								}
+                                    jQuery('input[name="mobile_menu[]"]').prop('checked', false);
+                                    e.data.mobile_menu.forEach(function (val) {
+                                        jQuery('input[name="mobile_menu[]"][value="' + val + '"]').prop('checked', true);
+                                    });
+                                }
                                     },
                         error: function (e, t, n) {
                             jQuery("h2, h3", a.el)
@@ -117,6 +118,11 @@ var WPEMRestAPIAdmin = (function () {
                             jQuery("#api_key_loader").hide(), jQuery("#update_api_key").attr("disabled", !1);
                         },
                     });
+                } else {
+                    jQuery("h2, h3", a.el)
+                                .first()
+                                .append('<div class="wpem-api-message error"><p>Please select User Owner of key.</p></div>');
+                }
             },
             saveAppBranding: function (e) {
                 e.preventDefault();
