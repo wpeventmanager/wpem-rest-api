@@ -99,6 +99,17 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			'callback'            => [$this, 'wpem_get_general_matchmaking_settings'],
 		]);
     }
+	/**
+	 * create a matchmaking meetings with the other participants.
+	 *
+	 * Accepts the following parameters: user_id, event_id, meeting_date, slot, meeting_participants, write_a_message.
+	 *
+	 * Creates a new meeting with the given parameters. If the meeting is created successfully, sends a styled email to each participant with the meeting details.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 * @since 1.1.0
+	 */
     public function wpem_create_matchmaking_meeting(WP_REST_Request $request) {
 		global $wpdb;
 		if (!get_option('enable_matchmaking', false)) {
@@ -324,6 +335,14 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
 	}
+	/**
+	 * Get all meetings for a given user in a given event.
+	 *
+	 * @param WP_REST_Request $request The request object.
+	 *
+	 * @return WP_REST_Response The response object.
+	 * @since 1.1.0
+	 */
 	 public function wpem_get_matchmaking_user_meetings(WP_REST_Request $request) {
 		global $wpdb;
 		if (!get_option('enable_matchmaking', false)) {
@@ -468,6 +487,13 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
 	}
+	/**
+	 * Cancel upcomming matchmaking meetings by host.
+	 *
+	 * @since 1.1.0
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
 	public function wpem_cancel_matchmaking_meetings(WP_REST_Request $request) {
 		global $wpdb;
         if (!get_option('enable_matchmaking', false)) {
@@ -569,6 +595,14 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
     }
+        /**
+         * Update a meeting's status according to participant accept or decline the meeting.
+         *
+         * @param WP_REST_Request $request
+         * @return WP_REST_Response
+         * @since 1.1.0
+         */
+
 	public function wpem_update_matchmaking_meeting_status(WP_REST_Request $request) {
 		global $wpdb;
         if (!get_option('enable_matchmaking', false)) {
@@ -679,7 +713,7 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
     }
 
     /**
-     * Get available meeting slots
+     * Get available meeting slots of user
      * @param WP_REST_Request $request
      * @return WP_REST_Response
      * @since 1.1.0
@@ -713,6 +747,13 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
     }
+	/**
+	 * Update user's matchmaking availability slots and availability flag for meetings.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 * @since 1.1.0
+	 */
 	public function wpem_update_matchmaking_availability_slots(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
             return new WP_REST_Response([
@@ -754,6 +795,17 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
 	}
+	/**
+	 * Retrieve common availability slots for meeting for given users .
+	 *
+	 * @param WP_REST_Request $request {
+	 * @type int $event_id Event ID.
+	 * @type array $user_ids User IDs.
+	 * @since 1.1.0
+	 *
+	 * @return WP_REST_Response
+	 * @throws Exception
+	 */
 	public function wpem_get_common_availability_slots($request) {
 		global $wpdb;
 		if (!get_option('enable_matchmaking', false)) {
@@ -869,6 +921,13 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
 	}
+	/**
+	 * Retrieve general matchmaking settings.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 * @since 1.1.0
+	 */
 	public function wpem_get_general_matchmaking_settings(WP_REST_Request $request) {
 		if (!get_option('enable_matchmaking', false)) {
 			return new WP_REST_Response([
@@ -878,22 +937,26 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 				'data'    => null
 			], 403);
 		}
+		$auth_check = $this->wpem_check_authorized_user();
+		if ($auth_check) {
+			return self::prepare_error_for_response(405);
+		} else {
+			$settings = [
+				'request_mode'     => get_option('wpem_meeting_request_mode'), 
+				'scheduling_mode'     => get_option('wpem_meeting_scheduling_mode'),
+				'attendee_limit'   => get_option('wpem_meeting_attendee_limit'),
+				'meeting_expiration' => get_option('wpem_meeting_expiration'),
+				'enable_matchmaking' => get_option('enable_matchmaking'),
+				'participant_activation' => get_option('participant_activation'),
+			];
 
-		$settings = [
-			'request_mode'     => get_option('wpem_meeting_request_mode'), 
-			'scheduling_mode'     => get_option('wpem_meeting_scheduling_mode'),
-			'attendee_limit'   => get_option('wpem_meeting_attendee_limit'),
-			'meeting_expiration' => get_option('wpem_meeting_expiration'),
-			'enable_matchmaking' => get_option('enable_matchmaking'),
-			'participant_activation' => get_option('participant_activation'),
-		];
-
-		return new WP_REST_Response([
-			'code'    => 200,
-			'status'  => 'OK',
-			'message' => 'Matchmaking settings retrieved.',
-			'data'    => $settings
-		], 200);
+			return new WP_REST_Response([
+				'code'    => 200,
+				'status'  => 'OK',
+				'message' => 'Matchmaking settings retrieved.',
+				'data'    => $settings
+			], 200);
+		}
 	}
 }
 
