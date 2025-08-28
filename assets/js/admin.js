@@ -100,7 +100,7 @@ var WPEMRestAPIAdmin = (function () {
                                     jQuery('#select_events').val(e.data.selected_events).trigger('chosen:updated')))
                                 : jQuery("h2, h3", a.el)
                                       .first()
-                                      .append('<div class="wpem-api-message error"><p>' + e.errorThrown + "</p></div>");
+                                      .append('<div class="wpem-api-message error"><p>' + e.data.message + "</p></div>");
                                       
                                 if (e.data.mobile_menu) {
                                     jQuery('input[name="mobile_menu[]"]').prop('checked', false);
