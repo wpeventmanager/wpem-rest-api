@@ -29,7 +29,7 @@ class WPEM_REST_User_Registered_Events extends WPEM_REST_CRUD_Controller {
      *
      * @var string
      */
-    protected $rest_base = 'user-registered-event-list';
+    protected $rest_base = 'user-registered-events';
 
     /**
      * Post type we are ultimately returning.
