@@ -83,6 +83,10 @@ class WPEM_Rest_API{
 
         // Call when update plugin
         add_action('admin_init', array($this, 'updater'));
+        // Restrict Scanner role from accessing wp-admin
+        add_action('admin_init', array($this, 'restrict_scanner_admin'));
+        // Enforce that Scanner users can only manage their own registrations
+        // add_filter('map_meta_cap', array($this, 'limit_scanner_own_registration'), 10, 4);
     }
 
     /**
@@ -100,11 +104,16 @@ class WPEM_Rest_API{
 	 * @since 1.1.2
 	 */
 	public function updater() {
-        if(version_compare(get_option('wpem_rest_api_version', WPEM_REST_API_VERSION), '1.0.9', '<')) {
-			$this->check_rest_api_table();
+        if ( version_compare( get_option( 'wpem_rest_api_version', WPEM_REST_API_VERSION ), '1.0.9', '<' ) ) {
+            $this->check_rest_api_table();
+            flush_rewrite_rules();
+        }
+        if(version_compare(WPEM_REST_API_VERSION, get_option('wpem_rest_api_version'), '>')) {
+			 // Ensure roles/capabilities exist on admin init (covers updates)
+            $this->init_user_roles();
 			flush_rewrite_rules();
 		}
-	}
+    }
 
     /**
      * Check rest api table
@@ -174,11 +183,159 @@ class WPEM_Rest_API{
             update_option( 'wpem_rest_api_app_name', 'WP Event Manager' );
         };
     }
+
+    /**
+     * Init user roles.
+     * Creates/updates roles and capabilities used by this plugin.
+     */
+    private function init_user_roles() {
+        global $wp_roles;
+        if ( class_exists( 'WP_Roles' ) && ! isset( $wp_roles ) ) {
+            $wp_roles = new WP_Roles();
+        }
+
+        if ( is_object( $wp_roles ) ) {
+            // Create Scanner role if not exists with minimal base caps.
+            add_role(
+                'wpem-scanner',
+                __( 'Ticket Scanner', 'wpem-rest-api' ),
+                array(
+                    'read'         => true,
+                    'edit_posts'   => false,
+                    'delete_posts' => false,
+                )
+            );
+
+            // Ensure administrator has full capabilities.
+            $capabilities = $this->get_core_capabilities();
+            foreach ( $capabilities as $cap_group ) {
+                foreach ( $cap_group as $cap ) {
+                    $wp_roles->add_cap( 'administrator', $cap );
+                }
+            }
+
+            // Grant Scanner role same capabilities as WooCommerce 'customer' and add registration caps.
+            if ( $role = get_role( 'wpem-scanner' ) ) {
+                // Mirror WooCommerce customer capabilities if role exists.
+                if ( $customer = get_role( 'customer' ) ) {
+                    if ( is_array( $customer->capabilities ) ) {
+                        foreach ( $customer->capabilities as $cap => $grant ) {
+                            if ( $grant ) {
+                                $role->add_cap( $cap );
+                            }
+                        }
+                    }
+                }
+
+                // Add own registration management capabilities.
+                // $scanner_caps = array(
+                //     'read_event_registration',
+                //     'edit_event_registration',
+                //     'edit_event_registrations',
+                //     'create_event_registrations',
+                //     'publish_event_registrations',
+                //     'delete_event_registration',
+                //     'delete_event_registrations',
+                //     'edit_published_event_registrations',
+                //     'delete_published_event_registrations',
+                // );
+                // foreach ( $scanner_caps as $cap ) {
+                //     $role->add_cap( $cap );
+                // }
+            }
+        }
+    }
+
+    /**
+     * Get capabilities required by the plugin.
+     * @return array
+     */
+    private function get_core_capabilities() {
+        return array(
+            'core' => array(
+                'manage_event_registrations',
+            ),
+            'event_registration' => array(
+                'edit_event_registration',
+                'read_event_registration',
+                'delete_event_registration',
+                'edit_event_registrations',
+                'edit_others_event_registrations',
+                'publish_event_registrations',
+                'read_private_event_registrations',
+                'delete_event_registrations',
+                'delete_private_event_registrations',
+                'delete_published_event_registrations',
+                'delete_others_event_registrations',
+                'edit_private_event_registrations',
+                'edit_published_event_registrations',
+            ),
+        );
+    }
+
+    /**
+     * Restrict Scanner role from accessing wp-admin (except AJAX).
+     */
+    public function restrict_scanner_admin() {
+        if ( ! is_admin() ) {
+            return;
+        }
+        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+            return;
+        }
+        $user = wp_get_current_user();
+        if ( $user && is_array( $user->roles ) && in_array( 'wpem-scanner', $user->roles, true ) ) {
+            wp_safe_redirect( home_url() );
+            exit;
+        }
+    }
+
+    /**
+     * Enforce that Scanner users can only manage their own event_registration posts.
+     * Denies edit/read/delete on registrations not authored by the current Scanner user.
+     */
+    public function limit_scanner_own_registration( $caps, $cap, $user_id, $args ) {
+        // Only act on singular registration caps where a post ID is present
+        $target_caps = array( 'edit_event_registration', 'delete_event_registration', 'read_event_registration' );
+        if ( ! in_array( $cap, $target_caps, true ) ) {
+            return $caps;
+        }
+
+        $post_id = isset( $args[0] ) ? (int) $args[0] : 0;
+        if ( ! $post_id ) {
+            return $caps;
+        }
+
+        $post = get_post( $post_id );
+        if ( ! $post || 'event_registration' !== $post->post_type ) {
+            return $caps;
+        }
+
+        // If user has a higher capability (e.g., admin), don't restrict.
+        if ( user_can( $user_id, 'manage_event_registrations' ) || user_can( $user_id, 'administrator' ) ) {
+            return $caps;
+        }
+
+        // Get user roles
+        $user = get_userdata( $user_id );
+        if ( ! $user || empty( $user->roles ) ) {
+            return $caps;
+        }
+
+        // If the user is a Scanner and is trying to manage someone else's registration, deny.
+        if ( in_array( 'wpem-scanner', (array) $user->roles, true ) && (int) $post->post_author !== (int) $user_id ) {
+            return array( 'do_not_allow' );
+        }
+
+        return $caps;
+    }
+
     /**
      * Install
      */
     public function install(){
        $this->check_rest_api_table();
+       $this->init_user_roles();
     }
 }
 
