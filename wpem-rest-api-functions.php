@@ -277,7 +277,8 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
             'wp-event-manager-sell-tickets' => 'WP Event Manager Sell Tickets',
             'wp-event-manager-registrations' => 'WP Event Manager Registrations',
             'wpem-guests' => 'WP Event Manager Guests',
-            'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule'
+            'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule',
+            'wpem-name-badges'	=> 'WP Event Manager - Name Badges',
         ) );
 
         // Get ecosystem data
