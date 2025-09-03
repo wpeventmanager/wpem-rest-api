@@ -372,24 +372,27 @@ if( !function_exists( 'get_wpem_event_users' ) ) {
      * @since 1.0.1
      */
     function get_wpem_event_users() {
+        // Get allowed roles from settings; default to organizer and wpem-scanner
+        $allowed_roles = get_option( 'wpem_rest_allowed_roles' );
+        if ( empty( $allowed_roles ) || ! is_array( $allowed_roles ) ) {
+            $allowed_roles = array( 'organizer', 'wpem-scanner' );
+        }
+        $allowed_roles = array_map( 'sanitize_key', $allowed_roles );
+
         $args = array(
-            'role__not_in' => array('customer'), // Exclude customers
+            'role__in' => $allowed_roles,
         );
 
-        $users = get_users($args);
+        $users = get_users( $args );
         $filtered_users = array();
 
-        foreach ($users as $user) {
-            if(isset($user->roles)) {
-                foreach ($user->roles as $role) {
-                    $filtered_users[] = array(
-                        'ID'       => $user->ID,
-                        'username' => $user->user_login,
-                        'email'    => $user->user_email,
-                        'roles'    => $user->roles,
-                    );
-                }
-            }
+        foreach ( $users as $user ) {
+            $filtered_users[] = array(
+                'ID'       => $user->ID,
+                'username' => $user->user_login,
+                'email'    => $user->user_email,
+                'roles'    => isset( $user->roles ) ? $user->roles : array(),
+            );
         }
         return $filtered_users;
     }

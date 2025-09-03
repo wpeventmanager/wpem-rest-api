@@ -27,8 +27,8 @@ class WPEM_Rest_API_Settings {
 		$this->settings = apply_filters( 'wpem_rest_api_settings',
 			array(
 				'general' => array(
-					'label'	   => __( 'General', 'wpem-rest-api' ),
-					'icon'	   => 'meter',
+					'label'   => __( 'General', 'wpem-rest-api' ),
+					'icon'   => 'meter',
 					'type'     => 'fields',
 					'sections' => array(
 						'general' => __('General Settings','wpem-rest-api'),
@@ -66,14 +66,37 @@ class WPEM_Rest_API_Settings {
 					)
 				),
 				'api-access' => array(
-					'label'	=>	__( 'API Access', 'wpem-rest-api' ),
-					'icon'	=>	'loop',
+					'label' => __( 'API Access', 'wpem-rest-api' ),
+					'icon'  => 'loop',
 					'type'  => 'template',
 				),
 				'app-branding' => array(
-					'label'	=>	__( 'APP Branding', 'wpem-rest-api' ),
-					'icon'	=>	'mobile',
+					'label' => __( 'APP Branding', 'wpem-rest-api' ),
+					'icon'  => 'mobile',
 					'type'  => 'template',
+				),
+				// New Settings tab
+				'settings' => array(
+					'label'    => __( 'Settings', 'wpem-rest-api' ),
+					'icon'     => 'setting',
+					'type'     => 'fields',
+					'sections' => array(
+						'general' => __( 'General Settings', 'wpem-rest-api' ),
+					),
+					'fields'   => array(
+						'general' => array(
+							array(
+								'name'       => 'wpem_rest_allowed_roles',
+								'std'        => array( 'organizer', 'wpem-scanner' ),
+								'label'      => __( 'Allowed Roles to access Organizer App', 'wpem-rest-api' ),
+								'cb_label'   => __( 'Selected roles allows to access Organizer app.', 'wpem-rest-api' ),
+								'desc'       => __( 'Choose one or more user roles.', 'wpem-rest-api' ),
+								'type'       => 'multi-select-checkbox',
+								'attributes' => array(),
+								'options'    => $this->get_all_roles_for_multiselect(),
+							),
+						),
+					),
 				),
 			)
 		);
@@ -91,7 +114,7 @@ class WPEM_Rest_API_Settings {
 		if(isset($settings['sections'] ))
 			foreach ( $settings['sections'] as $section_key => $section ) {
 
-	      		if(isset($settings['fields'][$section_key]))
+		  		if(isset($settings['fields'][$section_key]))
 		      	foreach ( $settings['fields'][$section_key] as $option ) {
 		      		if(isset($option['name']) && isset($option['std']) )
 		      			add_option( $option['name'], $option['std'] );
@@ -116,7 +139,7 @@ class WPEM_Rest_API_Settings {
 		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field($_REQUEST['tab']) : 'general';
 
 		$action = '';
-		if(in_array($current_tab, ['general'])){
+		if(in_array($current_tab, ['general','settings'])){
 			$action = 'action=options.php';
 		} ?>
 		<div class="wrap">
@@ -125,7 +148,7 @@ class WPEM_Rest_API_Settings {
 
 		<div id="wpbody" role="main">
 		  	<div id="wpbody-content" class="wpem-admin-container">
-		    	<div class="wpem-wrap">
+	    		<div class="wpem-wrap">
 					<form method="post" name="wpem-rest-settings-form" <?php echo esc_attr($action); ?> >
 
 						<?php settings_fields( $this->settings_group ); ?>
@@ -160,10 +183,52 @@ class WPEM_Rest_API_Settings {
 								</p>
 							</div>
 						</div>
-			    	</form>
-		    	</div>
-		 	</div>
+		    	</form>
+	    	</div>
+	 		</div>
 		</div>
 		<?php wp_enqueue_script( 'wp-event-manager-admin-settings');
+	}
+
+	/**
+	 * Get all roles as [role_key => role_label] for multiselect.
+	 * @access private
+	 * @return array
+	 * @since 1.2.0
+	 */
+	private function get_all_roles_for_multiselect() {
+		if ( ! function_exists( 'wp_roles' ) ) {
+			return array();
+		}
+		$roles_obj = wp_roles();
+		$roles = isset( $roles_obj->roles ) ? $roles_obj->roles : array();
+		$options = array();
+		foreach ( $roles as $key => $data ) {
+			$options[ $key ] = isset( $data['name'] ) ? $data['name'] : $key;
+		}
+		return $options;
+	}
+
+	/**
+	 * Render a multi-select checkbox control compatible with the panel renderer.
+	 * Expects $option keys: name, options (key=>label), std (array), desc
+	 * @since 1.2.0
+	 */
+	private function create_multi_select_checkbox( $option ) {
+		$saved = get_option( $option['name'] );
+		if ( ! is_array( $saved ) ) {
+			$saved = (array) $option['std'];
+		}
+		echo '<fieldset class="wpem-multicheck">';
+		if ( ! empty( $option['desc'] ) ) {
+			echo '<p class="description">' . esc_html( $option['desc'] ) . '</p>';
+		}
+		foreach ( (array) $option['options'] as $key => $label ) {
+			$checked = in_array( $key, $saved, true ) ? 'checked="checked"' : '';
+			echo '<label style="display:block; margin:2px 0;">';
+			echo '<input type="checkbox" name="' . esc_attr( $option['name'] ) . '[]" value="' . esc_attr( $key ) . '" ' . $checked . ' /> ' . esc_html( $label );
+			echo '</label>';
+		}
+		echo '</fieldset>';
 	}
 }
