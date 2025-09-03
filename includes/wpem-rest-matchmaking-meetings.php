@@ -237,47 +237,25 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         global $wpdb;
         // Get current user ID
-        $event_id = isset($request['event_id']) ? (int) $request['event_id'] : 0;
         $user_id  = isset($request['user_id']) ? (int) $request['user_id'] : wpem_rest_get_current_user_id();
 
         $page     = max(1, (int) $request->get_param('page'));
         $per_page = max(1, min(100, (int) $request->get_param('per_page')));
         $offset   = ($page - 1) * $per_page;
 
-        $where = array();
         $params = array();
-        $user_filter_sql = '';
-        if ($event_id) {
-            // If event_id is provided, return all meetings for that event (upcoming only)
-            $where[] = 'event_id = %d';
-            $params[] = $event_id;
-        } else {
-            // If no event_id, require user_id explicitly, else return 405
-            if (empty($user_id)) {
-                return self::prepare_error_for_response(405);
-            }
-            $user_filter_sql = ' AND (user_id = %d OR participant_ids LIKE %s)';
-            $params[] = $user_id;
-            $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+        // Require user_id explicitly, else return 405
+        if (empty($user_id)) {
+            return self::prepare_error_for_response(405);
         }
+        $where_sql = 'WHERE 1=1';
+        $user_filter_sql = ' AND (user_id = %d OR participant_ids LIKE %s)';
+        $params[] = $user_id;
+        $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
 
-        // Ensure a WHERE starter so we can append filters safely
-        $where_sql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
-        if ($where_sql === '') {
-            $where_sql = 'WHERE 1=1';
-        }
-
-        // Exclude past/expired meetings: keep meetings where date is in future,
-        // or date is today and end time has not passed yet.
-        $today = current_time('Y-m-d');
-        $now   = current_time('H:i');
-        $date_filter_sql = ' AND (meeting_date > %s OR (meeting_date = %s AND meeting_end_time >= %s))';
-        $params[] = $today;
-        $params[] = $today;
-        $params[] = $now;
-
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$user_filter_sql}{$date_filter_sql}";
-        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$user_filter_sql}{$date_filter_sql} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
+        
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$user_filter_sql}";
+        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$user_filter_sql} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
 
         // Prepare dynamic portions
         if (!empty($params)) {
@@ -361,13 +339,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         global $wpdb;
         $user_id      = (int) $request->get_param('user_id');
-        $event_id     = (int) $request->get_param('event_id');
         $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
         $slot         = sanitize_text_field($request->get_param('slot'));
         $participants = (array) $request->get_param('meeting_participants');
         $message      = sanitize_textarea_field($request->get_param('message'));
 
-        if (!$user_id || !$event_id || empty($meeting_date) || empty($slot) || empty($participants)) {
+        if (!$user_id || empty($meeting_date) || empty($slot) || empty($participants)) {
             return new WP_REST_Response(array(
                 'code' => 400,
                 'status' => 'Bad Request',
@@ -383,7 +360,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $this->table,
             array(
                 'user_id'            => $user_id,
-                'event_id'           => $event_id,
                 'participant_ids'    => serialize($participants),
                 'meeting_date'       => $meeting_date,
                 'meeting_start_time' => date('H:i', strtotime($slot)),
@@ -391,7 +367,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 'message'            => $message,
                 'meeting_status'     => 0,
             ),
-            array('%d','%d','%s','%s','%s','%s','%s','%d')
+            array('%d','%s','%s','%s','%s','%s','%d')
         );
 
         if (!$inserted) {
@@ -542,12 +518,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                     'context'     => array('view', 'edit'),
                     'readonly'    => true,
                 ),
-                'event_id' => array(
-                    'description' => __('Related Event ID.', 'wpem-rest-api'),
-                    'type'        => 'integer',
-                    'context'     => array('view', 'edit'),
-                ),
-                'host_id' => array(
+                                'host_id' => array(
                     'description' => __('Host user ID.', 'wpem-rest-api'),
                     'type'        => 'integer',
                     'context'     => array('view', 'edit'),
@@ -593,11 +564,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      */
     public function get_collection_params() {
         $params = parent::get_collection_params();
-        $params['event_id'] = array(
-            'description'       => __('Limit result set to a specific event ID.', 'wpem-rest-api'),
-            'type'              => 'integer',
-            'sanitize_callback' => 'absint',
-        );
         $params['user_id'] = array(
             'description'       => __('Limit result set to meetings relevant to a user (host or participant).', 'wpem-rest-api'),
             'type'              => 'integer',
