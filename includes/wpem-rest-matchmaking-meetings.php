@@ -338,7 +338,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         global $wpdb;
-        $user_id      = (int) $request->get_param('user_id');
+        $user_id      = wpem_rest_get_current_user_id();
         $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
         $slot         = sanitize_text_field($request->get_param('slot'));
         $participants = (array) $request->get_param('meeting_participants');
@@ -353,17 +353,77 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             ), 400);
         }
 
-        $participants = array_filter(array_map('intval', $participants), function($pid) use ($user_id){ return $pid && $pid !== $user_id; });
-        $participants = array_fill_keys($participants, -1);
+        $participants_raw = array_filter(array_map('intval', $participants), function($pid) use ($user_id){ return $pid && $pid !== $user_id; });
+        $participants_map = array_fill_keys($participants_raw, -1);
+
+        $start_time = date('H:i', strtotime($slot));
+        $end_time   = date('H:i', strtotime($slot . ' +1 hour'));
+
+        // Availability check: host and all selected participants must be free (no accepted meetings) in this slot
+        $check_ids = array_unique(array_merge(array($user_id), $participants_raw));
+        if (!empty($check_ids)) {
+            $in_placeholders = implode(',', array_fill(0, count($check_ids), '%d'));
+
+            $like_clauses = array();
+            $like_params  = array();
+            foreach ($check_ids as $cid) {
+                $like_clauses[] = 'participant_ids LIKE %s';
+                $like_params[]  = '%' . $wpdb->esc_like('i:' . (int)$cid) . '%';
+            }
+
+            $availability_sql = "SELECT * FROM {$this->table} WHERE meeting_date = %s AND NOT (meeting_end_time <= %s OR meeting_start_time >= %s) AND (user_id IN ($in_placeholders) OR " . implode(' OR ', $like_clauses) . ")";
+            $availability_params = array_merge(array($meeting_date, $start_time, $end_time), $check_ids, $like_params);
+            $overlapping_rows = $wpdb->get_results($wpdb->prepare($availability_sql, $availability_params), ARRAY_A);
+
+            $conflicts = array();
+            if (!empty($overlapping_rows)) {
+                foreach ($overlapping_rows as $row) {
+                    $participant_ids = maybe_unserialize($row['participant_ids']);
+                    if (!is_array($participant_ids)) { $participant_ids = array(); }
+                    $overall_status = isset($row['meeting_status']) ? (int)$row['meeting_status'] : 0;
+
+                    foreach ($check_ids as $cid) {
+                        $blocks = false;
+                        if ((int)$row['user_id'] === (int)$cid) {
+                            // Host blocks if meeting is accepted/confirmed (overall status) or any participant accepted
+                            if ($overall_status === 1) {
+                                $blocks = true;
+                            } else {
+                                foreach ($participant_ids as $participant_slot) {
+                                    if ((int)$participant_slot === 1) { $blocks = true; break; }
+                                }
+                            }
+                        } elseif (isset($participant_ids[$cid]) && (int)$participant_ids[$cid] === 1) {
+                            // Participant blocks only if they accepted
+                            $blocks = true;
+                        }
+
+                        if ($blocks) {
+                            if (!isset($conflicts[$cid])) { $conflicts[$cid] = array(); }
+                            $conflicts[$cid][] = (int)$row['id'];
+                        }
+                    }
+                }
+            }
+
+            if (!empty($conflicts)) {
+                return new WP_REST_Response(array(
+                    'code'    => 409,
+                    'status'  => 'Conflict',
+                    'message' => 'One or more attendees are busy in the selected time slot.',
+                    'data'    => array('conflicts' => $conflicts),
+                ), 409);
+            }
+        }
 
         $inserted = $wpdb->insert(
             $this->table,
             array(
                 'user_id'            => $user_id,
-                'participant_ids'    => serialize($participants),
+                'participant_ids'    => serialize($participants_map),
                 'meeting_date'       => $meeting_date,
-                'meeting_start_time' => date('H:i', strtotime($slot)),
-                'meeting_end_time'   => date('H:i', strtotime($slot . ' +1 hour')),
+                'meeting_start_time' => $start_time,
+                'meeting_end_time'   => $end_time,
                 'message'            => $message,
                 'meeting_status'     => 0,
             ),
