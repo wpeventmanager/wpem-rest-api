@@ -111,7 +111,7 @@ class WPEM_Rest_API_Keys {
         if (absint($count) && $count > 0 ) {
             $keys_table_list->prepare_items();
             $keys_table_list->views();
-            $keys_table_list->search_box(__( 'Search key', 'wp-event-manager-organizer-app-access' ), 'key' );
+            $keys_table_list->search_box(__( 'Search by User', 'wp-event-manager-organizer-app-access' ), 'user' );
             $keys_table_list->display();
 
         } else {
