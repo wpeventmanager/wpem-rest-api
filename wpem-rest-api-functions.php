@@ -278,7 +278,7 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
             'wp-event-manager-registrations' => 'WP Event Manager Registrations',
             'wpem-guests' => 'WP Event Manager Guests',
             'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule',
-            'wpem-name-badges'	=> 'WP Event Manager - Name Badges',
+			'wpem-name-badges'	=> 'WP Event Manager - Name Badges',
         ) );
 
         // Get ecosystem data
@@ -371,11 +371,11 @@ if( !function_exists( 'get_wpem_event_users' ) ) {
      * 
      * @since 1.0.1
      */
-    function get_wpem_event_users() {
+     function get_wpem_event_users() {
         // Get allowed roles from settings; default to organizer and wpem-scanner
         $allowed_roles = get_option( 'wpem_rest_allowed_roles' );
         if ( empty( $allowed_roles ) || ! is_array( $allowed_roles ) ) {
-            $allowed_roles = array( 'organizer', 'wpem-scanner' );
+            $allowed_roles = array( 'organizer', 'wpem-scanner','administrator' );
         }
         $allowed_roles = array_map( 'sanitize_key', $allowed_roles );
 

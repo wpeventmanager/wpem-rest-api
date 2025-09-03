@@ -78,16 +78,16 @@ class WPEM_Rest_API_Settings {
 				// New Settings tab
 				'settings' => array(
 					'label'    => __( 'Settings', 'wpem-rest-api' ),
-					'icon'     => 'setting',
+					'icon'     => 'settings',
 					'type'     => 'fields',
 					'sections' => array(
-						'general' => __( 'General Settings', 'wpem-rest-api' ),
+						'settings' => __( 'App Settings', 'wpem-rest-api' ),
 					),
 					'fields'   => array(
-						'general' => array(
+						'settings' => array(
 							array(
 								'name'       => 'wpem_rest_allowed_roles',
-								'std'        => array( 'organizer', 'wpem-scanner' ),
+								'std'        => array( 'organizer', 'wpem-scanner', 'administrator' ),
 								'label'      => __( 'Allowed Roles to access Organizer App', 'wpem-rest-api' ),
 								'cb_label'   => __( 'Selected roles allows to access Organizer app.', 'wpem-rest-api' ),
 								'desc'       => __( 'Choose one or more user roles.', 'wpem-rest-api' ),
