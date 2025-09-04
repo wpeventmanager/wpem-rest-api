@@ -249,6 +249,11 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
                 'message' => __( 'You do not have permission to checkin yet.', 'wpem-rest-api' )
             ),
             array(
+                'code' => 506,
+                'status' => 'Disabled Matchmaking',
+                'message' => __( 'Matchmaking functionality is not enabled.', 'wpem-rest-api' )
+            ),
+            array(
                 'code' => 203,
                 'status' => 'Non-Authorative Information',
                 'message' => __( 'You does not have read permissions.', 'wpem-rest-api' )

@@ -388,7 +388,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    /*public function get_items( $request ) {
+    public function get_items( $request ) {
         $auth_check = $this->wpem_check_authorized_user();
         if($auth_check){
             return self::prepare_error_for_response(405);
@@ -426,55 +426,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             );
             return wp_send_json($response_data);
         }
-    }*/
-
-    public function get_items( $request ) {
-		global $wpdb;
-		$auth_check = $this->wpem_check_authorized_user();
-		if ($auth_check) {
-			return self::prepare_error_for_response(405);
-		} else {
-			/*$settings_row = $wpdb->get_row("SELECT event_show_by, selected_events FROM {$wpdb->prefix}wpem_rest_api_keys LIMIT 1", ARRAY_A);
-
-			$event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
-			$selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];*/
-	 
-			$query_args = $this->prepare_objects_query($request);
-
-			/*if ($event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
-				$query_args['post__in'] = array_map('intval', $selected_events);
-				$query_args['orderby'] = 'post__in';
-				unset($query_args['author']);
-			}*/
-
-			$query_results = $this->get_objects($query_args);
-
-			$objects = array();
-			foreach ($query_results['objects'] as $object) {
-				$object_id = isset($object->ID) ? $object->ID : $object->get_id();
-
-				if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
-					continue;
-				}
-
-				$data = $this->prepare_object_for_response($object, $request);
-				$objects[] = $this->prepare_response_for_collection($data);
-			}
-
-			$page = isset($query_args['paged']) ? (int) $query_args['paged'] : 1;
-			$total_pages = ceil($query_results['total'] / $query_args['posts_per_page']);
-
-			$response_data = self::prepare_error_for_response(200);
-			$response_data['data'] = array(
-				'total_post_count' => isset($query_results['total']) ? $query_results['total'] : null,
-				'current_page' => $page,
-				'last_page' => max(1, $total_pages),
-				'total_pages' => $total_pages,
-				$this->rest_base => $objects,
-			);
-			return wp_send_json($response_data);
-		}
-	}
+    }
 
     /**
      * Delete a single item.
@@ -739,8 +691,12 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
                     } else {
                         return false;
                     }
-                } else if(!empty( $user_meta ) && $user_meta == 1){ 
-                    return false;
+                } else if(!empty( $user_meta ) && $user_meta == 1){
+                    if (!get_option('enable_matchmaking', false)) {
+                        return self::prepare_error_for_response(506);
+                    } else {
+                        return false;   
+                    }
                 } else {
                     return self::prepare_error_for_response(405);
                 }
