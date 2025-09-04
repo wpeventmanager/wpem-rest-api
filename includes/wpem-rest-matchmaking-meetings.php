@@ -438,7 +438,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 'data' => array()
             ), 500);
         }
-
+        WP_Event_Manager_Registrations_Register::send_matchmaking_meeting_emails($wpdb->insert_id, $user_id, $participants_raw, $meeting_date, $start_time, $end_time, $message);
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $wpdb->insert_id), ARRAY_A);
         return new WP_REST_Response(array(
             'code'    => 200,
