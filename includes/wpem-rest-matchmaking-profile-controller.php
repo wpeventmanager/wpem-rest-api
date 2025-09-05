@@ -286,109 +286,97 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return self::prepare_error_for_response(404);
         }
 
-        // Inline payload build (avoid dependency on helper that used undefined var)
         $user_meta = get_user_meta($user_id);
-        $photo =  get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
 
-        $countries = wpem_get_all_countries();
+        // Base info
+        $profile = array(
+            'user_id'      => $user_id,
+            'display_name' => $user->display_name,
+            'email'        => $user->user_email,
+        );
+
+        // Fetch dynamic fields
+        $fields = get_wpem_user_matchmaking_profile_fields();
+        
+        foreach ($fields as $field_key => $field_config) {
+            $raw_value = isset($user_meta[$field_key][0]) ? maybe_unserialize($user_meta[$field_key][0]) : '';
+
+            $value = null;
+            $type  = isset($field_config['type']) ? $field_config['type'] : 'text';
+
+            switch ($type) {
+                case 'text':
+                case 'textarea':
+                case 'select':
+                    $value = sanitize_text_field($raw_value);
+                    break;
+
+                case 'checkbox':
+                    $value = !empty($raw_value) ? 1 : 0;
+                    break;
+
+                case 'multiselect':
+                case 'checkbox_multi':
+                    $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
+                    $value = array_map('sanitize_text_field', $arr);
+                    break;
+
+                case 'file':
+                    if (is_array($raw_value)) {
+                        $raw_value = reset($raw_value); // handle WP file upload meta
+                    }
+                    $value = esc_url_raw($raw_value);
+                    break;
+
+                case 'term_multiselect':
+                case 'term_checkbox':
+                    $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
+                    $slugs = [];
+                    foreach ($arr as $term_value) {
+                        $term = get_term_by('slug', $term_value, $field_config['taxonomy']);
+                        if (!$term) { $term = get_term_by('name', $term_value, $field_config['taxonomy']); }
+                        if (!$term) { $term = get_term_by('id', $term_value, $field_config['taxonomy']); }
+                        if ($term) { $slugs[] = $term->slug; }
+                    }
+                    $value = $slugs;
+                    break;
+
+                case 'term_select':
+                    if (!empty($raw_value)) {
+                        $term = get_term_by('slug', $raw_value, $field_config['taxonomy']);
+                        if (!$term) { $term = get_term_by('name', $raw_value, $field_config['taxonomy']); }
+                        if (!$term) { $term = get_term_by('id', $raw_value, $field_config['taxonomy']); }
+                        $value = $term ? $term->slug : '';
+                    } else {
+                        $value = '';
+                    }
+                    break;
+
+                default:
+                    $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
+                    break;
+            }
+
+            $profile[$field_key] = $value;
+        }
+
+        // Add profile photo separately
+        $profile['profile_photo'] = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+
+        // Add organization logo separately
         $organization_logo = get_user_meta($user_id, '_organization_logo', true);
         $organization_logo = maybe_unserialize($organization_logo);
         if (is_array($organization_logo)) {
             $organization_logo = reset($organization_logo);
         }
-        $organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+        $profile['organization_logo'] = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 
-        $country_value = isset($user_meta['_country'][0]) ? sanitize_text_field($user_meta['_country'][0]) : '';
-        $country_code = '';
-        if ($country_value) {
-            if (isset($countries[$country_value])) {
-                $country_code = $country_value;
-            } else {
-                $country_code = array_search($country_value, $countries);
-            }
-        }
-
-        $org_country_value = isset($user_meta['_organization_country'][0]) ? sanitize_text_field($user_meta['_organization_country'][0]) : '';
-        $org_country_code = '';
-        if ($org_country_value) {
-            if (isset($countries[$org_country_value])) {
-                $org_country_code = $org_country_value;
-            } else {
-                $org_country_code = array_search($org_country_value, $countries);
-            }
-        }
-
-        $meta = get_user_meta($user_id, '_available_for_meeting', true);
-        $meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
-
-        $professions = get_event_registration_taxonomy_list('event_registration_professions');
-        $profession_value = isset($user_meta['_profession'][0]) ? sanitize_text_field($user_meta['_profession'][0]) : '';
-        $profession_slug = $profession_value;
-        if ($profession_value && !isset($professions[$profession_value])) {
-            $found_slug = array_search($profession_value, $professions);
-            if ($found_slug) {
-                $profession_slug = $found_slug;
-            }
-        }
-
-        $skills_slugs = array();
-        $skills_arr = isset($user_meta['_skills'][0]) ? maybe_unserialize($user_meta['_skills'][0]) : array();
-        if (is_array($skills_arr)) {
-            foreach ($skills_arr as $skill) {
-                $term = get_term_by('slug', $skill, 'event_registration_skills');
-                if (!$term) { $term = get_term_by('name', $skill, 'event_registration_skills'); }
-                if (!$term) { $term = get_term_by('id', $skill, 'event_registration_skills'); }
-                if ($term) { $skills_slugs[] = $term->slug; }
-            }
-        }
-        $skills_slugs = array_filter($skills_slugs);
-        $skills_serialized = serialize($skills_slugs);
-
-        $interests_slugs = array();
-        $interests_arr = isset($user_meta['_interests'][0]) ? maybe_unserialize($user_meta['_interests'][0]) : array();
-        if (is_array($interests_arr)) {
-            foreach ($interests_arr as $interest) {
-                $term = get_term_by('slug', $interest, 'event_registration_interests');
-                if (!$term) { $term = get_term_by('name', $interest, 'event_registration_interests'); }
-                if (!$term) { $term = get_term_by('id', $interest, 'event_registration_interests'); }
-                if ($term) { $interests_slugs[] = $term->slug; }
-            }
-        }
-        $interests_slugs = array_filter($interests_slugs);
-        $interests_serialized = serialize($interests_slugs);
-
-        $profile = array(
-            'user_id'                    => $user_id,
-            'display_name'               => $user->display_name,
-            'first_name'                 => isset($user_meta['first_name'][0]) ? sanitize_text_field($user_meta['first_name'][0]) : '',
-            'last_name'                  => isset($user_meta['last_name'][0]) ? sanitize_text_field($user_meta['last_name'][0]) : '',
-            'email'                      => $user->user_email,
-            'matchmaking_profile'        => isset($user_meta['_matchmaking_profile'][0]) ? (int)$user_meta['_matchmaking_profile'][0] : 0,
-            'profile_photo'              => $photo,
-            'profession'                 => $profession_slug,
-            'experience'                 => isset($user_meta['_experience'][0]) ? (float)$user_meta['_experience'][0] : 0,
-            'company_name'               => isset($user_meta['_company_name'][0]) ? sanitize_text_field($user_meta['_company_name'][0]) : '',
-            'country'                    => $country_code,
-            'city'                       => isset($user_meta['_city'][0]) ? sanitize_text_field($user_meta['_city'][0]) : '',
-            'about'                      => isset($user_meta['_about'][0]) ? sanitize_textarea_field($user_meta['_about'][0]) : '',
-            'skills'                     => $skills_serialized,
-            'interests'                  => $interests_serialized,
-            'message_notification'       => isset($user_meta['_message_notification'][0]) ? (int)$user_meta['_message_notification'][0] : 0,
-            'organization_name'          => isset($user_meta['_organization_name'][0]) ? sanitize_text_field($user_meta['_organization_name'][0]) : '',
-            'organization_logo'          => $organization_logo,
-            'organization_country'       => $org_country_code,
-            'organization_city'          => isset($user_meta['_organization_city'][0]) ? sanitize_text_field($user_meta['_organization_city'][0]) : '',
-            'organization_description'   => isset($user_meta['_organization_description'][0]) ? sanitize_textarea_field($user_meta['_organization_description'][0]) : '',
-            'organization_website'       => isset($user_meta['_organization_website'][0]) ? sanitize_text_field($user_meta['_organization_website'][0]) : '',
-            'approve_profile_status'     => isset($user_meta['_approve_profile_status'][0]) ? (int)$user_meta['_approve_profile_status'][0] : 0,
-            'wpem_meeting_request_mode'  => isset($user_meta['_wpem_meeting_request_mode'][0]) ? $user_meta['_wpem_meeting_request_mode'][0] : 'approval',
-            'available_for_meeting'      => (int)$meeting_available,
-        );
-
+        // Build response
         $response = self::prepare_error_for_response(200);
         $response['data'] = $profile;
         return wp_send_json($response);
     }
+
 
     /**
      * PUT/PATCH /attendee-profile/update
