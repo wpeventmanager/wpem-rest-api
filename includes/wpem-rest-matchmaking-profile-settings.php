@@ -176,9 +176,6 @@ class WPEM_REST_Matchmaking_Profile_Settings_Controller extends WPEM_REST_CRUD_C
         $user = get_user_by('id', $user_id);
 
         // Update user meta values
-        if (!is_null($request->get_param('enable_matchmaking'))) {
-            update_user_meta($user_id, '_matchmaking_profile', (int) $request->get_param('enable_matchmaking'));
-        }
         if (!is_null($request->get_param('message_notification'))) {
             update_user_meta($user_id, '_message_notification', (int) $request->get_param('message_notification'));
         }
