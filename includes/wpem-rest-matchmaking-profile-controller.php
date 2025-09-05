@@ -52,13 +52,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                         ),
                     ),
                 ),
-            )
-        );
-
-        // PUT/PATCH - Update a user's matchmaking profile
-        register_rest_route(
-            $this->namespace,
-            '/' . $this->rest_base . '/update',
+            ),
             array(
                 array(
                     'methods'             => WP_REST_Server::EDITABLE,
@@ -93,6 +87,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             )
         );
 
+        // Retrieve/Update matchmaking profile settings
         register_rest_route(
             $this->namespace,
             '/matchmaking-profile-settings',
@@ -110,6 +105,10 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     ),
                 ),
             ),
+        );
+        register_rest_route(
+            $this->namespace,
+            '/matchmaking-profile-settings',
             array(
                 'methods'  => WP_REST_Server::CREATABLE,
                 'callback' => array($this, 'update_matchmaking_profile_settings'),
@@ -149,9 +148,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @return bool|WP_Error True if allowed, or sends JSON error.
      */
     public function permission_check($request) {
-        if (!get_option('enable_matchmaking', false)) {
-            return self::prepare_error_for_response(506);
-        }
         $auth_check = $this->wpem_check_authorized_user();
         if ($auth_check) {
             return $auth_check; // Standardized error already sent
@@ -402,7 +398,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @return WP_REST_Response|Array
      */
     public function update_matchmaking_profile($request) {
-       
         $user_id = (int) wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
         if (!$user) {
