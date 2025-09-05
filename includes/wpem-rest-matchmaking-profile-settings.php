@@ -54,7 +54,7 @@ class WPEM_REST_Matchmaking_Profile_Settings_Controller extends WPEM_REST_CRUD_C
         // POST - Update profile settings
         register_rest_route(
             $this->namespace,
-            '/update-matchmaking-profile-settings',
+            '/matchmaking-profile-settings',
             array(
                 'methods'  => WP_REST_Server::CREATABLE,
                 'callback' => array($this, 'update_matchmaking_profile_settings'),
