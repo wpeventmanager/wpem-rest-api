@@ -23,7 +23,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      *
      * @var string
      */
-    protected $rest_base = 'user-profile';
+    protected $rest_base = 'matchmaking-profile';
 
     /**
      * Initialize routes.
@@ -45,12 +45,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     'methods'             => WP_REST_Server::READABLE,
                     'callback'            => array($this, 'get_user_profile_data'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(
-                        'user_id' => array(
-                            'required' => false,
-                            'type'     => 'integer',
-                        ),
-                    ),
+                    'args'                => array(),
                 ),
             ),
             array(
@@ -58,12 +53,20 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     'methods'             => WP_REST_Server::EDITABLE,
                     'callback'            => array($this, 'update_matchmaking_profile'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(
-                        'user_id' => array(
-                            'required' => true,
-                            'type'     => 'integer',
-                        ),
-                    ),
+                    'args'                => array(),
+                ),
+            )
+        );
+
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base,
+           array(
+                array(
+                    'methods'             => WP_REST_Server::EDITABLE,
+                    'callback'            => array($this, 'update_matchmaking_profile'),
+                    'permission_callback' => array($this, 'permission_check'),
+                    'args'                => array(),
                 ),
             )
         );
@@ -170,7 +173,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $user_meta = get_user_meta($user_id);
-
         // Base info
         $profile = array(
             'user_id'      => $user_id,
@@ -180,21 +182,25 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
         // Fetch dynamic fields
         $fields = get_wpem_user_matchmaking_profile_fields();
-        
         foreach ($fields as $field_key => $field_config) {
-            $raw_value = isset($user_meta[$field_key][0]) ? maybe_unserialize($user_meta[$field_key][0]) : '';
+            $raw_value = isset($user_meta["_".$field_key][0]) ? maybe_unserialize($user_meta["_".$field_key][0]) : '';
 
             $value = null;
             $type  = isset($field_config['type']) ? $field_config['type'] : 'text';
-
             switch ($type) {
                 case 'text':
+                case 'email':
+                case 'number':
                 case 'textarea':
+                    $value = sanitize_text_field($raw_value);
+                    break;
                 case 'select':
+                case 'term-select':
                     $value = sanitize_text_field($raw_value);
                     break;
 
                 case 'checkbox':
+                case 'radio':
                     $value = !empty($raw_value) ? 1 : 0;
                     break;
 
@@ -204,6 +210,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     $value = array_map('sanitize_text_field', $arr);
                     break;
 
+                case 'url':
                 case 'file':
                     if (is_array($raw_value)) {
                         $raw_value = reset($raw_value); // handle WP file upload meta
@@ -211,28 +218,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     $value = esc_url_raw($raw_value);
                     break;
 
-                case 'term_multiselect':
-                case 'term_checkbox':
-                    $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
-                    $slugs = [];
-                    foreach ($arr as $term_value) {
-                        $term = get_term_by('slug', $term_value, $field_config['taxonomy']);
-                        if (!$term) { $term = get_term_by('name', $term_value, $field_config['taxonomy']); }
-                        if (!$term) { $term = get_term_by('id', $term_value, $field_config['taxonomy']); }
-                        if ($term) { $slugs[] = $term->slug; }
-                    }
-                    $value = $slugs;
-                    break;
-
-                case 'term_select':
-                    if (!empty($raw_value)) {
-                        $term = get_term_by('slug', $raw_value, $field_config['taxonomy']);
-                        if (!$term) { $term = get_term_by('name', $raw_value, $field_config['taxonomy']); }
-                        if (!$term) { $term = get_term_by('id', $raw_value, $field_config['taxonomy']); }
-                        $value = $term ? $term->slug : '';
-                    } else {
-                        $value = '';
-                    }
+                case 'term-multiselect':
+                case 'term-checkbox':
+                    $value = $raw_value;
                     break;
 
                 default:
@@ -285,55 +273,11 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
             $value = $request->get_param($field_key);
             $type  = isset($field_config['type']) ? $field_config['type'] : 'text';
-
-            switch ($type) {
-                case 'text':
-                case 'textarea':
-                case 'select':
-                    $value = sanitize_text_field($value);
-                    break;
-
-                case 'checkbox':
-                    $value = !empty($value) ? 1 : 0;
-                    break;
-
-                case 'multiselect':
-                case 'checkbox_multi':
-                    $arr = is_array($value) ? $value : (array) $value;
-                    $value = array_values(array_filter($arr, function($v) { return $v !== null && $v !== ''; }));
-                    break;
-
-                case 'file':
-                    // Expect URL or uploaded file via $_FILES
-                    if (!empty($_FILES[$field_key]) && $_FILES[$field_key]['error'] === UPLOAD_ERR_OK) {
-                        require_once ABSPATH . 'wp-admin/includes/file.php';
-                        $upload_overrides = array('test_form' => false);
-                        $movefile = wp_handle_upload($_FILES[$field_key], $upload_overrides);
-                        if (isset($movefile['url'])) {
-                            $value = esc_url_raw($movefile['url']);
-                        } else {
-                            return self::prepare_error_for_response(500, array('message' => 'File upload failed.'));
-                        }
-                    } else {
-                        $value = esc_url_raw($value);
-                    }
-                    break;
-
-                case 'term_multiselect':
-                case 'term_checkbox':
-                    $arr = is_array($value) ? $value : (array) $value;
-                    $arr = array_values(array_filter($arr, function($v) { return $v !== null && $v !== ''; }));
-                    $value = $arr;
-                    break;
-
-                case 'term_select':
-                    $value = sanitize_text_field($value);
-                    break;
-
-                default:
-                    $value = sanitize_text_field(is_scalar($value) ? $value : '');
-                    break;
-            }
+           
+            if (str_starts_with($field_key, '_')) 
+                $field_key = $field_key;
+            else
+                $field_key = '_'.$field_key;
 
             // Save value
             if ($value !== '' && !(is_array($value) && empty($value))) {
@@ -350,18 +294,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if ($request->get_param('last_name')) {
             update_user_meta($user_id, 'last_name', sanitize_text_field($request->get_param('last_name')));
         }
-        if ($request->get_param('email')) {
-            $email = sanitize_email($request->get_param('email'));
-            $email_exists = email_exists($email);
-            if ($email_exists && (int)$email_exists !== $user_id) {
-                return self::prepare_error_for_response(400, array('message' => 'Email already in use.'));
-            }
-            $result = wp_update_user(array('ID' => $user_id, 'user_email' => $email));
-            if (is_wp_error($result)) {
-                return self::prepare_error_for_response(500, array('message' => $result->get_error_message()));
-            }
-        }
-
+       
         return self::prepare_error_for_response(200);
     }
 
@@ -526,7 +459,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 }
             }
         }
-
         return self::prepare_error_for_response(200);
     }
 }
