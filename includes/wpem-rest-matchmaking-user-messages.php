@@ -238,7 +238,6 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 		if ($auth_check) {
 			return self::prepare_error_for_response(405);
 		} else {
-			$user_id = (int) wpem_rest_get_current_user_id();
 			$sender_id   = intval($request->get_param('senderId'));
 			$receiver_id = intval($request->get_param('receiverId'));
 			$page        = max(1, intval($request->get_param('page')));
@@ -303,7 +302,6 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 					'current_page'     => $page,
 					'last_page'        => $total_pages,
 					'total_pages'      => $total_pages,
-					'message_notification' => get_user_meta($user_id, '_message_notification', true) == 1,
 					'messages'         => array_filter($messages, function ($msg) {
 						unset($msg['image']);
 						return $msg;
@@ -336,7 +334,7 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 		if ($auth_check) {
 			return self::prepare_error_for_response(405);
 		} else {
-			$user_id = (int) wpem_rest_get_current_user_id();
+			$user_id  = intval($request->get_param('user_id'));
 			$paged    = max(1, intval($request->get_param('paged')));
 			$per_page = max(1, intval($request->get_param('per_page')));
 
@@ -371,7 +369,6 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 						'total_users'   => 0,
 						'current_page'  => $paged,
 						'last_page'     => 0,
-						'message_notification' => get_user_meta($user_id, '_message_notification', true) == 1,
 						'users'         => []
 					]
 				], 200);
@@ -436,7 +433,6 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 					'current_page'  => $paged,
 					'per_page'      => $per_page,
 					'last_page'     => $last_page,
-					'message_notification' => get_user_meta($user_id, '_message_notification', true) == 1,
 					'users'         => $results
 				]
 			], 200);
