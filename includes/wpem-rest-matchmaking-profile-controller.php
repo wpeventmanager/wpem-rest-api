@@ -159,6 +159,24 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 ),
             )
         );
+
+        // Alias endpoint for legacy path and POST method
+        register_rest_route(
+             $this->namespace,
+            '/' . $this->rest_base . '/filter',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::READABLE,
+                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
+                    'permission_callback' => array($this, 'permission_check'),
+                ),
+                array(
+                    'methods'             => WP_REST_Server::CREATABLE,
+                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
+                    'permission_callback' => array($this, 'permission_check'),
+                ),
+            )
+        );
     }
 
     /**
@@ -519,10 +537,67 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     }
                 }
             }
+        } elseif ($user_id) {
+            // No event_id passed: choose the most recent event that has other attendees
+            $user_regs = new WP_Query([
+                'post_type'      => 'event_registration',
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'post_status'    => 'any',
+                'post_author'    => $user_id,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+            ]);
+
+            $user_event_ids_ordered = [];
+            foreach ($user_regs->posts as $reg_id) {
+                $parent_event = (int) wp_get_post_parent_id($reg_id);
+                if ($parent_event) {
+                    $user_event_ids_ordered[] = $parent_event;
+                }
+            }
+            // Preserve order by date (DESC), but remove duplicates
+            $user_event_ids_ordered = array_values(array_unique($user_event_ids_ordered));
+
+            if (!empty($user_event_ids_ordered)) {
+                // Preload all registrations, filter by event per iteration
+                $attendee_query = new WP_Query([
+                    'post_type'      => 'event_registration',
+                    'posts_per_page' => -1,
+                    'fields'         => 'ids',
+                    'post_status'    => 'any',
+                    'orderby'        => 'date',
+                    'order'          => 'DESC',
+                ]);
+
+                foreach ($user_event_ids_ordered as $candidate_event_id) {
+                    $candidate_user_ids = [];
+                    foreach ($attendee_query->posts as $registration_id) {
+                        if ((int) wp_get_post_parent_id($registration_id) === (int) $candidate_event_id) {
+                            $uid = intval(get_post_field('post_author', $registration_id));
+                            if ($uid && $uid !== $user_id && !in_array($uid, $candidate_user_ids, true)) {
+                                $candidate_user_ids[] = $uid;
+                            }
+                        }
+                    }
+                    if (!empty($candidate_user_ids)) {
+                        $registered_user_ids = $candidate_user_ids;
+                        break;
+                    }
+                }
+            }
         }
 
         if (empty($registered_user_ids)) {
-            return self::prepare_error_for_response(404);
+            $response_data = self::prepare_error_for_response(200);
+            $response_data['data'] = array(
+                'total_post_count' => 0,
+                'current_page'     => max(1, (int) $request->get_param('page')),
+                'last_page'        => 0,
+                'total_pages'      => 0,
+                'users'            => array(),
+            );
+            return wp_send_json($response_data);
         }
 
         // Step 2: Build user data
