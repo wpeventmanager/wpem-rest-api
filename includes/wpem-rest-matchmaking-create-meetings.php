@@ -94,10 +94,7 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 				],
 			]
 		]);
-		register_rest_route($this->namespace, '/matchmaking-settings', [
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => [$this, 'wpem_get_general_matchmaking_settings'],
-		]);
+		
     }
 	/**
 	 * create a matchmaking meetings with the other participants.
@@ -921,43 +918,7 @@ class WPEM_REST_Create_Meeting_Controller extends WPEM_REST_CRUD_Controller{
 			], 200);
 		}
 	}
-	/**
-	 * Retrieve general matchmaking settings.
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
-	 * @since 1.1.0
-	 */
-	public function wpem_get_general_matchmaking_settings(WP_REST_Request $request) {
-		if (!get_option('enable_matchmaking', false)) {
-			return new WP_REST_Response([
-				'code'    => 403,
-				'status'  => 'Disabled',
-				'message' => 'Matchmaking is disabled.',
-				'data'    => null
-			], 403);
-		}
-		$auth_check = $this->wpem_check_authorized_user();
-		if ($auth_check) {
-			return self::prepare_error_for_response(405);
-		} else {
-			$settings = [
-				'request_mode'     => get_option('wpem_meeting_request_mode'), 
-				'scheduling_mode'     => get_option('wpem_meeting_scheduling_mode'),
-				'attendee_limit'   => get_option('wpem_meeting_attendee_limit'),
-				'meeting_expiration' => get_option('wpem_meeting_expiration'),
-				'enable_matchmaking' => get_option('enable_matchmaking'),
-				'participant_activation' => get_option('participant_activation'),
-			];
-
-			return new WP_REST_Response([
-				'code'    => 200,
-				'status'  => 'OK',
-				'message' => 'Matchmaking settings retrieved.',
-				'data'    => $settings
-			], 200);
-		}
-	}
+	
 }
 
 new WPEM_REST_Create_Meeting_Controller();
