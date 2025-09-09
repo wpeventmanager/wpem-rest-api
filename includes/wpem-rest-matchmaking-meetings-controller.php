@@ -771,24 +771,40 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      */
     public function get_available_slots($request) {
        
-        $user_id = intval($request->get_param('user_id')) ?: wpem_rest_get_current_user_id();
+        $user_id = $request->get_param('user_ids') ?: wpem_rest_get_current_user_id();
+        if($user_id == wpem_rest_get_current_user_id()) {
+            // Fetch default slots for user (helper aligns with existing implementation)
+            $slots = get_wpem_default_meeting_slots_for_user($user_id);
 
-        // Fetch default slots for user (helper aligns with existing implementation)
-        $default_slots = get_wpem_default_meeting_slots_for_user($user_id);
+            // Availability flag (_available_for_meeting); default to 1 if not set
+            $meta               = get_user_meta($user_id, '_available_for_meeting', true);
+            $meeting_available  = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
 
-        // Availability flag (_available_for_meeting); default to 1 if not set
-        $meta               = get_user_meta($user_id, '_available_for_meeting', true);
-        $meeting_available  = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
-
-        return new WP_REST_Response([
-            'code'    => 200,
-            'status'  => 'OK',
-            'message' => 'Availability slots fetched successfully.',
-            'data'    => array(
+            $response_data = self::prepare_error_for_response(200);
+            $response_data['data'] = array(
                 'available_for_meeting' => $meeting_available,
                 'slots'                 => $default_slots,
-            ),
-        ], 200);
+            );
+            return wp_send_json($response_data);
+        } else {
+            // Fetch slots for other users (if needed)
+            $date     = $request->get_param('date') ? sanitize_text_field($request->get_param('date')) : '';
+
+            if (!$date && !is_array($user_id)) {
+                return self::prepare_error_for_response(404);
+            }
+            $combined_slots = get_wpem_user_available_slots($user_id, $date);
+            foreach ($combined_slots as $slot) {
+                $time = $slot['time'];
+                // You can decide: set "1" if slot exists OR based on is_booked
+                $slots[$time] = $slot['is_booked'] ? "0" : "1"; // available=1, booked=0
+            }
+            $response_data = self::prepare_error_for_response(200);
+            $response_data['data'] = array(
+                'slots' => $slots
+            );
+            return wp_send_json($response_data);
+        }
     }
 }
 
