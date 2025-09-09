@@ -156,7 +156,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             array(
                 array(
                     'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_availability_slots'),
+                    'callback'            => array($this, 'get_available_slots'),
                     'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(),
                 ),
@@ -769,7 +769,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function get_availability_slots($request) {
+    public function get_available_slots($request) {
        
         $user_id = intval($request->get_param('user_id')) ?: wpem_rest_get_current_user_id();
 
