@@ -53,13 +53,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 array(
                     'methods'             => WP_REST_Server::READABLE,
                     'callback'            => array($this, 'get_items'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_collection_params(),
                 ),
                 array(
                     'methods'             => WP_REST_Server::CREATABLE,
                     'callback'            => array($this, 'create_item'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
@@ -79,18 +79,18 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 array(
                     'methods'             => WP_REST_Server::READABLE,
                     'callback'            => array($this, 'get_item'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
                 ),
                 array(
                     'methods'             => WP_REST_Server::EDITABLE,
                     'callback'            => array($this, 'update_item'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
                     'methods'             => WP_REST_Server::DELETABLE,
                     'callback'            => array($this, 'delete_item'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(
                         'force' => array(
                             'default'     => false,
@@ -117,7 +117,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 array(
                     'methods'             => WP_REST_Server::EDITABLE,
                     'callback'            => array($this, 'update_participant_status'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(
                         'status' => array(
                             'required'    => true,
@@ -144,12 +144,43 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 array(
                     'methods'             => WP_REST_Server::EDITABLE,
                     'callback'            => array($this, 'cancel_item'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
+                ),
+            )
+        );
+
+        // Availability slots endpoint (for compatibility)
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base. '/slots',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::READABLE,
+                    'callback'            => array($this, 'get_availability_slots'),
+                    'permission_callback' => array($this, 'permission_check'),
+                    'args'                => array(),
                 ),
             )
         );
     }
 
+    /**
+     * Permission callback: ensure matchmaking is enabled and user is authorized.
+     *
+     * Note: This follows the plugin's pattern of returning the standardized
+     * error payload via prepare_error_for_response on failure.
+     *
+     * @param WP_REST_Request $request
+     * @return bool|WP_Error True if allowed, or sends JSON error.
+     */
+    public function permission_check($request) {
+        $auth_check = $this->wpem_check_authorized_user();
+        if ($auth_check) {
+            return $auth_check; // Standardized error already sent
+        }
+        return true;
+    }
+    
     /**
      * Format a DB row as API response data.
      */
@@ -268,11 +299,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 	 * @since 1.2.0
      */
     public function get_items($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return self::prepare_error_for_response(405);
-        }
-
         global $wpdb;
         // Get current user ID
         $user_id  = isset($request['user_id']) ? (int) $request['user_id'] : wpem_rest_get_current_user_id();
@@ -338,11 +364,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 	 * @since 1.2.0
      */
     public function get_item($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return self::prepare_error_for_response(405);
-        }
-
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
@@ -364,11 +385,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 	 * @since 1.2.0
      */
     public function create_item($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return self::prepare_error_for_response(405);
-        }
-
         global $wpdb;
         $user_id      = wpem_rest_get_current_user_id();
         $event_id     = sanitize_text_field($request->get_param('event_id'));
@@ -479,11 +495,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 	 * @since 1.2.0
      */
     public function update_item($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return self::prepare_error_for_response(405);
-        }
-
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
@@ -559,11 +570,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * @since 1.2.1
      */
     public function update_participant_status($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return self::prepare_error_for_response(405);
-        }
-
         global $wpdb;
         $meeting_id       = (int) $request['id'];
         $user_id  = (int) wpem_rest_get_current_user_id();
@@ -623,11 +629,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * @since 1.2.1
      */
     public function cancel_item($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return self::prepare_error_for_response(405);
-        }
-
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
@@ -662,11 +663,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 	 * @since 1.2.0
      */
     public function delete_item($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return self::prepare_error_for_response(405);
-        }
-
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
@@ -764,6 +760,35 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         );
         // Keep pagination params from parent
         return $params;
+    }
+
+    /**
+     * GET /get-availability-slots
+     * Return availability slots + availability flag for the specified/current user.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|Array
+     */
+    public function get_availability_slots($request) {
+       
+        $user_id = intval($request->get_param('user_id')) ?: wpem_rest_get_current_user_id();
+
+        // Fetch default slots for user (helper aligns with existing implementation)
+        $default_slots = get_wpem_default_meeting_slots_for_user($user_id);
+
+        // Availability flag (_available_for_meeting); default to 1 if not set
+        $meta               = get_user_meta($user_id, '_available_for_meeting', true);
+        $meeting_available  = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
+
+        return new WP_REST_Response([
+            'code'    => 200,
+            'status'  => 'OK',
+            'message' => 'Availability slots fetched successfully.',
+            'data'    => array(
+                'available_for_meeting' => $meeting_available,
+                'slots'                 => $default_slots,
+            ),
+        ], 200);
     }
 }
 
