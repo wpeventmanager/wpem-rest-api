@@ -494,278 +494,172 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * Route: POST /wp-json/wpem/matchmaking-profile/filter
      * @since 1.1.4
      */
-    public function wpem_matchmaking_filter_users($request) {
-        global $wpdb;
-       
-        $event_id = intval($request->get_param('event_id'));
-        $user_id  = wpem_rest_get_current_user_id();
+    public function wpem_matchmaking_filter_users( WP_REST_Request $request ) {
+        $filters   = $request->get_params();
+        $current_user = wpem_rest_get_current_user_id();
 
-        // Step 1: Validate registration and collect attendees
-        $registered_user_ids = [];
-        if ($event_id && $user_id) {
-            $registration_query = new WP_Query([
+        // Step 1: Get event_ids (passed or derived from user registrations)
+        $event_ids = [];
+        if (!empty($filters['event_id'])) {
+            $event_ids[] = absint($filters['event_id']);
+        } else {
+            $registration_post_ids = get_posts([
                 'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
+                'post_status'    => ['new', 'confirmed', 'archived'],
+                'author'         => $current_user,
+                'numberposts'    => -1,
                 'fields'         => 'ids',
-                'post_author'    => $user_id,
+                'meta_query'     => [
+                    [
+                        'key'     => '_create_matchmaking',
+                        'value'   => '1',
+                        'compare' => '='
+                    ]
+                ],
             ]);
 
-            $has_registration = false;
-            foreach ($registration_query->posts as $registration_id) {
-                if (wp_get_post_parent_id($registration_id) == $event_id) {
-                    $has_registration = true;
-                    break;
+            foreach ($registration_post_ids as $reg_id) {
+                $parent_id = wp_get_post_parent_id($reg_id);
+                if ($parent_id) {
+                    $event_ids[] = $parent_id;
                 }
             }
+            $event_ids = array_unique($event_ids);
+        }
 
-            if (!$has_registration) {
-                return self::prepare_error_for_response(404);
-            }
+        if (empty($event_ids)) {
+            return self::prepare_error_for_response(404);
+        }
 
-            // Collect all registered users for this event
-            $attendee_query = new WP_Query([
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'fields'         => 'ids'
-            ]);
+        // Step 2: Collect attendees with matchmaking
+        $countries = wpem_get_all_countries();
+        $filtered_users = [];
 
-            foreach ($attendee_query->posts as $registration_id) {
-                if (wp_get_post_parent_id($registration_id) == $event_id) {
-                    $uid = intval(get_post_field('post_author', $registration_id));
-                    if ($uid && !in_array($uid, $registered_user_ids)) {
-                        $registered_user_ids[] = $uid;
-                    }
-                }
-            }
-        } elseif ($user_id) {
-            // No event_id passed: choose the most recent event that has other attendees
-            $user_regs = new WP_Query([
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'fields'         => 'ids',
-                'post_status'    => 'any',
-                'post_author'    => $user_id,
-                'orderby'        => 'date',
-                'order'          => 'DESC',
-            ]);
+        foreach ($event_ids as $eid) {
+            $users = wpem_get_all_match_making_attendees($current_user, $eid);
 
-            $user_event_ids_ordered = [];
-            foreach ($user_regs->posts as $reg_id) {
-                $parent_event = (int) wp_get_post_parent_id($reg_id);
-                if ($parent_event) {
-                    $user_event_ids_ordered[] = $parent_event;
-                }
-            }
-            // Preserve order by date (DESC), but remove duplicates
-            $user_event_ids_ordered = array_values(array_unique($user_event_ids_ordered));
+            foreach ($users as $u) {
+                $uid = $u['user_id'] ?? $u['ID'];
 
-            if (!empty($user_event_ids_ordered)) {
-                // Preload all registrations, filter by event per iteration
-                $attendee_query = new WP_Query([
+                $regs = get_posts([
                     'post_type'      => 'event_registration',
-                    'posts_per_page' => -1,
-                    'fields'         => 'ids',
-                    'post_status'    => 'any',
-                    'orderby'        => 'date',
-                    'order'          => 'DESC',
+                    'post_status'    => ['new', 'confirmed', 'archived'],
+                    'post_parent'    => $eid,
+                    'author'         => $uid,
+                    'meta_query'     => [
+                        [
+                            'key'     => '_create_matchmaking',
+                            'value'   => '1',
+                            'compare' => '='
+                        ]
+                    ],
+                    'fields' => 'ids'
                 ]);
 
-                foreach ($user_event_ids_ordered as $candidate_event_id) {
-                    $candidate_user_ids = [];
-                    foreach ($attendee_query->posts as $registration_id) {
-                        if ((int) wp_get_post_parent_id($registration_id) === (int) $candidate_event_id) {
-                            $uid = intval(get_post_field('post_author', $registration_id));
-                            if ($uid && $uid !== $user_id && !in_array($uid, $candidate_user_ids, true)) {
-                                $candidate_user_ids[] = $uid;
-                            }
-                        }
-                    }
-                    if (!empty($candidate_user_ids)) {
-                        $registered_user_ids = $candidate_user_ids;
-                        break;
-                    }
+                if (!empty($regs)) {
+                    $filtered_users[$uid] = $u;
                 }
             }
         }
 
-        if (empty($registered_user_ids)) {
-            $response_data = self::prepare_error_for_response(200);
-            $response_data['data'] = array(
-                'total_post_count' => 0,
-                'current_page'     => max(1, (int) $request->get_param('page')),
-                'last_page'        => 0,
-                'total_pages'      => 0,
-                'users'            => array(),
-            );
-            return wp_send_json($response_data);
-        }
+        $users = array_values($filtered_users);
 
-        // Step 2: Build user data
-        $profession_terms = get_event_registration_taxonomy_list('event_registration_professions'); // [slug => name]
-        $skills_terms     = get_event_registration_taxonomy_list('event_registration_skills');
-        $interests_terms  = get_event_registration_taxonomy_list('event_registration_interests');
-
-        $users_data = [];
-        foreach ($registered_user_ids as $uid) {
-            if ($uid == $user_id) continue;
-            if (!get_user_meta($uid, '_matchmaking_profile', true)) continue;
-
-            $photo = get_wpem_user_profile_photo($uid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
-
-            // Normalize organization logo
-            $organization_logo = get_user_meta($uid, '_organization_logo', true);
-            $organization_logo = maybe_unserialize($organization_logo);
-            if (is_array($organization_logo)) {
-                $organization_logo = reset($organization_logo);
-            }
-            $organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
-
-            // Profession
-            $profession_value = get_user_meta($uid, '_profession', true);
-            $profession_slug  = $profession_value;
-            if ($profession_value && !isset($profession_terms[$profession_value])) {
-                $found_slug = array_search($profession_value, $profession_terms);
-                if ($found_slug) {
-                    $profession_slug = $found_slug;
-                }
-            }
-
-            // Skills -> normalized to slugs, keep serialized string to mirror existing API structure
-            $skills_slugs = [];
-            $skills_arr = maybe_unserialize(get_user_meta($uid, '_skills', true));
-            if (is_array($skills_arr)) {
-                foreach ($skills_arr as $skill) {
-                    $term = get_term_by('slug', $skill, 'event_registration_skills');
-                    if (!$term) { $term = get_term_by('name', $skill, 'event_registration_skills'); }
-                    if (!$term) { $term = get_term_by('id', $skill, 'event_registration_skills'); }
-                    if ($term) { $skills_slugs[] = $term->slug; }
-                }
-            }
-            $skills_slugs = array_filter($skills_slugs);
-            $skills_serialized = serialize($skills_slugs);
-
-            // Interests -> normalized to slugs, keep serialized string to mirror existing API structure
-            $interests_slugs = [];
-            $interests_arr = maybe_unserialize(get_user_meta($uid, '_interests', true));
-            if (is_array($interests_arr)) {
-                foreach ($interests_arr as $interest) {
-                    $term = get_term_by('slug', $interest, 'event_registration_interests');
-                    if (!$term) { $term = get_term_by('name', $interest, 'event_registration_interests'); }
-                    if (!$term) { $term = get_term_by('id', $interest, 'event_registration_interests'); }
-                    if ($term) { $interests_slugs[] = $term->slug; }
-                }
-            }
-            $interests_slugs = array_filter($interests_slugs);
-            $interests_serialized = serialize($interests_slugs);
-
-            $countries = wpem_get_all_countries();
-            $country_value = get_user_meta($uid, '_country', true);
-            $country_code = '';
-            if ($country_value) {
-                if (isset($countries[$country_value])) {
-                    $country_code = $country_value;
-                } else {
-                    $country_code = array_search($country_value, $countries);
-                }
-            }
-            $org_country_value = get_user_meta($uid, '_organization_country', true);
-            $org_country_code = '';
-            if ($org_country_value) {
-                if (isset($countries[$org_country_value])) {
-                    $org_country_code = $org_country_value;
-                } else {
-                    $org_country_code = array_search($org_country_value, $countries);
-                }
-            }
-
-            $users_data[] = [
-                'user_id'                => $uid,
-                'display_name'           => get_the_author_meta('display_name', $uid),
-                'first_name'             => get_user_meta($uid, 'first_name', true),
-                'last_name'              => get_user_meta($uid, 'last_name', true),
-                'email'                  => get_userdata($uid)->user_email,
-                'matchmaking_profile'    => get_user_meta($uid, '_matchmaking_profile', true),
-                'profile_photo'          => $photo,
-                'profession'             => $profession_slug,
-                'experience'             => get_user_meta($uid, '_experience', true),
-                'company_name'           => get_user_meta($uid, '_company_name', true),
-                'country'                => $country_code,
-                'city'                   => get_user_meta($uid, '_city', true),
-                'about'                  => get_user_meta($uid, '_about', true),
-                'skills'                 => $skills_serialized,
-                'interests'              => $interests_serialized,
-                'message_notification'   => get_user_meta($uid, '_message_notification', true),
-                'organization_name'      => get_user_meta($uid, '_organization_name', true),
-                'organization_logo'      => $organization_logo,
-                'organization_country'   => $org_country_code,
-                'organization_city'      => get_user_meta($uid, '_organization_city', true),
-                'organization_description'=> get_user_meta($uid, '_organization_description', true),
-                'organization_website'   => get_user_meta($uid, '_organization_website', true),
-                'available_for_meeting'  => get_user_meta($uid, '_available_for_meeting', true),
-                'approve_profile_status' => get_user_meta($uid, '_approve_profile_status', true),
-            ];
+        if (empty($users)) {
+            return self::prepare_error_for_response(404);
         }
 
         // Step 3: Apply filters
-        $profession = sanitize_text_field($request->get_param('profession'));
-        $country    = $request->get_param('country');
-        $skills     = $request->get_param('skills');
-        $interests  = $request->get_param('interests');
-        $search     = sanitize_text_field($request->get_param('search'));
+        $final_users = [];
 
-        $filtered_users = array_filter($users_data, function($user) use ($profession, $country, $skills, $interests, $search) {
-            if ($profession && strtolower($user['profession']) !== strtolower($profession)) {
-                return false;
+        foreach ($users as $user) {
+            // Search (name, profession, company, country, city, skills, interests)
+            if (!empty($filters['search'])) {
+                $search = strtolower($filters['search']);
+                $haystack = strtolower(
+                    ($user['display_name'] ?? '') . ' ' .
+                    ($user['_profession'] ?? '') . ' ' .
+                    ($user['_company_name'] ?? '') . ' ' .
+                    ($countries[$user['_country']] ?? $user['_country']) . ' ' .
+                    ($user['_city'] ?? '') . ' ' .
+                    implode(' ', (array) maybe_unserialize($user['_skills'])) . ' ' .
+                    implode(' ', (array) maybe_unserialize($user['_interests']))
+                );
+                if (strpos($haystack, $search) === false) continue;
             }
-            if (!empty($country) && is_array($country) && !in_array($user['country'], $country)) {
-                return false;
+
+            // Profession
+            if (!empty($filters['profession']) && strtolower($filters['profession']) !== strtolower($user['_profession'] ?? '')) {
+                continue;
             }
-            if (!empty($skills) && is_array($skills)) {
-                // Unserialize stored skills for comparison
-                $user_skills = @unserialize($user['skills']);
-                if (!is_array($user_skills) || !array_intersect($skills, $user_skills)) {
-                    return false;
+
+            // Company
+            if (!empty($filters['company_name']) && strtolower($filters['company_name']) !== strtolower($user['_company_name'] ?? '')) {
+                continue;
+            }
+
+            // Country
+            if (!empty($filters['country'])) {
+                $selected_countries = array_map('strtolower', (array) $filters['country']);
+                $user_country = strtolower($user['_country'] ?? '');
+                $user_country_name = strtolower($countries[$user_country] ?? $user_country);
+
+                if (!in_array($user_country, $selected_countries, true) && !in_array($user_country_name, $selected_countries, true)) {
+                    continue;
                 }
             }
-            if (!empty($interests) && is_array($interests)) {
-                $user_interests = @unserialize($user['interests']);
-                if (!is_array($user_interests) || !array_intersect($interests, $user_interests)) {
-                    return false;
+
+            // City
+            if (!empty($filters['city']) && strtolower($filters['city']) !== strtolower($user['_city'] ?? '')) {
+                continue;
+            }
+
+            // Experience
+            if (!empty($filters['experience']) && is_array($filters['experience'])) {
+                $user_exp = (int) ($user['_experience'] ?? 0);
+                if ($user_exp < ($filters['experience']['min'] ?? 0) || $user_exp > ($filters['experience']['max'] ?? PHP_INT_MAX)) {
+                    continue;
                 }
             }
-            if ($search) {
-                $haystack_parts = [];
-                foreach ($user as $key => $val) {
-                    if (is_array($val)) {
-                        $haystack_parts = array_merge($haystack_parts, $val);
-                    } else {
-                        $haystack_parts[] = $val;
-                    }
-                }
-                $haystack = strtolower(implode(' ', $haystack_parts));
-                if (strpos($haystack, strtolower($search)) === false) {
-                    return false;
+
+            // Skills
+            if (!empty($filters['skills'])) {
+                $user_skills = array_map('sanitize_title', (array) maybe_unserialize($user['_skills']));
+                if (empty(array_intersect($filters['skills'], $user_skills))) {
+                    continue;
                 }
             }
-            return true;
-        });
+
+            // Interests
+            if (!empty($filters['interests'])) {
+                $user_interests = array_map('sanitize_title', (array) maybe_unserialize($user['_interests']));
+                if (empty(array_intersect($filters['interests'], $user_interests))) {
+                    continue;
+                }
+            }
+
+            $final_users[] = $user;
+        }
+
+        if (empty($final_users)) {
+            return self::prepare_error_for_response(404);
+        }
 
         // Step 4: Pagination
-        $per_page = max(1, (int) $request->get_param('per_page'));
-        $page     = max(1, (int) $request->get_param('page'));
-        $total    = count($filtered_users);
+        $page     = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
+        $per_page = isset($filters['per_page']) ? max(1, (int) $filters['per_page']) : 5;
         $offset   = ($page - 1) * $per_page;
-        $paged_users = array_slice($filtered_users, $offset, $per_page);
+        $paged_users = array_slice($final_users, $offset, $per_page);
 
-        $response_data = self::prepare_error_for_response( 200 );
-        $response_data['data'] = array(
-            'total_post_count' => $total,
-            'current_page'     => $page,
-            'last_page'        => ceil($total / $per_page),
-            'total_pages'      => ceil($total / $per_page),
-            'users'            => array_values($paged_users),
-        );
-        return wp_send_json($response_data);
+        $response = self::prepare_error_for_response(200);
+        $response['data'] = [
+            'total'       => count($final_users),
+            'page'        => $page,
+            'per_page'    => $per_page,
+            'total_pages' => ceil(count($final_users) / $per_page),
+            'users'       => $paged_users,
+        ];
+
+        return wp_send_json($response);
     }
 }
 
