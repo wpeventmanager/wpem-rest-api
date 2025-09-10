@@ -5,7 +5,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.5.1
 Tested up to: 6.8
-Stable tag: 1.1.2
+Stable tag: 1.2.0
 
 Requires PHP: 8.0.0
 License: GPLv3
@@ -119,6 +119,19 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 
 == Changelog ==
+
+= 1.2.0 [ 10th September 2025 ] =
+
+Fixed : Validation while app key generate
+Fixed : App Branding API should be accessible to Attendee
+Fixed : Issue in get registered event list for selected user
+Fixed : Send name-badge addon details in ecosystem API
+Fixed : Add user friendly words and messages
+Fixed : Add message-notification flag in get-conversation-list & get-messages API
+Fixed : Non Organizer user or volunteer login with app not working
+Fixed : Add search by Username in Rest API
+Fixed : Meeting create email template design same like web
+Fixed : Various Bug Fixes and Code Improvements
 
 = 1.1.2 [ 27th August 2025 ] =
 
