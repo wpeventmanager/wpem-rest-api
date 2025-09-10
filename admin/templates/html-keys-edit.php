@@ -120,7 +120,7 @@ defined( 'ABSPATH' ) || exit; ?>
 						<label><input type="checkbox" name="mobile_menu[]" value="orders" <?php checked(in_array('orders', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Orders', 'wpem-rest-api' ); ?></label><br>
 						<label><input type="checkbox" name="mobile_menu[]" value="arrivals" <?php checked(in_array('arrivals', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Arrivals', 'wpem-rest-api' ); ?></label>
 						<p class="description">
-							<?php esc_html_e( 'Restrict pages for this key.', 'wpem-rest-api' ); ?>
+							<?php esc_html_e( 'Choose which pages this key can access in the mobile app. Only the selected pages will be visible to the user.', 'wpem-rest-api' ); ?>
 						</p>
 					</td>
 				</tr>

@@ -230,8 +230,26 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 
         $search = '';
 
-        if( !empty( $_REQUEST['s'] ) ) { // WPCS: input var okay, CSRF ok.
-            $search = "AND description LIKE '%" . esc_sql( $wpdb->esc_like( wp_unslash( $_REQUEST['s'] ) ) ) . "%' "; // WPCS: input var okay, CSRF ok.
+        if ( ! empty( $_REQUEST['s'] ) ) { // WPCS: input var okay, CSRF ok.
+            $term = wp_unslash( $_REQUEST['s'] ); // WPCS: input var okay, CSRF ok.
+            $like = '%' . $wpdb->esc_like( $term ) . '%';
+
+            // Find users matching by display name, username, or email.
+            $user_ids = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT ID FROM {$wpdb->users} WHERE display_name LIKE %s OR user_login LIKE %s OR user_email LIKE %s",
+                    $like,
+                    $like,
+                    $like
+                )
+            );
+
+            // Only search by user (username/display name/email). If no users match, return no results.
+            if ( ! empty( $user_ids ) ) {
+                $search = 'AND user_id IN (' . implode( ',', array_map( 'absint', $user_ids ) ) . ') ';
+            } else {
+                $search = 'AND 1 = 0 ';
+            }
         }
 
         // Get the API keys.

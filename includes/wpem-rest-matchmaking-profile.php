@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
-class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller {
+class WPEM_REST_MatchMaking_Profile extends WPEM_REST_CRUD_Controller {
     protected $namespace = 'wpem';
 
     public function __construct() {
@@ -571,4 +571,4 @@ class WPEM_REST_MatchMaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 		}
 	}
 }
-new WPEM_REST_MatchMaking_Profile_Controller();
+new WPEM_REST_MatchMaking_Profile();

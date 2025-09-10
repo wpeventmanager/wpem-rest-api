@@ -249,6 +249,11 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
                 'message' => __( 'You do not have permission to checkin yet.', 'wpem-rest-api' )
             ),
             array(
+                'code' => 506,
+                'status' => 'Disabled Matchmaking',
+                'message' => __( 'Matchmaking functionality is not enabled.', 'wpem-rest-api' )
+            ),
+            array(
                 'code' => 203,
                 'status' => 'Non-Authorative Information',
                 'message' => __( 'You does not have read permissions.', 'wpem-rest-api' )
@@ -277,7 +282,8 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
             'wp-event-manager-sell-tickets' => 'WP Event Manager Sell Tickets',
             'wp-event-manager-registrations' => 'WP Event Manager Registrations',
             'wpem-guests' => 'WP Event Manager Guests',
-            'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule'
+            'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule',
+			'wpem-name-badges'	=> 'WP Event Manager - Name Badges',
         ) );
 
         // Get ecosystem data
@@ -370,25 +376,28 @@ if( !function_exists( 'get_wpem_event_users' ) ) {
      * 
      * @since 1.0.1
      */
-    function get_wpem_event_users() {
+     function get_wpem_event_users() {
+        // Get allowed roles from settings; default to organizer and wpem-scanner
+        $allowed_roles = get_option( 'wpem_rest_allowed_roles' );
+        if ( empty( $allowed_roles ) || ! is_array( $allowed_roles ) ) {
+            $allowed_roles = array( 'organizer', 'wpem-scanner','administrator' );
+        }
+        $allowed_roles = array_map( 'sanitize_key', $allowed_roles );
+
         $args = array(
-            'role__not_in' => array('customer'), // Exclude customers
+            'role__in' => $allowed_roles,
         );
 
-        $users = get_users($args);
+        $users = get_users( $args );
         $filtered_users = array();
 
-        foreach ($users as $user) {
-            if(isset($user->roles)) {
-                foreach ($user->roles as $role) {
-                    $filtered_users[] = array(
-                        'ID'       => $user->ID,
-                        'username' => $user->user_login,
-                        'email'    => $user->user_email,
-                        'roles'    => $user->roles,
-                    );
-                }
-            }
+        foreach ( $users as $user ) {
+            $filtered_users[] = array(
+                'ID'       => $user->ID,
+                'username' => $user->user_login,
+                'email'    => $user->user_email,
+                'roles'    => isset( $user->roles ) ? $user->roles : array(),
+            );
         }
         return $filtered_users;
     }
