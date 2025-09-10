@@ -51,7 +51,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             '/' . $this->rest_base,
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
+                    'methods'             => WP_REST_Server::CREATABLE,
                     'callback'            => array($this, 'get_items'),
                     'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_collection_params(),
