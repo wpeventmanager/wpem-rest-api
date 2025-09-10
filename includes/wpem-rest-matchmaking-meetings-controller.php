@@ -162,6 +162,20 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ),
             )
         );
+
+        // Update availability slots endpoint (for compatibility)
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base. '/slots',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::EDITABLE,
+                    'callback'            => array($this, 'update_available_slots'),
+                    'permission_callback' => array($this, 'permission_check'),
+                    'args'                => array(),
+                ),
+            )
+        );
     }
 
     /**
@@ -301,45 +315,57 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function get_items($request) {
         global $wpdb;
         // Get current user ID
-        $user_id  = isset($request['user_id']) ? (int) $request['user_id'] : wpem_rest_get_current_user_id();
+        $user_id  = wpem_rest_get_current_user_id();
+        $partner_id  = isset($request['partner_id']) ? (int) $request['partner_id'] : 0;
         $event_id = isset($request['event_id']) ? (int) $request['event_id'] : 0;
         $page     = max(1, (int) $request->get_param('page'));
         $per_page = max(1, min(100, (int) $request->get_param('per_page')));
         $offset   = ($page - 1) * $per_page;
 
         $params = array();
-        // Require user_id explicitly, else return 405
-        if (empty($user_id)) {
-            return self::prepare_error_for_response(405);
-        }
 
-        if( $event_id ) {
+        // Base WHERE clause
+        if ($event_id) {
             $where_sql = 'WHERE event_id = %d';
-            $params[] = $event_id;
+            $params[]  = $event_id;
         } else {
             $where_sql = 'WHERE 1=1';
         }
-        // $where_sql = 'WHERE 1=1';
-        $user_filter_sql = ' AND (user_id = %d OR participant_ids LIKE %s)';
-        $params[] = $user_id;
-        $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
 
-        
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$user_filter_sql}";
-        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$user_filter_sql} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
+        // --- Filters ---
+        if (!empty($partner_id)) {
+            // Bi-directional filter
+            $filter_sql = ' AND (
+                (user_id = %d AND participant_ids LIKE %s)
+                OR (user_id = %d AND participant_ids LIKE %s)
+            )';
 
-        // Prepare dynamic portions
-        if (!empty($params)) {
-            $sql_count = $wpdb->prepare($sql_count, $params);
-            $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, array($per_page, $offset)));
+            $params[] = $user_id;
+            $params[] = '%' . $wpdb->esc_like((string)$partner_id) . '%';
+            $params[] = $partner_id;
+            $params[] = '%' . $wpdb->esc_like((string)$user_id) . '%';
         } else {
-            $sql_rows .= $wpdb->prepare(' LIMIT %d OFFSET %d', $per_page, $offset); // safety but should not reach here
+            // Default user-only filter
+            $filter_sql = ' AND (user_id = %d OR participant_ids LIKE %s)';
+            $params[]   = $user_id;
+            $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
         }
 
+        // SQL queries
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$filter_sql}";
+        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql} 
+                    ORDER BY meeting_date ASC, meeting_start_time ASC 
+                    LIMIT %d OFFSET %d";
+
+        $sql_count = $wpdb->prepare($sql_count, $params);
+        $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
+
+        // Execute queries
         $total = (int) $wpdb->get_var($sql_count);
         $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
 
-        $items = array();
+        // Format rows
+        $items = [];
         foreach ((array) $rows as $row) {
             $items[] = $this->format_meeting_row($row);
         }
@@ -805,6 +831,29 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             );
             return wp_send_json($response_data);
         }
+    }
+
+    /**
+     * PUT /update-availability-slots
+     * Update availability slots + availability flag for the specified/current user.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|Array
+     */
+    public function update_available_slots($request) {
+        $user_id = wpem_rest_get_current_user_id();
+        $available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
+
+		$updated_status = update_user_meta($user_id, '_available_for_meeting', (int) $available_for_meeting);
+
+		if($available_for_meeting == 1) {
+            $availability_slots = $request->get_param('availability_slots')??array();
+			$updated_slot = update_user_meta($user_id, '_meeting_availability_slot', $availability_slots);
+		} else {
+			delete_user_meta($user_id, '_meeting_availability_slot');
+		}
+
+        return self::prepare_error_for_response(200);
     }
 }
 
