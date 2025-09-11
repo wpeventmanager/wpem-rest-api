@@ -253,7 +253,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $receiver_user = get_user_by( 'id', $partner_id );
 
         if ( ! $sender_user || ! $receiver_user ) {
-            return self::prepare_error_for_response( 404 );
+            return self::prepare_error_for_response( 400 );
         }
 
         $sender_name   = trim( get_user_meta( $user_id, 'first_name', true ) . ' ' . get_user_meta( $user_id, 'last_name', true ) );
@@ -369,21 +369,96 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * @return WP_Error|WP_REST_Response
      */
     public function get_conversation($request) {
-        $user_id = (int) $request['user_id'];
-        $paged = max(1, $request['paged']);
-        $per_page = min(100, $request['per_page']);
-        
-        // Get conversation logic here
-        
-        $response = array(
-            'total_users'  => 0,
+        global $wpdb;
+        $user_id  = wpem_rest_get_current_user_id();
+        $paged    = max( 1, intval( $request->get_param( 'paged' ) ) );
+        $per_page = max( 1, intval( $request->get_param( 'per_page' ) ) );
+
+        $messages_tbl = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+
+        /**
+         * Step 1: Find unique conversation partners
+         */
+        $conversation_user_ids = $wpdb->get_col( $wpdb->prepare( "
+            SELECT DISTINCT other_user FROM (
+                SELECT receiver_id AS other_user FROM $messages_tbl WHERE sender_id = %d
+                UNION
+                SELECT sender_id AS other_user FROM $messages_tbl WHERE receiver_id = %d
+            ) AS temp
+            WHERE other_user != %d
+        ", $user_id, $user_id, $user_id ) );
+
+        if ( empty( $conversation_user_ids ) ) {
+            $response_data = self::prepare_error_for_response(200);
+            $response_data['data'] = [
+                'total_users_count' => 0,
+                'current_page' => $paged,
+                'per_page'     => 0,
+                'last_page'    => 0,
+                'users'        => [],
+            ];
+            return wp_send_json($response_data);
+        }
+
+        /**
+         * Step 2: Pagination
+         */
+        $total_count   = count( $conversation_user_ids );
+        $last_page     = ceil( $total_count / $per_page );
+        $offset        = ( $paged - 1 ) * $per_page;
+        $paginated_ids = array_slice( $conversation_user_ids, $offset, $per_page );
+
+        /**
+         * Step 3: Build conversation list with last message
+         */
+        $results = [];
+        foreach ( $paginated_ids as $partner_id ) {
+            $last_message_row = $wpdb->get_row( $wpdb->prepare( "
+                SELECT message, created_at
+                FROM $messages_tbl
+                WHERE (sender_id = %d AND receiver_id = %d)
+                OR (sender_id = %d AND receiver_id = %d)
+                ORDER BY created_at DESC
+                LIMIT 1
+            ", $user_id, $partner_id, $partner_id, $user_id ) );
+
+            // Build display name
+            $display_name = get_user_meta( $partner_id, 'display_name', true );
+            if ( empty( $display_name ) ) {
+                $first_name   = get_user_meta( $partner_id, 'first_name', true );
+                $last_name    = get_user_meta( $partner_id, 'last_name', true );
+                $display_name = trim( "$first_name $last_name" );
+            }
+
+            // Detect if last message is an image
+            $is_image = ( $last_message_row && preg_match( '/\.(jpg|jpeg|png|gif|webp)$/i', $last_message_row->message ) ) ? 1 : 0;
+
+            $results[] = [
+                'user_id'              => (int) $partner_id,
+                'first_name'           => get_user_meta( $partner_id, 'first_name', true ),
+                'last_name'            => get_user_meta( $partner_id, 'last_name', true ),
+                'display_name'         => $display_name,
+                'profile_photo'        => get_wpem_user_profile_photo( $partner_id ),
+                'profession'           => get_user_meta( $partner_id, '_profession', true ),
+                'company_name'         => get_user_meta( $partner_id, '_company_name', true ),
+                'last_message'         => $last_message_row ? $last_message_row->message : null,
+                'message_time'         => $last_message_row ? date( 'Y-m-d H:i:s', strtotime( $last_message_row->created_at ) ) : null,
+                'last_message_is_image'=> $is_image,
+            ];
+        }
+
+        /**
+         * Step 4: Return formatted response
+         */
+        $response_data = self::prepare_error_for_response(200);
+        $response_data['data'] = [
+            'total_users_count' => intval($total_count),
             'current_page' => $paged,
             'per_page'     => $per_page,
-            'last_page'    => 1,
-            'users'        => array()
-        );
-
-        return rest_ensure_response($response);
+            'last_page'    => $last_page,
+            'users'        => $results,
+        ];
+        return wp_send_json($response_data);
     }
 
     /**
