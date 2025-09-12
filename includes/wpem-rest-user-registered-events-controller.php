@@ -99,20 +99,13 @@ class WPEM_REST_User_Registered_Events extends WPEM_REST_CRUD_Controller {
      * @param WP_REST_Request $request
      * @return WP_REST_Response|array
      */
-    public function get_items($request) {
-        $auth_user_id = $this->get_authenticated_user_id();
-        if (!$auth_user_id) {
-            return self::prepare_error_for_response(401);
-        }
+    public function get_items($request) { 
+        // Pagination
+        $per_page = max(1, (int) $request->get_param('per_page'));
+        $page     = max(1, (int) $request->get_param('page'));
+        $offset   = ($page - 1) * $per_page;
 
-        $requested_user_id = absint($request->get_param('user_id'));
-        $target_user_id    = $requested_user_id ?: $auth_user_id;
-
-        // Restrict fetching other users' data unless explicitly allowed (no elevated capability here by JWT design)
-        if ($requested_user_id && $requested_user_id !== $auth_user_id) {
-            return self::prepare_error_for_response(403);
-        }
-
+        $user_id = wpem_rest_get_current_user_id();
         // Query all registrations authored by the target user and collect unique parent event IDs
         $registration_query = new WP_Query(array(
             'post_type'      => 'event_registration',
@@ -136,11 +129,6 @@ class WPEM_REST_User_Registered_Events extends WPEM_REST_CRUD_Controller {
 
         $all_event_ids = array_keys($event_ids_map);
         $total         = count($all_event_ids);
-
-        // Pagination
-        $per_page = max(1, (int) $request->get_param('per_page'));
-        $page     = max(1, (int) $request->get_param('page'));
-        $offset   = ($page - 1) * $per_page;
 
         $paged_event_ids = array_slice($all_event_ids, $offset, $per_page);
 

@@ -106,7 +106,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Update the logged-in participant's status for a meeting
         register_rest_route(
             $this->namespace,
-            '/' . $this->rest_base . '/(?P<id>[\d]+)/participant-status',
+            '/' . $this->rest_base . '/(?P<id>[\d]+)/meeting-status',
             array(
                 'args' => array(
                     'id' => array(

@@ -90,16 +90,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 'methods'  => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_matchmaking_profile_settings'),
                 'permission_callback' => array($this, 'permission_check'),
-                'args'     => array(
-                    'user_id' => array(
-                        'required' => false,
-                        'type'     => 'integer',
-                    ),
-                    'event_id' => array(
-                        'required' => false,
-                        'type'     => 'integer',
-                    ),
-                ),
+                'args'     => array(),
             ),
         );
         register_rest_route(
@@ -136,12 +127,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
         // POST - Filter matchmaking users (same as wpem_matchmaking_filter_users)
         register_rest_route(
-             $this->namespace,
+            $this->namespace,
             '/' . $this->rest_base . '/search',
             array(
                 array(
                     'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
+                    'callback'            => array($this, 'get_wpem_matchmaking_filter_users'),
                     'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(
                         'profession'    => array('required' => false, 'type' => 'string'),
@@ -163,18 +154,13 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // Alias endpoint for legacy path and POST method
         register_rest_route(
              $this->namespace,
-            '/' . $this->rest_base . '/filter',
+            '/' . $this->rest_base . '/events', 
             array(
                 array(
                     'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
+                    'callback'            => array($this, 'get_wpem_matchmaking_user_events'),
                     'permission_callback' => array($this, 'permission_check'),
-                ),
-                array(
-                    'methods'             => WP_REST_Server::CREATABLE,
-                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
-                    'permission_callback' => array($this, 'permission_check'),
-                ),
+                )
             )
         );
     }
@@ -383,51 +369,30 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function get_matchmaking_profile_settings($request) {
         $user_id  = wpem_rest_get_current_user_id();
-        $event_id = (int) $request->get_param('event_id');
-
         $user = get_user_by('id', $user_id);
 
         // Build user event participation settings
         $user_event_participation = array();
-        if ($event_id) {
-            // Get registrations for a specific event
-            $registration_post_ids = get_posts(array(
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'post_status'    => 'any',
-                'author'         => $user_id,
-                'post_parent'    => $event_id,
-                'fields'         => 'ids',
-            ));
+       
+        // Get all registrations for this user
+        $user_registrations = get_posts(array(
+            'post_type'      => 'event_registration',
+            'posts_per_page' => -1,
+            'post_status'    => 'any',
+            'author'         => $user_id,
+            'fields'         => 'ids',
+        ));
 
-            if (!empty($registration_post_ids)) {
-                $create_matchmaking = (int) get_post_meta($registration_post_ids[0], '_create_matchmaking', true);
-                $user_event_participation[] = array(
-                    'event_id'           => (int) $event_id,
-                    'create_matchmaking' => $create_matchmaking,
-                );
+        foreach ($user_registrations as $registration_id) {
+            $parent_event_id = (int) get_post_field('post_parent', $registration_id);
+            if (!$parent_event_id) {
+                continue;
             }
-        } else {
-            // Get all registrations for this user
-            $user_registrations = get_posts(array(
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'post_status'    => 'any',
-                'author'         => $user_id,
-                'fields'         => 'ids',
-            ));
-
-            foreach ($user_registrations as $registration_id) {
-                $parent_event_id = (int) get_post_field('post_parent', $registration_id);
-                if (!$parent_event_id) {
-                    continue;
-                }
-                $create_matchmaking = (int) get_post_meta($registration_id, '_create_matchmaking', true);
-                $user_event_participation[] = array(
-                    'event_id'           => $parent_event_id,
-                    'create_matchmaking' => $create_matchmaking,
-                );
-            }
+            $create_matchmaking = (int) get_post_meta($registration_id, '_create_matchmaking', true);
+            $user_event_participation[$parent_event_id] = array(
+                'event_id'           => $parent_event_id,
+                'create_matchmaking' => $create_matchmaking,
+            );
         }
 
         $settings = array(
@@ -494,7 +459,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * Route: POST /wp-json/wpem/matchmaking-profile/filter
      * @since 1.1.4
      */
-    public function wpem_matchmaking_filter_users( WP_REST_Request $request ) {
+    public function get_wpem_matchmaking_filter_users( WP_REST_Request $request ) {
         $filters   = $request->get_params();
         $current_user = wpem_rest_get_current_user_id();
 
@@ -660,6 +625,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         ];
 
         return wp_send_json($response);
+    }
+
+    /**
+     * This function is used to get event list for which current loggedin user has registered
+     * @since 1.3.0
+     */
+    public function get_wpem_matchmaking_user_events(){
+        
     }
 }
 

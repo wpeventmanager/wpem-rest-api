@@ -26,7 +26,7 @@ class WPEM_REST_Send_Message_Controller extends WPEM_REST_CRUD_Controller{
 				'message'    => array('required' => false),
 				'image'      => array('required' => false),
 			),
-		));
+		)); 
 
         register_rest_route($this->namespace, '/get-messages', array(
             'methods'  => WP_REST_Server::READABLE,
