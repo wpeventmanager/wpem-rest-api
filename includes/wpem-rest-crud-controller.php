@@ -104,6 +104,23 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
     }
 
     /**
+     * Permission callback: ensure matchmaking is enabled and user is authorized.
+     *
+     * Note: This follows the plugin's pattern of returning the standardized
+     * error payload via prepare_error_for_response on failure.
+     *
+     * @param WP_REST_Request $request
+     * @return bool|WP_Error True if allowed, or sends JSON error.
+     */
+    public function permission_check($request) {
+        $auth_check = $this->wpem_check_authorized_user();
+        if ($auth_check) {
+            return $auth_check; // Standardized error already sent
+        }
+        return true;
+    }
+
+    /**
      * Get object permalink.
      *
      * @param  object $object Object.

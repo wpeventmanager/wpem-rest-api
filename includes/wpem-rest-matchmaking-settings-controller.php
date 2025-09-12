@@ -54,21 +54,6 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
     }
 
     /**
-     * Permission callback: ensure user is authorized (mirrors other matchmaking controllers).
-     *
-     * @param WP_REST_Request $request
-     * @return bool|WP_Error
-     */
-    public function permission_check($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            // Parent method returns standardized error payload if unauthorized.
-            return $auth_check;
-        }
-        return true;
-    }
-
-    /**
      * GET /matchmaking-settings
      * Retrieve matchmaking settings for the current user. If event_id is provided,
      * include participation for that event; otherwise include all events.
