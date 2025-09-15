@@ -51,14 +51,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             '/' . $this->rest_base,
             array(
                 array(
-                    'methods'             => WP_REST_Server::CREATABLE,
+                    'methods'             => WP_REST_Server::READABLE,
                     'callback'            => array($this, 'get_items'),
                     'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_collection_params(),
                 ),
                 array(
                     'methods'             => WP_REST_Server::CREATABLE,
-                    'callback'            => array($this, 'create_item'),
+                    'callback'            => array($this, 'create_meeting'),
                     'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
@@ -299,10 +299,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         // Get current user ID
         $user_id  = wpem_rest_get_current_user_id();
-        $partner_id  = isset($request['partner_id']) ? (int) $request['partner_id'] : 0;
-        $event_id = isset($request['event_id']) ? (int) $request['event_id'] : 0;
-        $page     = max(1, (int) $request->get_param('page'));
-        $per_page = max(1, min(100, (int) $request->get_param('per_page')));
+        $partner_id = (int) $request->get_param('partner_id');
+        $event_id   = (int) $request->get_param('event_id');
+        $page       = max(1, (int) $request->get_param('page'));
+        $per_page   = max(1, min(100, (int) $request->get_param('per_page')));
         $offset   = ($page - 1) * $per_page;
 
         $params = array();
@@ -316,7 +316,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // --- Filters ---
-        if (!empty($partner_id)) {
+        if ($partner_id) {
             // Bi-directional filter
             $filter_sql = ' AND (
                 (user_id = %d AND participant_ids LIKE %s)
@@ -393,7 +393,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 	 * @return WP_REST_Response
 	 * @since 1.2.0
      */
-    public function create_item($request) {
+    public function create_meeting($request) {
         global $wpdb;
         $user_id      = wpem_rest_get_current_user_id();
         $event_id     = sanitize_text_field($request->get_param('event_id'));
