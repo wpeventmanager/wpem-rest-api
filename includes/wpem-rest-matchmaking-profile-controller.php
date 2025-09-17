@@ -375,7 +375,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $user_event_participation[] = array(
                 'event_id'           => $parent_event_id,
                 'event_title'        => get_the_title($parent_event_id),
-                'event_banner'       => get_the_post_thumbnail($parent_event_id, 'thumbnail', array('class' => 'wpem-event-thumbnail')),
+                'event_banner'       => get_the_post_thumbnail_url($parent_event_id, 'thumbnail'),
                 'create_matchmaking' => $create_matchmaking,
             );
         }
