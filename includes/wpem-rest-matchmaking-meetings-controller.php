@@ -183,6 +183,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      */
     protected function format_meeting_row($row) {
         // Participants map: [user_id => status]
+        $host_id = (int) $row['user_id'];
+
         $participant_map = maybe_unserialize($row['participant_ids']);
         if (!is_array($participant_map)) {
             $participant_map = array();
@@ -196,6 +198,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             : array();
 
         foreach ($participant_map as $pid => $status) {
+            if($pid == $host_id) continue;
             $pid = (int) $pid;
             $status = (int) $status;
             $user = get_userdata($pid);
@@ -243,7 +246,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // Host info
-        $host_id = (int) $row['user_id'];
         $host = get_userdata($host_id);
         $host_name = ($host && !empty($host->display_name)) ? $host->display_name : '';
         if (empty($host_name)) {
@@ -582,13 +584,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $meeting_id       = (int) $request['id'];
         $user_id  = (int) wpem_rest_get_current_user_id();
-        $status   = (int) $request->get_param('status');
+        $status   = $request['status'];
 
-        if (!in_array($status, array(-1, 0, 1), true)) {
+        if ($status!= 0 && $status!= 1 && $status!= -1) {
             return self::prepare_error_for_response(400);
         }
 
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
+        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
         }
