@@ -372,11 +372,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 continue;
             }
             $create_matchmaking = (int) get_post_meta($registration_id, '_create_matchmaking', true);
-            $user_event_participation[$parent_event_id] = array(
+            $user_event_participation[] = array(
                 'event_id'           => $parent_event_id,
+                'event_title'        => get_the_title($parent_event_id),
                 'create_matchmaking' => $create_matchmaking,
             );
         }
+        // Remove duplicates by event_id if necessary
+        $user_event_participation = array_values(array_unique($user_event_participation, SORT_REGULAR));
 
         $settings = array(
             'enable_matchmaking'   => (int) get_user_meta($user_id, '_matchmaking_profile', true),
