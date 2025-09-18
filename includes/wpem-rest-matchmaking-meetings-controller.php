@@ -402,7 +402,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
         $slot         = sanitize_text_field($request->get_param('slot'));
         $participants = (array) $request->get_param('meeting_participants');
-        $message      = sanitize_textarea_field($request->get_param('message'));
+        $message      = $request->get_param('message');
 
         if (!$user_id || empty($event_id) || empty($meeting_date) || empty($slot) || empty($participants) ||!is_array($participants)) {
             return self::prepare_error_for_response(400);
@@ -485,13 +485,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             ),
             array('%d','%s','%s','%s','%s','%s','%d')
         );
-
         if (!$inserted) {
             return self::prepare_error_for_response(500);
         }
+        $meeting_id = $wpdb->insert_id;
         $registrations = new WP_Event_Manager_Registrations_Register();
-        $registrations->send_matchmaking_meeting_emails($wpdb->insert_id, $user_id, $event_id, $participants_raw, $meeting_date, $start_time, $end_time, $message);
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $wpdb->insert_id), ARRAY_A);
+        $registrations->send_matchmaking_meeting_emails($meeting_id, $user_id, $event_id, $participants_raw, $meeting_date, $start_time, $end_time, $message);
+        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
         return wp_send_json($response_data);
