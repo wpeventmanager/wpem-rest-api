@@ -483,7 +483,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 'message'            => $message,
                 'meeting_status'     => 0,
             ),
-            array('%d','%s','%s','%s','%s','%s','%d')
+            array('%d','%s','%s','%s','%s','%s','%s','%d')
         );
         if (!$inserted) {
             return self::prepare_error_for_response(500);
