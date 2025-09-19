@@ -810,7 +810,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $response_data = self::prepare_error_for_response(200);
             $response_data['data'] = array(
                 'available_for_meeting' => $meeting_available,
-                'slots'                 => $default_slots,
+                'slots'                 => $slots,
             );
             return wp_send_json($response_data);
         } else {
