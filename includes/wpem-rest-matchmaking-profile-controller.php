@@ -199,7 +199,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             switch ($type) {
                 case 'text':
                 case 'email':
-                case 'number':
+                case 'number': 
                 case 'textarea':
                     $value = sanitize_text_field($raw_value);
                     break;
@@ -516,12 +516,13 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // Step 2: Collect attendees with matchmaking
         $countries = wpem_get_all_countries();
         $filtered_users = [];
+        $fields = get_wpem_user_matchmaking_profile_fields();
 
         foreach ($event_ids as $eid) {
             $users = wpem_get_all_match_making_attendees($current_user, $eid);
 
-            foreach ($users as $u) {
-                $uid = $u['user_id'] ?? $u['ID'];
+            foreach ($users as $u_id) {
+                $uid = $u_id['user_id'] ?? $u_id['ID'];
 
                 $regs = get_posts([
                     'post_type'      => 'event_registration',
@@ -539,7 +540,89 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 ]);
 
                 if (!empty($regs)) {
-                    $filtered_users[$uid] = $u;
+                    $filtered_users[$uid] = $u_id;
+                    $user_data = get_user_by('id', $user_id);
+                    $user_meta = get_user_meta($uid);
+                    // Base info
+                    $profile = array(
+                        'user_id'      => $uid,
+                        'display_name' => $user_data->display_name,
+                        'email'        => $user_data->user_email,
+                        'first_name'   => $user_data->first_name,
+                        'last_name'    => $user_data->last_name,
+                    );
+
+                    // Fetch dynamic fields
+                    foreach ($fields as $field_key => $field_config) {
+                        $raw_value = isset($user_meta["_".$field_key][0]) ? maybe_unserialize($user_meta["_".$field_key][0]) : '';
+
+                        $value = null;
+                        $type  = isset($field_config['type']) ? $field_config['type'] : 'text';
+                        switch ($type) {
+                            case 'text':
+                            case 'email':
+                            case 'number': 
+                            case 'textarea':
+                                $value = sanitize_text_field($raw_value);
+                                break;
+                            case 'select':
+                            case 'term-select':
+                                $value = sanitize_text_field($raw_value);
+                                break;
+
+                            case 'checkbox':
+                            case 'radio':
+                                $value = !empty($raw_value) ? 1 : 0;
+                                break;
+
+                            case 'multiselect':
+                            case 'checkbox_multi':
+                                $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
+                                $value = array_map('sanitize_text_field', $arr);
+                                break;
+
+                            case 'url':
+                            case 'file':
+                                if (is_array($raw_value)) {
+                                    $raw_value = reset($raw_value); // handle WP file upload meta
+                                }
+                                $value = esc_url_raw($raw_value);
+                                break;
+
+                            case 'term-multiselect':
+                            case 'term-checkbox':
+                                $value = $raw_value;
+                                break;
+
+                            default:
+                                $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
+                                break;
+                        }
+
+                        $profile[$field_key] = $value; 
+                    }
+
+                    // Add profile photo separately
+                    $profile['profile_photo'] = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+                    if(!isset($profile['matchmaking_profile]']))
+                        $profile['matchmaking_profile'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int)get_user_meta($user_id, '_matchmaking_profile', true) : 0;
+                    if(!isset($profile['approve_profile_status]']))
+                        $profile['approve_profile_status'] = get_user_meta($user_id, '_approve_profile_status', true) ? (int)get_user_meta($user_id, '_approve_profile_status', true) : 0;
+                    if(!isset($profile['wpem_meeting_request_mode]']))
+                        $profile['wpem_meeting_request_mode'] = get_user_meta($user_id, '_wpem_meeting_request_mode', true) ? get_user_meta($user_id, '_wpem_meeting_request_mode', true) : 'approval';
+                    $meta = get_user_meta($user_id, '_available_for_meeting', true);
+                    $meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+                    $profile['available_for_meeting'] = (int)$meeting_available;
+
+                    // Add organization logo separately
+                    $organization_logo = get_user_meta($user_id, '_organization_logo', true);
+                    $organization_logo = maybe_unserialize($organization_logo);
+                    if (is_array($organization_logo)) {
+                        $organization_logo = reset($organization_logo);
+                    }
+                    $profile['organization_logo'] = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+
+                    $filtered_users[$uid] = $profile;
                 }
             }
         }
