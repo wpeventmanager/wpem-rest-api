@@ -392,14 +392,18 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
         // Remove duplicates by event_id if necessary
         $user_event_participation = array_values(array_unique($user_event_participation, SORT_REGULAR));
-
+        $timezone_settings = get_user_meta($user_id, '_timezone_settings', true) ? get_user_meta($user_id, '_timezone_settings', true) : 'default';
         $settings = array(
             'enable_matchmaking'   => (int) get_user_meta($user_id, '_matchmaking_profile', true),
             'message_notification' => (int) get_user_meta($user_id, '_message_notification', true),
             'event_participation'  => $user_event_participation,
             'meeting_request_mode' => get_user_meta($user_id, '_wpem_meeting_request_mode', true) ?: 'approval',
+            'timezone_settings'    => $timezone_settings,
         );
-
+        if($timezone_settings === 'custom') {
+            $settings['custom_timezone'] = get_user_meta($user_id, '_custom_timezone', true);
+            $settings['custom_timezone_offset'] = DateTimeZone::listIdentifiers();
+        }
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $settings;
         return wp_send_json($response_data);
@@ -424,7 +428,22 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if (!is_null($request->get_param('meeting_request_mode'))) {
             update_user_meta($user_id, '_wpem_meeting_request_mode', sanitize_text_field($request->get_param('meeting_request_mode')));
         }
+        if (!is_null($request->get_param('timezone_settings'))) {
+            $timezone_settings = $request->get_param('timezone_settings');
+            if($timezone_settings === 'custom') {
+                $tzlist   = DateTimeZone::listIdentifiers();
+                $timezone = $request->get_param('custom_timezone');
 
+                if ($timezone && in_array($timezone, $tzlist, true)) {                    
+                    update_user_meta($user_id, '_custom_timezone', sanitize_text_field($timezone));  
+                } else {
+                    self::prepare_error_for_response(400);
+                }
+            } else {
+                delete_user_meta($user_id, '_custom_timezone');
+            }
+            update_user_meta($user_id, '_timezone_settings', sanitize_text_field($request->get_param('timezone_settings')));
+        }
         // Update event participation settings
         $event_participation = $request->get_param('event_participation');
         if (is_array($event_participation)) {
@@ -629,8 +648,76 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * This function is used to get event list for which current loggedin user has registered
      * @since 1.3.0
      */
-    public function get_wpem_matchmaking_user_events(){
-        
+    public function get_wpem_matchmaking_user_events($request){       
+        $user_id = wpem_rest_get_current_user_id();
+
+        // Get all registrations authored by user (lightweight query)
+        $registrations = get_posts(array(
+            'post_type'      => 'event_registration',
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'author'         => $user_id,
+            'no_found_rows'  => true,
+        ));
+
+        // Collect unique parent event IDs
+        $event_ids = array();
+        foreach ($registrations as $registration_id) {
+            $parent_id = (int) wp_get_post_parent_id($registration_id);
+            if ($parent_id > 0) {
+                $post_type = get_post_field('post_type', $parent_id);
+                if ($post_type === 'event_listing') {
+                    $event_ids[$parent_id] = true; // unique map
+                }
+            }
+        }
+
+        $all_event_ids = array_keys($event_ids);
+        $total         = count($all_event_ids);
+
+        // Pagination
+        $per_page = max(1, (int) $request->get_param('per_page') ?: 10);
+        $page     = max(1, (int) $request->get_param('page') ?: 1);
+        $offset   = ($page - 1) * $per_page;
+        $paged_ids = array_slice($all_event_ids, $offset, $per_page);
+
+        // Fetch event posts in bulk
+        $event_posts = get_posts(array(
+            'post_type'      => 'event_listing',
+            'post__in'       => $paged_ids,
+            'orderby'        => 'post__in', // keep original order
+            'posts_per_page' => count($paged_ids),
+        ));
+
+        // Build response items
+        $events = array();
+        foreach ($event_posts as $event_post) {
+            $event_id = $event_post->ID;
+            $images   = function_exists('get_event_banner') ? get_event_banner($event_post) : array();
+
+            $events[] = array(
+                'event_id'   => $event_id,
+                'title'      => $event_post->post_title,
+                'status'     => $event_post->post_status,
+                'start_date' => get_post_meta($event_id, '_event_start_date', true),
+                'end_date'   => get_post_meta($event_id, '_event_end_date', true),
+                'location'   => get_post_meta($event_id, '_event_location', true),
+                'banner'     => $images,
+            );
+        }
+
+        $total_pages = (int) ceil($total / $per_page);
+
+        $response = self::prepare_error_for_response(200);
+        $response['data'] = array(
+            'total_post_count' => $total,
+            'current_page'     => $page,
+            'last_page'        => max(1, $total_pages),
+            'total_pages'      => $total_pages,
+            'events'           => $events,
+        );
+        return wp_send_json($response);
     }
 }
 
