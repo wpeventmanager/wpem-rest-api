@@ -476,6 +476,10 @@ function wpem_base64url_encode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
+/**
+ * This function will used to generate base64url_decode
+ * @since 1.0.9
+ */
 function wpem_base64url_decode($data) {
     $remainder = strlen($data) % 4;
     if ($remainder) {
@@ -483,4 +487,43 @@ function wpem_base64url_decode($data) {
         $data .= str_repeat('=', $padlen);
     }
     return base64_decode(strtr($data, '-_', '+/'));
+}
+
+/**
+ * This function will used to get user status
+ * @since 1.3.0
+ */
+function wpem_get_user_login_status($user_id) {
+    global $wpdb;
+
+    $user_status = array();
+
+    $user = get_userdata($user_id);
+
+    if ($user) {
+        $user_meta = get_user_meta($user->ID, '_matchmaking_profile', true);
+        $user_status['is_matchmaking'] = (!empty($user_meta) && $user_meta == 1) ? 1 : 0;
+    } else {
+        $user_status['is_matchmaking'] = 0;
+    }
+
+    $table_name = $wpdb->prefix . 'wpem_rest_api_keys';
+    $user_info = $wpdb->get_row(
+        $wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $user_id)
+    );
+
+    if ($user_info) {
+        $date_expires = strtotime($user_info->date_expires);
+        $today = strtotime(date('Y-m-d'));
+
+        if ($date_expires < $today) {
+            $user_status['is_organizer'] = 0;
+        } else {
+            $user_status['is_organizer'] = 1;
+        }
+    } else {
+        $user_status['is_organizer'] = 0;
+    }
+
+    return $user_status;
 }

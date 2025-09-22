@@ -372,15 +372,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         ", $user_id, $user_id, $user_id ) );
 
         if ( empty( $conversation_user_ids ) ) {
-            $response_data = self::prepare_error_for_response(200);
-            $response_data['data'] = [
-                'total_users_count' => 0,
-                'current_page' => $paged,
-                'per_page'     => 0,
-                'last_page'    => 0,
-                'users'        => [],
-            ];
-            return wp_send_json($response_data);
+            return self::prepare_error_for_response(404);
         }
 
         /**
@@ -440,6 +432,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             'per_page'     => $per_page,
             'last_page'    => $last_page,
             'users'        => $results,
+            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
     }

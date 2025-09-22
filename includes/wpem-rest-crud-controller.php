@@ -178,6 +178,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $response_data = self::prepare_error_for_response( 200 );
         $response_data['data'] = array(
             $this->rest_base => $response,
+            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         );
         return wp_send_json($response_data);
     }
@@ -440,6 +441,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
                 'last_page' => max(1, $total_pages),
                 'total_pages' => $total_pages,
                 $this->rest_base => $objects,
+                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }
@@ -697,14 +699,22 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             if (!wp_check_password($user_data['password'], $user->user_pass, $user->ID)) {
                 return self::prepare_error_for_response(405);
             } else {
-                 $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
+                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
                 $user_meta = get_user_meta( $user->ID, '_matchmaking_profile', true );
                 if($user_info){ 
                     $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
                     if( $user_info->permissions == 'write'){
                         return self::prepare_error_for_response(203);
                     } else if( $date_expires < date('Y-m-d') ){
-                        return self::prepare_error_for_response(503);
+                        if(!empty( $user_meta ) && $user_meta == 1){
+                            if (!get_option('enable_matchmaking', false)) {
+                                return self::prepare_error_for_response(506);
+                            } else {
+                                return false;   
+                            }
+                        } else {
+                            return self::prepare_error_for_response(503);
+                        }
                     } else {
                         return false;
                     }
