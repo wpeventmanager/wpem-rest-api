@@ -522,8 +522,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         foreach ($event_ids as $eid) {
             $users = wpem_get_all_match_making_attendees($current_user, $eid);
 
-            foreach ($users as $u_id) {
-                $uid = $u_id['user_id'] ?? $u_id['ID'];
+            foreach ($users as $key => $value) {
+                $uid = $value['user_id'] ? $value['user_id'] : '';
 
                 $regs = get_posts([
                     'post_type'      => 'event_registration',
@@ -539,18 +539,16 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     ],
                     'fields' => 'ids'
                 ]);
-
                 if (!empty($regs)) {
                     $filtered_users[$uid] = $u_id;
-                    $user_data = get_user_by('id', $user_id);
                     $user_meta = get_user_meta($uid);
                     // Base info
                     $profile = array(
-                        'user_id'      => $uid,
-                        'display_name' => $user_data->display_name,
-                        'email'        => $user_data->user_email,
-                        'first_name'   => $user_data->first_name,
-                        'last_name'    => $user_data->last_name,
+                        'user_id'      => $value['user_id'],
+                        'display_name' => $value['display_name'],
+                        'email'        => $value['user_email'],
+                        'first_name'   => $user_meta['first_name'][0],
+                        'last_name'    => $user_meta['last_name'][0],
                     );
 
                     // Fetch dynamic fields
