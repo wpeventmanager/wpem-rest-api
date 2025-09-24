@@ -478,10 +478,10 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @since 1.1.4
      */
     public function get_wpem_matchmaking_filter_users( WP_REST_Request $request ) {
-        $filters   = $request->get_params();
+        $filters      = $request->get_params();
         $current_user = wpem_rest_get_current_user_id();
 
-        // Step 1: Get event_ids (passed or derived from user registrations)
+        // Step 1: Get event IDs
         $event_ids = [];
         if (!empty($filters['event_id'])) {
             $event_ids[] = absint($filters['event_id']);
@@ -500,7 +500,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     ]
                 ],
             ]);
-
             foreach ($registration_post_ids as $reg_id) {
                 $parent_id = wp_get_post_parent_id($reg_id);
                 if ($parent_id) {
@@ -515,114 +514,87 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Step 2: Collect attendees with matchmaking
-        $countries = wpem_get_all_countries();
-        $filtered_users = [];
-        $fields = get_wpem_user_matchmaking_profile_fields();
+        $countries       = wpem_get_all_countries();
+        $filtered_users  = [];
+        $fields          = get_wpem_user_matchmaking_profile_fields();
 
         foreach ($event_ids as $eid) {
             $users = wpem_get_all_match_making_attendees($current_user, $eid);
 
-            foreach ($users as $key => $value) {
-                $uid = $value['user_id'] ? $value['user_id'] : '';
+            foreach ($users as $user) {
+                $uid       = $user['user_id'];
+                $user_meta = get_user_meta($uid);
 
-                $regs = get_posts([
-                    'post_type'      => 'event_registration',
-                    'post_status'    => ['new', 'confirmed', 'archived'],
-                    'post_parent'    => $eid,
-                    'author'         => $uid,
-                    'meta_query'     => [
-                        [
-                            'key'     => '_create_matchmaking',
-                            'value'   => '1',
-                            'compare' => '='
-                        ]
-                    ],
-                    'fields' => 'ids'
-                ]);
-                if (!empty($regs)) {
-                    $filtered_users[$uid] = $u_id;
-                    $user_meta = get_user_meta($uid);
-                    // Base info
-                    $profile = array(
-                        'user_id'      => $value['user_id'],
-                        'display_name' => $value['display_name'],
-                        'email'        => $value['user_email'],
-                        'first_name'   => $user_meta['first_name'][0],
-                        'last_name'    => $user_meta['last_name'][0],
-                    );
+                // Base info
+                $profile = [
+                    'user_id'      => $uid,
+                    'display_name' => $user['display_name'],
+                    'email'        => $user['user_email'],
+                    'first_name'   => $user_meta['first_name'][0] ?? '',
+                    'last_name'    => $user_meta['last_name'][0] ?? '',
+                ];
 
-                    // Fetch dynamic fields
-                    foreach ($fields as $field_key => $field_config) {
-                        $raw_value = isset($user_meta["_".$field_key][0]) ? maybe_unserialize($user_meta["_".$field_key][0]) : '';
+                // Dynamic fields
+                foreach ($fields as $field_key => $field_config) {
+                    $raw_value = isset($user_meta["_".$field_key][0]) ? maybe_unserialize($user_meta["_".$field_key][0]) : '';
+                    $type      = $field_config['type'] ?? 'text';
+                    $value     = '';
 
-                        $value = null;
-                        $type  = isset($field_config['type']) ? $field_config['type'] : 'text';
-                        switch ($type) {
-                            case 'text':
-                            case 'email':
-                            case 'number': 
-                            case 'textarea':
-                                $value = sanitize_text_field($raw_value);
-                                break;
-                            case 'select':
-                            case 'term-select':
-                                $value = sanitize_text_field($raw_value);
-                                break;
+                    switch ($type) {
+                        case 'text':
+                        case 'email':
+                        case 'number': 
+                        case 'textarea':
+                        case 'select':
+                        case 'term-select':
+                            $value = sanitize_text_field($raw_value);
+                            break;
 
-                            case 'checkbox':
-                            case 'radio':
-                                $value = !empty($raw_value) ? 1 : 0;
-                                break;
+                        case 'checkbox':
+                        case 'radio':
+                            $value = !empty($raw_value) ? 1 : 0;
+                            break;
 
-                            case 'multiselect':
-                            case 'checkbox_multi':
-                                $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
-                                $value = array_map('sanitize_text_field', $arr);
-                                break;
+                        case 'multiselect':
+                        case 'checkbox_multi':
+                            $arr   = is_array($raw_value) ? $raw_value : (array) $raw_value;
+                            $value = array_map('sanitize_text_field', $arr);
+                            break;
 
-                            case 'url':
-                            case 'file':
-                                if (is_array($raw_value)) {
-                                    $raw_value = reset($raw_value); // handle WP file upload meta
-                                }
-                                $value = esc_url_raw($raw_value);
-                                break;
+                        case 'url':
+                        case 'file':
+                            if (is_array($raw_value)) {
+                                $raw_value = reset($raw_value);
+                            }
+                            $value = esc_url_raw($raw_value);
+                            break;
 
-                            case 'term-multiselect':
-                            case 'term-checkbox':
-                                $value = $raw_value;
-                                break;
+                        case 'term-multiselect':
+                        case 'term-checkbox':
+                            $value = $raw_value;
+                            break;
 
-                            default:
-                                $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
-                                break;
-                        }
-
-                        $profile[$field_key] = $value; 
+                        default:
+                            $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
+                            break;
                     }
-
-                    // Add profile photo separately
-                    $profile['profile_photo'] = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
-                    if(!isset($profile['matchmaking_profile]']))
-                        $profile['matchmaking_profile'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int)get_user_meta($user_id, '_matchmaking_profile', true) : 0;
-                    if(!isset($profile['approve_profile_status]']))
-                        $profile['approve_profile_status'] = get_user_meta($user_id, '_approve_profile_status', true) ? (int)get_user_meta($user_id, '_approve_profile_status', true) : 0;
-                    if(!isset($profile['wpem_meeting_request_mode]']))
-                        $profile['wpem_meeting_request_mode'] = get_user_meta($user_id, '_wpem_meeting_request_mode', true) ? get_user_meta($user_id, '_wpem_meeting_request_mode', true) : 'approval';
-                    $meta = get_user_meta($user_id, '_available_for_meeting', true);
-                    $meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
-                    $profile['available_for_meeting'] = (int)$meeting_available;
-
-                    // Add organization logo separately
-                    $organization_logo = get_user_meta($user_id, '_organization_logo', true);
-                    $organization_logo = maybe_unserialize($organization_logo);
-                    if (is_array($organization_logo)) {
-                        $organization_logo = reset($organization_logo);
-                    }
-                    $profile['organization_logo'] = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
-
-                    $filtered_users[$uid] = $profile;
+                    $profile[$field_key] = $value;
                 }
+
+                // Photos / logos
+                $profile['profile_photo'] = get_wpem_user_profile_photo($uid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+                $org_logo = get_user_meta($uid, '_organization_logo', true);
+                $org_logo = is_array($org_logo) ? reset($org_logo) : $org_logo;
+                $profile['organization_logo'] = $org_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+
+                // Matchmaking / meeting meta
+                $profile['matchmaking_profile']   = (int) get_user_meta($uid, '_matchmaking_profile', true);
+                $profile['approve_profile_status'] = (int) get_user_meta($uid, '_approve_profile_status', true);
+                $profile['wpem_meeting_request_mode'] = get_user_meta($uid, '_wpem_meeting_request_mode', true) ?: 'approval';
+                $meta = get_user_meta($uid, '_available_for_meeting', true);
+                $profile['available_for_meeting'] = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+
+                $filtered_users[$uid] = $profile;
             }
         }
 
@@ -632,9 +604,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return self::prepare_error_for_response(404);
         }
 
-        // Step 3: Apply filters
+        // Step 3: Apply filters (search, profession, etc.) — keep your existing filter logic here
         $final_users = [];
-
         foreach ($users as $user) {
             // Search (name, profession, company, country, city, skills, interests)
             if (!empty($filters['search'])) {
@@ -709,9 +680,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Step 4: Pagination
-        $page     = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
-        $per_page = isset($filters['per_page']) ? max(1, (int) $filters['per_page']) : 5;
-        $offset   = ($page - 1) * $per_page;
+        $page        = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
+        $per_page    = isset($filters['per_page']) ? max(1, (int) $filters['per_page']) : 5;
+        $offset      = ($page - 1) * $per_page;
         $paged_users = array_slice($final_users, $offset, $per_page);
 
         $response = self::prepare_error_for_response(200);
