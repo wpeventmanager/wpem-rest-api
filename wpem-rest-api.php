@@ -68,7 +68,7 @@ class WPEM_Rest_API{
 
         // match making api
         // include 'includes/wpem-rest-matchmaking-profile.php';
-		include 'includes/wpem-rest-matchmaking-get-texonomy.php';
+		// include 'includes/wpem-rest-matchmaking-get-texonomy.php';
         // include 'includes/wpem-rest-matchmaking-user-messages.php';
         // include 'includes/wpem-rest-matchmaking-filter-users.php';
         // include 'includes/wpem-rest-matchmaking-user-settings.php';
