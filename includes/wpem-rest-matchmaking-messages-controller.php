@@ -165,7 +165,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         // Optimized paginated messages using UNION ALL (index friendly)
         $sql = $wpdb->prepare(
-            "(SELECT id, sender_id, receiver_id, message, created_at 
+            "(SELECT id, sender_id as user_id, receiver_id as partner_id, message, created_at 
             FROM $table
             WHERE sender_id = %d AND receiver_id = %d)
             UNION ALL
@@ -435,32 +435,6 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         ];
         return wp_send_json($response_data);
     }
-
-    /**
-     * Prepare a single message output for response.
-     *
-     * @param array           $message Message data.
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response $response Response data.
-     */
-    public function prepare_item_for_response($message, $request) {
-        $data = array(
-            'id'          => $message['id'],
-            'sender_id'   => $message['sender_id'],
-            'receiver_id' => $message['receiver_id'],
-            'message'     => $message['message'],
-            'created_at'  => $message['created_at'],
-        );
-
-        $context = !empty($request['context']) ? $request['context'] : 'view';
-        $data    = $this->add_additional_fields_to_object($data, $request);
-        $data    = $this->filter_response_by_context($data, $context);
-
-        $response = rest_ensure_response($data);
-        
-        return $response;
-    }
-
 
     /**
      * Get the query params for collections.
