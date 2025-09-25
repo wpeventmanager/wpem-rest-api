@@ -225,7 +225,6 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      */
     public function send_message( WP_REST_Request $request ) {
         global $wpdb;
-
         // --- Current User ---
         $user_id    = wpem_rest_get_current_user_id();
         $partner_id = intval( $request->get_param( 'partner_id' ) );
@@ -275,8 +274,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
         $parent_id = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT id FROM $table
-            WHERE (user_id = %d AND partner_id = %d)
-                OR (user_id = %d AND partner_id = %d)
+            WHERE (receiver_id = %d AND sender_id = %d)
+                OR (sender_id = %d AND receiver_id = %d)
             ORDER BY created_at ASC LIMIT 1",
             $user_id, $partner_id,
             $partner_id, $user_id
@@ -287,8 +286,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             $table,
             [
                 'parent_id'   => $parent_id ?: 0,
-                'user_id'     => $user_id,
-                'partner_id'  => $partner_id,
+                'sender_id'     => $user_id,
+                'receiver_id'  => $partner_id,
                 'message'     => $final_message,
                 'created_at'  => current_time( 'mysql' ),
             ],
