@@ -176,6 +176,20 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ),
             )
         );
+
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base. '/organizer',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::READABLE,
+                    'callback'            => array($this, 'get_meeting_list_for_organizer'),
+                    'permission_callback' => array($this, 'permission_check'),
+                    'args'                => $this->get_collection_params(),
+                ),
+                'schema' => array($this, 'get_public_item_schema'),
+            )
+        );
     }
     
     /**
@@ -865,6 +879,93 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         return self::prepare_error_for_response(200);
     }
+
+    /**
+     * Retrieves a specific matchmaking meeting by ID.
+     * GET /matchmaking-meetings
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 * @since 1.2.0
+     */
+    public function get_meeting_list_for_organizer($request) {
+        global $wpdb;
+
+        // Get current user ID
+        $user_id  = wpem_rest_get_current_user_id();
+        $event_id = (int) $request->get_param('event_id');
+        $page     = max(1, (int) $request->get_param('page'));
+        $per_page = max(1, min(100, (int) $request->get_param('per_page')));
+        $offset   = ($page - 1) * $per_page;
+
+        $params = [];
+
+        // --- Get events created by this organizer (post author of event_listing) ---
+        $organizer_events = get_posts([
+            'post_type'      => 'event_listing',
+            'post_status'    => 'publish',
+            'author'         => $user_id,
+            'fields'         => 'ids',
+            'posts_per_page' => -1,
+        ]);
+
+        // If API request specifies event_id, check if it belongs to this organizer
+        if ($event_id && in_array($event_id, $organizer_events)) {
+            $where_sql = "WHERE event_id = %d";
+            $params[]  = $event_id;
+        } else {
+            // Otherwise get meetings for all organizer’s events
+            if (!empty($organizer_events)) {
+                $placeholders = implode(',', array_fill(0, count($organizer_events), '%d'));
+                $where_sql    = "WHERE event_id IN ($placeholders)";
+                $params       = array_merge($params, $organizer_events);
+            } else {
+                // If no events, return empty
+                $response_data = self::prepare_error_for_response(200);
+                $response_data['data'] = [
+                    'total_post_count' => 0,
+                    'current_page'     => $page,
+                    'last_page'        => 1,
+                    'total_pages'      => 1,
+                    $this->rest_base   => [],
+                    'user_status'      => wpem_get_user_login_status($user_id)
+                ];
+                return wp_send_json($response_data);
+            }
+        }
+
+        // --- SQL queries ---
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}";
+        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}
+                    ORDER BY meeting_date ASC, meeting_start_time ASC
+                    LIMIT %d OFFSET %d";
+
+        $sql_count = $wpdb->prepare($sql_count, $params);
+        $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
+
+        // Execute queries
+        $total = (int) $wpdb->get_var($sql_count);
+        $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
+
+        // Format rows
+        $items = [];
+        foreach ((array) $rows as $row) {
+            $items[] = $this->format_meeting_row($row);
+        }
+
+        $response_data = self::prepare_error_for_response(200);
+        $response_data['data'] = [
+            'total_post_count' => $total,
+            'current_page'     => $page,
+            'last_page'        => (int) max(1, ceil($total / $per_page)),
+            'total_pages'      => (int) max(1, ceil($total / $per_page)),
+            $this->rest_base   => $items,
+            'user_status'      => wpem_get_user_login_status($user_id)
+        ];
+
+        return wp_send_json($response_data);
+    }
+
 }
 
 new WPEM_REST_Matchmaking_Meetings_Controller();
