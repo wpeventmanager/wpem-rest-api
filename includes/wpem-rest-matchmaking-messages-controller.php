@@ -523,7 +523,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         // Delete
         $deleted = $wpdb->delete(
-            $table,
+            $this->table,
             [ 'id' => $message_id ],
             [ '%d' ]
         );
