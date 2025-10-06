@@ -88,11 +88,11 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                             'id'               => $option['name'],
                             'sort_column'      => 'menu_order',
                             'sort_order'       => 'ASC',
-                            'show_option_none' => __('--no page--', 'wp-event-manager'),
+                            'show_option_none' => __('--no page--', 'wpem-rest-api'),
                             'echo'             => false,
                             'selected'         => absint($value)
                         );
-                        echo str_replace(' id=', " data-placeholder='" . __( 'Select a page&hellip;', 'wp-event-manager' ) .  "' id=", wp_dropdown_pages( $args ));
+                        echo str_replace(' id=', " data-placeholder='" . __( 'Select a page&hellip;', 'wpem-rest-api' ) .  "' id=", wp_dropdown_pages( $args ));
                         if ($option['desc'] ) {
                             echo ' <p class="description">' . esc_html( $option['desc'] ) . '</p>';
                         }
