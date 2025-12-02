@@ -691,10 +691,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return self::prepare_error_for_response(500);
         }
 
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
+        // Fetch meeting
+		$meeting = $wpdb->get_row(
+			$wpdb->prepare("SELECT * FROM " . $this->table . " WHERE id = %d", $meeting_id)
+		);
         //send mail to all participants
-        $registration_instance = new WP_Event_Manager_Registrations_Register();
-        $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $row);
+        $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
+        $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $meeting);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
         $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
