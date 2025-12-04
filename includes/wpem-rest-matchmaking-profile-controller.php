@@ -519,7 +519,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $fields          = get_wpem_user_matchmaking_profile_fields();
 
         foreach ($event_ids as $eid) {
-            $users = wpem_get_all_match_making_attendees($current_user, $eid);
+            $users = wpem_get_all_matchmaking_participants($current_user, $eid);
 
             foreach ($users as $user) {
                 $uid       = $user['user_id'];
