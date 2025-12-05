@@ -825,7 +825,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $user_id = $request->get_param('user_ids') ?: wpem_rest_get_current_user_id();
         if($user_id == wpem_rest_get_current_user_id()) {
             // Fetch default slots for user (helper aligns with existing implementation)
-            $slots = get_wpem_default_meeting_slots_for_user($user_id);
+            $slots = wpem_get_default_meeting_slots_for_matchmaking_participants($user_id);
 
             // Availability flag (_available_for_meeting); default to 1 if not set
             $meta               = get_user_meta($user_id, '_available_for_meeting', true);
