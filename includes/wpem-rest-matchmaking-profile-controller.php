@@ -589,7 +589,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
                 // Matchmaking / meeting meta
                 $profile['matchmaking_profile']   = (int) get_user_meta($uid, '_matchmaking_profile', true);
-                $profile['approve_profile_status'] = (int) get_user_meta($uid, '_approve_profile_status', true);
+                if(get_option('participant_activation') === 'manual')
+                    $profile['approve_profile_status'] =  (int) get_user_meta($uid, '_approve_profile_status', true);
+                else {
+                    $profile_status = get_user_meta($uid, '_approve_profile_status', true);
+                    $profile['approve_profile_status'] =  ($profile_status !== '' && $profile_status !== null) ? ((int)$profile_status === 0 ? 0 : 1) : 1;
+                }
                 $profile['wpem_meeting_request_mode'] = get_user_meta($uid, '_wpem_meeting_request_mode', true) ?: 'approval';
                 $meta = get_user_meta($uid, '_available_for_meeting', true);
                 $profile['available_for_meeting'] = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
