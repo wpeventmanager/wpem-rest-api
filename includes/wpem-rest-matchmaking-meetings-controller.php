@@ -845,7 +845,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             if (!$date && !is_array($user_id)) {
                 return self::prepare_error_for_response(404);
             }
-            $combined_slots = get_wpem_user_available_slots($user_id, $date);
+            $combined_slots = wpem_get_participants_available_meeting_slots($user_id, $date);
             foreach ($combined_slots as $slot) {
                 $time = $slot['time'];
                 // You can decide: set "1" if slot exists OR based on is_booked
