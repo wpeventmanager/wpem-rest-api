@@ -207,8 +207,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Build participants info array
         $participants_info = array();
         // Preload profession terms (slug => name)
-        $profession_terms = function_exists('get_event_registration_taxonomy_list')
-            ? (array) get_event_registration_taxonomy_list('event_registration_professions')
+        $profession_terms = function_exists('wpem_get_registration_taxonomy_list')
+            ? (array) wpem_get_registration_taxonomy_list('event_registration_professions')
             : array();
 
         foreach ($participant_map as $pid => $status) {
@@ -237,14 +237,41 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
             // Profession slug
             $profession_value = get_user_meta($pid, '_profession', true);
-            $profession_slug  = $profession_value;
-            if (!empty($profession_value) && !isset($profession_terms[$profession_value])) {
-                // If stored as name, convert to slug
-                $found_slug = array_search($profession_value, $profession_terms, true);
-                if ($found_slug) {
-                    $profession_slug = $found_slug;
+
+            // Always convert to array
+            $profession_values = is_array($profession_value)
+                ? $profession_value
+                : [$profession_value];
+
+            $profession_slugs = [];
+
+            foreach ($profession_values as $value) {
+                if (empty($value)) {
+                    continue;
                 }
+
+                // Default: assume slug
+                $slug = $value;
+
+                // CASE 1: Value already matches a slug key
+                if (isset($profession_terms[$value])) {
+                    $slug = $value;
+
+                } else {
+                    // CASE 2: Value might be a name → convert name → slug
+                    $found_slug = array_search($value, $profession_terms, true);
+                    if ($found_slug !== false) {
+                        $slug = $found_slug;
+                    }
+                }
+
+                $profession_slugs[] = $slug;
             }
+
+            // If one value, return string — if many, return array
+            $profession_slug = count($profession_slugs) === 1
+                ? $profession_slugs[0]
+                : $profession_slugs;
 
             // Company name
             $company_name = get_user_meta($pid, '_company_name', true);
@@ -272,13 +299,41 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $host_profile = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
         }
         $host_prof_value = get_user_meta($host_id, '_profession', true);
-        $host_prof_slug  = $host_prof_value;
-        if (!empty($host_prof_value) && !isset($profession_terms[$host_prof_value])) {
-            $found_slug = array_search($host_prof_value, $profession_terms, true);
-            if ($found_slug) {
-                $host_prof_slug = $found_slug;
+
+        // Normalize to array
+        $host_prof_values = is_array($host_prof_value)
+            ? $host_prof_value
+            : [$host_prof_value];
+
+        $host_prof_slugs = [];
+
+        foreach ($host_prof_values as $value) {
+
+            if (empty($value)) {
+                continue;
+            }
+
+            // Case 1: Already a slug
+            if (isset($profession_terms[$value])) {
+                $host_prof_slugs[] = $value;
+                continue;
+            }
+
+            // Case 2: Stored as name — convert to slug
+            $found_slug = array_search($value, $profession_terms, true);
+
+            if ($found_slug !== false) {
+                $host_prof_slugs[] = $found_slug;
+            } else {
+                // fallback
+                $host_prof_slugs[] = $value;
             }
         }
+
+        $host_prof_slug = count($host_prof_slugs) === 1
+            ? $host_prof_slugs[0]
+            : $host_prof_slugs;
+
         $host_company = get_user_meta($host_id, '_company_name', true);
 
         $host_info = array(
