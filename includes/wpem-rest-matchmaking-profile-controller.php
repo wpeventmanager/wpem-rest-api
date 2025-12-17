@@ -85,6 +85,27 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // Retrieve/Update matchmaking profile settings
         register_rest_route(
             $this->namespace,
+            '/matchmaking-profile-approval',
+            array(
+                'methods'  => WP_REST_Server::CREATABLE,
+                'callback' => array($this, 'approve_matchmaking_profile'),
+                'permission_callback' => array($this, 'permission_check'),
+                // 'args'     => array(
+                //     'registration_id' => array(
+                //         'required' => true,
+                //         'type'     => 'integer',
+                //     ),
+                //     'profile_status' => array(
+                //         'required' => true,
+                //         'type'     => 'integer',
+                //     )
+                // ),
+            ),
+        );
+
+        // Retrieve/Update matchmaking profile settings
+        register_rest_route(
+            $this->namespace,
             '/matchmaking-profile-settings',
             array(
                 'methods'  => WP_REST_Server::READABLE,
@@ -472,6 +493,47 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         return self::prepare_error_for_response(200);
     }
     
+    /**
+     * Approve matchmaking profile by organizer.
+     * Params/validation aligned with matchmaking-settings controller.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.1.3
+     */
+    public function approve_matchmaking_profile($request) {
+        $params = $request->get_json_params();
+		$registration_id = isset($params['registration_id']) ? trim($params['registration_id']) : 0;
+		$profile_status = isset($params['profile_status']) ? $params['profile_status'] : 0;
+        // Update user meta values
+        if (empty($registration_id) || $registration_id <= 0 ) {
+			 return self::prepare_error_for_response(404);
+		}
+
+        // Get user_id and email from the current registration
+		$user_id = get_post_field('post_author', $registration_id);
+
+		// Update custom matchmaking table
+		if (!empty($user_id)) {
+			update_user_meta($user_id, '_approve_profile_status', $profile_status);
+		}
+		// Find all registrations with same user_id OR same email
+		$args = [
+			'post_type'      => 'event_registration',
+			'posts_per_page' => -1,
+			'post_status'    => 'any',
+			'author'         => absint( $user_id ), // Now uses post_author instead of meta
+		];
+
+		$registrations = get_posts($args);
+
+		foreach ($registrations as $reg) {
+			update_post_meta($reg->ID, '_attendee_approved', $profile_status);
+		}
+
+        return self::prepare_error_for_response(200);
+    }
+
     /**
      * Filter matchmaking users (combined logic from wpem_matchmaking_filter_users)
      * Route: POST /wp-json/wpem/matchmaking-profile/filter
