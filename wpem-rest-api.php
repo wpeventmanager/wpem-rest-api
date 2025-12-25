@@ -65,6 +65,7 @@ class WPEM_Rest_API{
         include 'includes/wpem-rest-events-controller.php';
         include 'includes/wpem-rest-app-branding.php';
         include 'includes/wpem-rest-ecosystem-controller.php';
+        include 'includes/wpem-rest-settings-controller.php';
 
         // match making api
         include 'includes/wpem-rest-matchmaking-meetings-controller.php';

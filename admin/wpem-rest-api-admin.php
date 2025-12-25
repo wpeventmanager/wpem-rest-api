@@ -38,7 +38,6 @@ class WPEM_Rest_API_Admin{
      * @access public
      * @return void
      */
-
     public function admin_enqueue_scripts(){
         if( isset( $_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ) {
 

@@ -704,6 +704,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				$first_name = get_user_meta($user_id, 'first_name', true);
 				$last_name = get_user_meta($user_id, 'last_name', true);
 				$user_login = get_user_meta($user_id, 'user_login', true);
+				$print_badge_mode = get_user_meta($user_id, 'wpem_print_badge_mode', true) ?? 0;
 
 				$data = array(
 					'token' => $token,
@@ -713,6 +714,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 						'first_name' => $first_name,
 						'last_name' => $last_name,
 						'username' => $user_login,
+						'wpem_print_badge_mode' => (int)$print_badge_mode,
 						'matchmaking_profile' => $is_matchmaking,
 						'enable_matchmaking' => $enable_matchmaking,
 						'mobile_menu' => $mobile_menu_status,
