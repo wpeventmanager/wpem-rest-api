@@ -326,12 +326,22 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
      */
     protected function get_event_data( $event, $context = 'view' ) {
         $meta_data    = get_post_meta( $event->ID );
+        $event_venue_id = 0;
         foreach( $meta_data as $key => $value ) {
             if('_event_start_time' == $key || '_event_end_time' == $key ) {
                 $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
                 $meta_data[$key] = esc_attr(date_i18n($time_format, strtotime(get_post_meta( $event->ID, $key, true ))));                                           
             } else
                 $meta_data[$key]= get_post_meta( $event->ID, $key, true );
+            if($key == '_event_online' && $meta_data[$key] == 'no' ) {
+                $event_venue_id = get_post_meta( $event->ID, '_event_venue_ids', true );
+            }
+        }
+        if( $event_venue_id ) {
+            $venue = get_post( $event_venue_id );
+            if( $venue ) {
+                $venue_qrcode = get_post_meta( $event_venue_id, '_venue_qrcode', true );
+            }
         }
         $data = array(
             'id'                    => $event->ID,
@@ -349,7 +359,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             'images'                => get_event_banner( $event ),
             'meta_data'             => $meta_data,
         );
-
+        if( isset( $venue_qrcode ) && !empty( $venue_qrcode ) ) {
+            $data['venue_qrcode'] = $venue_qrcode;
+        }
         return apply_filters( "wpem_rest_get_{$this->post_type}_data", $data, $event, $context );
     }
 
