@@ -214,6 +214,11 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
                 'message' => __( 'The item already deleted.', 'wpem-rest-api' )
             ),
             array(
+                'code' => 411,
+                'status' => 'Error',
+                'message' => __( 'The item already added.', 'wpem-rest-api' )
+            ),
+            array(
                 'code' => 418,
                 'status' => 'Error',
                 'message' => __( 'Already Checkin.', 'wpem-rest-api' )

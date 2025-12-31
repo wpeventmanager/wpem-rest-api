@@ -340,6 +340,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         if( $event_venue_id ) {
             $venue = get_post( $event_venue_id );
             if( $venue ) {
+                $venue_name   = $venue->post_title; 
                 $venue_qrcode = get_post_meta( $event_venue_id, '_venue_qrcode', true );
             }
         }
@@ -360,7 +361,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             'meta_data'             => $meta_data,
         );
         if( isset( $venue_qrcode ) && !empty( $venue_qrcode ) ) {
-            $data['venue_qrcode'] = $venue_qrcode;
+            $data['venue']['name'] = $venue_name;
+            $data['venue']['QRCode'] = $venue_qrcode;
         }
         return apply_filters( "wpem_rest_get_{$this->post_type}_data", $data, $event, $context );
     }
