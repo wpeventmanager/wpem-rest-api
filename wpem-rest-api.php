@@ -67,6 +67,7 @@ class WPEM_Rest_API{
         include 'includes/wpem-rest-ecosystem-controller.php';
         include 'includes/wpem-rest-settings-controller.php';
         include 'includes/wpem-rest-contact-controller.php';
+        include 'includes/wpem-rest-ticket-controller.php';
 
         // match making api
         include 'includes/wpem-rest-matchmaking-meetings-controller.php';
