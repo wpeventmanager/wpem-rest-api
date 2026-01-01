@@ -357,7 +357,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             'event_categories'      => taxonomy_exists( 'event_listing_category' ) ? get_the_terms( $event->ID, 'event_listing_category' ) : ''   ,
             'event_types'           => taxonomy_exists( 'event_listing_type' ) ? get_the_terms( $event->ID, 'event_listing_type' ) : '',
             'event_tags'            => taxonomy_exists( 'event_listing_tag' ) ? get_the_terms( $event->ID, 'event_listing_tag' ) : '',
-            'images'                => get_event_banner( $event ),
+            'images'                => wpem_get_event_banner( $event ),
             'meta_data'             => $meta_data,
         );
         if( isset( $venue_qrcode ) && !empty( $venue_qrcode ) ) {
