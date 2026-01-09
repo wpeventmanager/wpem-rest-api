@@ -532,3 +532,17 @@ function wpem_get_user_login_status($user_id) {
 
     return $user_status;
 }
+
+/**
+ * Legacy for WPEM functions with old and new core compatibility.
+ */
+if ( ! function_exists('wpem_addon_get_event_banner') ) {
+    function wpem_addon_get_event_banner( $event = null ) {
+
+        if ( function_exists('wpem_get_event_banner') ) {
+            return wpem_get_event_banner( $event );
+        } else {
+            return get_event_banner( $event );
+        }
+    }
+}
