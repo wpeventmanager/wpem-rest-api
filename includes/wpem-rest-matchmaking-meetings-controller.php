@@ -374,6 +374,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $user_id  = wpem_rest_get_current_user_id();
         $partner_id = (int) $request->get_param('partner_id');
         $event_id   = (int) $request->get_param('event_id');
+        $status     = sanitize_text_field($request->get_param('status'));
         $page       = max(1, (int) $request->get_param('page'));
         $per_page   = max(1, min(100, (int) $request->get_param('per_page')));
         $offset   = ($page - 1) * $per_page;
@@ -407,9 +408,27 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
         }
 
+        // Status filter
+        $status_filter = '';
+        if (!empty($status)) {
+            // Map status string to meeting_status integer
+            // -2 = pending accept, 1 = accepted, 0 = rejected, -1 = cancelled
+            $status_map = array(
+                'pending'  => -2,
+                'cancelled' => -1,
+                'accepted' => 1,
+                'rejected' => 0,
+            );
+            
+            if (isset($status_map[$status])) {
+                $status_filter = ' AND meeting_status = %d';
+                $params[] = $status_map[$status];
+            }
+        }
+
         // SQL queries
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$filter_sql}";
-        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql} 
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter}";
+        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter} 
                     ORDER BY meeting_date ASC, meeting_start_time ASC 
                     LIMIT %d OFFSET %d";
 
@@ -865,6 +884,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'type'              => 'integer',
             'sanitize_callback' => 'absint',
         );
+        $params['status'] = array(
+            'description'       => __('Limit result set to meetings with a specific status (pending, accepted, rejected).', 'wpem-rest-api'),
+            'type'              => 'string',
+            'enum'              => array('pending', 'accepted', 'rejected'),
+            'sanitize_callback' => 'sanitize_text_field',
+        );
         // Keep pagination params from parent
         return $params;
     }
@@ -953,6 +978,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Get current user ID
         $user_id  = wpem_rest_get_current_user_id();
         $event_id = (int) $request->get_param('event_id');
+        $status   = sanitize_text_field($request->get_param('status'));
         $page     = max(1, (int) $request->get_param('page'));
         $per_page = max(1, min(100, (int) $request->get_param('per_page')));
         $offset   = ($page - 1) * $per_page;
@@ -993,9 +1019,26 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             }
         }
 
+        // Status filter
+        $status_filter = '';
+        if (!empty($status)) {
+            // Map status string to meeting_status integer
+            // -2 = pending accept, 1 = accepted, 0 = rejected, -1 = cancelled
+            $status_map = array(
+                'pending'  => -2,
+                'accepted' => 1,
+                'rejected' => 0,
+            );
+            
+            if (isset($status_map[$status])) {
+                $status_filter = ' AND meeting_status = %d';
+                $params[] = $status_map[$status];
+            }
+        }
+
         // --- SQL queries ---
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}";
-        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$status_filter}";
+        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$status_filter}
                     ORDER BY meeting_date ASC, meeting_start_time ASC
                     LIMIT %d OFFSET %d";
 

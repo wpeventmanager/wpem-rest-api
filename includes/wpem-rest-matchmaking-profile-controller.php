@@ -794,21 +794,24 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $all_event_ids = array_keys($event_ids);
-        $total         = count($all_event_ids);
+
+        // Get all events that actually exist (any status: publish, cancelled, expired, etc.)
+        $all_existing_events = get_posts(array(
+            'post_type'      => 'event_listing',
+            'post_status'    => array('publish', 'expired'),
+            'post__in'       => $all_event_ids,
+            'orderby'        => 'post__in',
+            'posts_per_page' => -1,
+            'no_found_rows'  => true,
+        ));
+
+        $total = count($all_existing_events);
 
         // Pagination
         $per_page = max(1, (int) $request->get_param('per_page') ?: 10);
         $page     = max(1, (int) $request->get_param('page') ?: 1);
         $offset   = ($page - 1) * $per_page;
-        $paged_ids = array_slice($all_event_ids, $offset, $per_page);
-
-        // Fetch event posts in bulk
-        $event_posts = get_posts(array(
-            'post_type'      => 'event_listing',
-            'post__in'       => $paged_ids,
-            'orderby'        => 'post__in', // keep original order
-            'posts_per_page' => count($paged_ids),
-        ));
+        $event_posts = array_slice($all_existing_events, $offset, $per_page);
 
         // Build response items
         $events = array();
