@@ -814,7 +814,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $events = array();
         foreach ($event_posts as $event_post) {
             $event_id = $event_post->ID;
-            $images   = function_exists('get_event_banner') ? get_event_banner($event_post) : array();
+            $images   = function_exists('get_event_banner') ? get_event_banner($event_post) : wpem_get_event_banner($event_post);
 
             $events[] = array(
                 'event_id'   => $event_id,
