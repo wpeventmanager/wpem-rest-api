@@ -213,9 +213,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         foreach ($participant_map as $pid => $status) {
             if($pid == $host_id) continue;
+            $user = get_userdata($pid);
+            if(!$user) continue;
             $pid = (int) $pid;
             $status = (int) $status;
-            $user = get_userdata($pid);
 
             // Build display name
             $display_name = '';
@@ -344,18 +345,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'company_name'  => !empty($host_company) ? $host_company : '',
         );
 
-        // Build final payload
-        return array(
-            'meeting_id'     => (int) $row['id'],
-            'event_id'       => isset($row['event_id']) ? (int) $row['event_id'] : 0,
-            'meeting_date'   => date_i18n('l, d F Y', strtotime($row['meeting_date'])),
-            'start_time'     => date_i18n('H:i', strtotime($row['meeting_start_time'])),
-            'end_time'       => date_i18n('H:i', strtotime($row['meeting_end_time'])),
-            'message'        => isset($row['message']) ? $row['message'] : '',
-            'host_info'      => $host_info,
-            'participants'   => $participants_info,
-            'meeting_status' => (int) $row['meeting_status'],
-        );
+            // Build final payload
+            return array(
+                'meeting_id'     => (int) $row['id'],
+                'event_id'       => isset($row['event_id']) ? (int) $row['event_id'] : 0,
+                'meeting_date'   => date_i18n('l, d F Y', strtotime($row['meeting_date'])),
+                'start_time'     => date_i18n('H:i', strtotime($row['meeting_start_time'])),
+                'end_time'       => date_i18n('H:i', strtotime($row['meeting_end_time'])),
+                'message'        => isset($row['message']) ? $row['message'] : '',
+                'host_info'      => $host_info,
+                'participants'   => $participants_info,
+                'meeting_status' => (int) $row['meeting_status'],
+            );
+
     }
 
     /**
