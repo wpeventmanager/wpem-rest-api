@@ -74,6 +74,7 @@ class WPEM_REST_APP_Branding_Controller extends WPEM_REST_CRUD_Controller {
             $response_data = self::prepare_error_for_response( 200 );
             $response_data['data'] = array(
                 'wpem_app_branding_settings' => $wpem_app_branding_settings,
+                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }

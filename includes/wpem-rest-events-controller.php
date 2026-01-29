@@ -326,12 +326,23 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
      */
     protected function get_event_data( $event, $context = 'view' ) {
         $meta_data    = get_post_meta( $event->ID );
+        $event_venue_id = 0;
         foreach( $meta_data as $key => $value ) {
             if('_event_start_time' == $key || '_event_end_time' == $key ) {
                 $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
                 $meta_data[$key] = esc_attr(date_i18n($time_format, strtotime(get_post_meta( $event->ID, $key, true ))));                                           
             } else
                 $meta_data[$key]= get_post_meta( $event->ID, $key, true );
+            if($key == '_event_online' && $meta_data[$key] == 'no' ) {
+                $event_venue_id = get_post_meta( $event->ID, '_event_venue_ids', true );
+            }
+        }
+        if( $event_venue_id ) {
+            $venue = get_post( $event_venue_id );
+            if( $venue ) {
+                $venue_name   = $venue->post_title; 
+                $venue_qrcode = get_post_meta( $event_venue_id, '_venue_qrcode', true );
+            }
         }
         $data = array(
             'id'                    => $event->ID,
@@ -346,10 +357,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             'event_categories'      => taxonomy_exists( 'event_listing_category' ) ? get_the_terms( $event->ID, 'event_listing_category' ) : ''   ,
             'event_types'           => taxonomy_exists( 'event_listing_type' ) ? get_the_terms( $event->ID, 'event_listing_type' ) : '',
             'event_tags'            => taxonomy_exists( 'event_listing_tag' ) ? get_the_terms( $event->ID, 'event_listing_tag' ) : '',
-            'images'                => get_event_banner( $event ),
+            'images'                => wpem_addon_get_event_banner( $event ),
             'meta_data'             => $meta_data,
         );
-
+        if( isset( $venue_qrcode ) && !empty( $venue_qrcode ) ) {
+            $data['venue']['name'] = $venue_name;
+            $data['venue']['QRCode'] = $venue_qrcode;
+        }
         return apply_filters( "wpem_rest_get_{$this->post_type}_data", $data, $event, $context );
     }
 
@@ -971,6 +985,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
                 'last_page' => max(1, $total_pages),
                 'total_pages' => $total_pages,
                 $this->rest_base => $objects,
+                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }

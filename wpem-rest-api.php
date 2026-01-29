@@ -65,18 +65,15 @@ class WPEM_Rest_API{
         include 'includes/wpem-rest-events-controller.php';
         include 'includes/wpem-rest-app-branding.php';
         include 'includes/wpem-rest-ecosystem-controller.php';
+        include 'includes/wpem-rest-settings-controller.php';
+        include 'includes/wpem-rest-contact-controller.php';
+        include 'includes/wpem-rest-ticket-controller.php';
 
         // match making api
-        include 'includes/wpem-rest-matchmaking-profile.php';
-		include 'includes/wpem-rest-matchmaking-get-texonomy.php';
-        include 'includes/wpem-rest-matchmaking-user-messages.php';
-        include 'includes/wpem-rest-matchmaking-filter-users.php';
-        include 'includes/wpem-rest-matchmaking-user-settings.php';
-        include 'includes/wpem-rest-matchmaking-create-meetings.php';
         include 'includes/wpem-rest-matchmaking-meetings-controller.php';
+        include 'includes/wpem-rest-matchmaking-messages-controller.php';
         include 'includes/wpem-rest-matchmaking-profile-controller.php';
         include 'includes/wpem-rest-matchmaking-settings-controller.php';
-        include 'includes/wpem-rest-user-registered-events-controller.php';
 
         // Activate
         register_activation_hook( __FILE__, array( $this, 'install' ) );

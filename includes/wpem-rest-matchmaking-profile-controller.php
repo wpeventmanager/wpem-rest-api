@@ -85,21 +85,33 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // Retrieve/Update matchmaking profile settings
         register_rest_route(
             $this->namespace,
+            '/matchmaking-profile-approval',
+            array(
+                'methods'  => WP_REST_Server::CREATABLE,
+                'callback' => array($this, 'approve_matchmaking_profile'),
+                'permission_callback' => array($this, 'permission_check'),
+                // 'args'     => array(
+                //     'registration_id' => array(
+                //         'required' => true,
+                //         'type'     => 'integer',
+                //     ),
+                //     'profile_status' => array(
+                //         'required' => true,
+                //         'type'     => 'integer',
+                //     )
+                // ),
+            ),
+        );
+
+        // Retrieve/Update matchmaking profile settings
+        register_rest_route(
+            $this->namespace,
             '/matchmaking-profile-settings',
             array(
                 'methods'  => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_matchmaking_profile_settings'),
                 'permission_callback' => array($this, 'permission_check'),
-                'args'     => array(
-                    'user_id' => array(
-                        'required' => false,
-                        'type'     => 'integer',
-                    ),
-                    'event_id' => array(
-                        'required' => false,
-                        'type'     => 'integer',
-                    ),
-                ),
+                'args'     => array(),
             ),
         );
         register_rest_route(
@@ -136,12 +148,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
         // POST - Filter matchmaking users (same as wpem_matchmaking_filter_users)
         register_rest_route(
-             $this->namespace,
+            $this->namespace,
             '/' . $this->rest_base . '/search',
             array(
                 array(
                     'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
+                    'callback'            => array($this, 'get_wpem_matchmaking_filter_users'),
                     'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(
                         'profession'    => array('required' => false, 'type' => 'string'),
@@ -163,37 +175,15 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // Alias endpoint for legacy path and POST method
         register_rest_route(
              $this->namespace,
-            '/' . $this->rest_base . '/filter',
+            '/' . $this->rest_base . '/events', 
             array(
                 array(
                     'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
+                    'callback'            => array($this, 'get_wpem_matchmaking_user_events'),
                     'permission_callback' => array($this, 'permission_check'),
-                ),
-                array(
-                    'methods'             => WP_REST_Server::CREATABLE,
-                    'callback'            => array($this, 'wpem_matchmaking_filter_users'),
-                    'permission_callback' => array($this, 'permission_check'),
-                ),
+                )
             )
         );
-    }
-
-    /**
-     * Permission callback: ensure matchmaking is enabled and user is authorized.
-     *
-     * Note: This follows the plugin's pattern of returning the standardized
-     * error payload via prepare_error_for_response on failure.
-     *
-     * @param WP_REST_Request $request
-     * @return bool|WP_Error True if allowed, or sends JSON error.
-     */
-    public function permission_check($request) {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return $auth_check; // Standardized error already sent
-        }
-        return true;
     }
 
     /**
@@ -216,6 +206,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             'user_id'      => $user_id,
             'display_name' => $user->display_name,
             'email'        => $user->user_email,
+            'first_name'   => $user->first_name,
+            'last_name'    => $user->last_name,
         );
 
         // Fetch dynamic fields
@@ -228,7 +220,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             switch ($type) {
                 case 'text':
                 case 'email':
-                case 'number':
+                case 'number': 
                 case 'textarea':
                     $value = sanitize_text_field($raw_value);
                     break;
@@ -266,11 +258,20 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     break;
             }
 
-            $profile[$field_key] = $value;
+            $profile[$field_key] = $value; 
         }
 
         // Add profile photo separately
         $profile['profile_photo'] = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+        if(!isset($profile['matchmaking_profile]']))
+            $profile['matchmaking_profile'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int)get_user_meta($user_id, '_matchmaking_profile', true) : 0;
+        if(!isset($profile['approve_profile_status]']))
+            $profile['approve_profile_status'] = get_user_meta($user_id, '_approve_profile_status', true) ? (int)get_user_meta($user_id, '_approve_profile_status', true) : 0;
+        if(!isset($profile['wpem_meeting_request_mode]']))
+            $profile['wpem_meeting_request_mode'] = get_user_meta($user_id, '_wpem_meeting_request_mode', true) ? get_user_meta($user_id, '_wpem_meeting_request_mode', true) : 'approval';
+		$meta = get_user_meta($user_id, '_available_for_meeting', true);
+		$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+        $profile['available_for_meeting'] = (int)$meeting_available;
 
         // Add organization logo separately
         $organization_logo = get_user_meta($user_id, '_organization_logo', true);
@@ -383,62 +384,50 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function get_matchmaking_profile_settings($request) {
         $user_id  = wpem_rest_get_current_user_id();
-        $event_id = (int) $request->get_param('event_id');
-
         $user = get_user_by('id', $user_id);
 
         // Build user event participation settings
         $user_event_participation = array();
-        if ($event_id) {
-            // Get registrations for a specific event
-            $registration_post_ids = get_posts(array(
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'post_status'    => 'any',
-                'author'         => $user_id,
-                'post_parent'    => $event_id,
-                'fields'         => 'ids',
-            ));
+       
+        // Get all registrations for this user
+        $user_registrations = get_posts(array(
+            'post_type'      => 'event_registration',
+            'posts_per_page' => -1,
+            'post_status'    => 'any',
+            'author'         => $user_id,
+            'fields'         => 'ids',
+        ));
 
-            if (!empty($registration_post_ids)) {
-                $create_matchmaking = (int) get_post_meta($registration_post_ids[0], '_create_matchmaking', true);
-                $user_event_participation[] = array(
-                    'event_id'           => (int) $event_id,
-                    'create_matchmaking' => $create_matchmaking,
-                );
+        foreach ($user_registrations as $registration_id) {
+            $parent_event_id = (int) get_post_field('post_parent', $registration_id);
+            if (!$parent_event_id) {
+                continue;
             }
-        } else {
-            // Get all registrations for this user
-            $user_registrations = get_posts(array(
-                'post_type'      => 'event_registration',
-                'posts_per_page' => -1,
-                'post_status'    => 'any',
-                'author'         => $user_id,
-                'fields'         => 'ids',
-            ));
-
-            foreach ($user_registrations as $registration_id) {
-                $parent_event_id = (int) get_post_field('post_parent', $registration_id);
-                if (!$parent_event_id) {
-                    continue;
-                }
-                $create_matchmaking = (int) get_post_meta($registration_id, '_create_matchmaking', true);
-                $user_event_participation[] = array(
-                    'event_id'           => $parent_event_id,
-                    'create_matchmaking' => $create_matchmaking,
-                );
-            }
+            $create_matchmaking = (int) get_post_meta($registration_id, '_create_matchmaking', true);
+            $user_event_participation[] = array(
+                'event_id'           => $parent_event_id,
+                'event_title'        => get_the_title($parent_event_id),
+                'event_banner'       => get_the_post_thumbnail_url($parent_event_id, 'thumbnail'),
+                'create_matchmaking' => $create_matchmaking,
+            );
         }
-
+        // Remove duplicates by event_id if necessary
+        $user_event_participation = array_values(array_unique($user_event_participation, SORT_REGULAR));
+        $timezone_settings = get_user_meta($user_id, '_timezone_settings', true) ? get_user_meta($user_id, '_timezone_settings', true) : 'default';
         $settings = array(
             'enable_matchmaking'   => (int) get_user_meta($user_id, '_matchmaking_profile', true),
             'message_notification' => (int) get_user_meta($user_id, '_message_notification', true),
             'event_participation'  => $user_event_participation,
             'meeting_request_mode' => get_user_meta($user_id, '_wpem_meeting_request_mode', true) ?: 'approval',
+            'timezone_settings'    => $timezone_settings,
         );
-
+        if($timezone_settings === 'custom') {
+            $settings['custom_timezone'] = get_user_meta($user_id, '_custom_timezone', true);
+            $settings['custom_timezone_offset'] = DateTimeZone::listIdentifiers();
+        }
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $settings;
+        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -461,7 +450,22 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if (!is_null($request->get_param('meeting_request_mode'))) {
             update_user_meta($user_id, '_wpem_meeting_request_mode', sanitize_text_field($request->get_param('meeting_request_mode')));
         }
+        if (!is_null($request->get_param('timezone_settings'))) {
+            $timezone_settings = $request->get_param('timezone_settings');
+            if($timezone_settings === 'custom') {
+                $tzlist   = DateTimeZone::listIdentifiers();
+                $timezone = $request->get_param('custom_timezone');
 
+                if ($timezone && in_array($timezone, $tzlist, true)) {                    
+                    update_user_meta($user_id, '_custom_timezone', sanitize_text_field($timezone));  
+                } else {
+                    self::prepare_error_for_response(400);
+                }
+            } else {
+                delete_user_meta($user_id, '_custom_timezone');
+            }
+            update_user_meta($user_id, '_timezone_settings', sanitize_text_field($request->get_param('timezone_settings')));
+        }
         // Update event participation settings
         $event_participation = $request->get_param('event_participation');
         if (is_array($event_participation)) {
@@ -490,15 +494,56 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
     
     /**
+     * Approve matchmaking profile by organizer.
+     * Params/validation aligned with matchmaking-settings controller.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.1.3
+     */
+    public function approve_matchmaking_profile($request) {
+        $params = $request->get_json_params();
+		$registration_id = isset($params['registration_id']) ? trim($params['registration_id']) : 0;
+		$profile_status = isset($params['profile_status']) ? $params['profile_status'] : 0;
+        // Update user meta values
+        if (empty($registration_id) || $registration_id <= 0 ) {
+			 return self::prepare_error_for_response(404);
+		}
+
+        // Get user_id and email from the current registration
+		$user_id = get_post_field('post_author', $registration_id);
+
+		// Update custom matchmaking table
+		if (!empty($user_id)) {
+			update_user_meta($user_id, '_approve_profile_status', $profile_status);
+		}
+		// Find all registrations with same user_id OR same email
+		$args = [
+			'post_type'      => 'event_registration',
+			'posts_per_page' => -1,
+			'post_status'    => 'any',
+			'author'         => absint( $user_id ), // Now uses post_author instead of meta
+		];
+
+		$registrations = get_posts($args);
+
+		foreach ($registrations as $reg) {
+			update_post_meta($reg->ID, '_attendee_approved', $profile_status);
+		}
+
+        return self::prepare_error_for_response(200);
+    }
+
+    /**
      * Filter matchmaking users (combined logic from wpem_matchmaking_filter_users)
      * Route: POST /wp-json/wpem/matchmaking-profile/filter
      * @since 1.1.4
      */
-    public function wpem_matchmaking_filter_users( WP_REST_Request $request ) {
-        $filters   = $request->get_params();
+    public function get_wpem_matchmaking_filter_users( WP_REST_Request $request ) {
+        $filters      = $request->get_params();
         $current_user = wpem_rest_get_current_user_id();
 
-        // Step 1: Get event_ids (passed or derived from user registrations)
+        // Step 1: Get event IDs
         $event_ids = [];
         if (!empty($filters['event_id'])) {
             $event_ids[] = absint($filters['event_id']);
@@ -517,7 +562,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     ]
                 ],
             ]);
-
             foreach ($registration_post_ids as $reg_id) {
                 $parent_id = wp_get_post_parent_id($reg_id);
                 if ($parent_id) {
@@ -532,33 +576,92 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Step 2: Collect attendees with matchmaking
-        $countries = wpem_get_all_countries();
-        $filtered_users = [];
+        $countries       = wpem_get_all_countries();
+        $filtered_users  = [];
+        $fields          = get_wpem_user_matchmaking_profile_fields();
 
         foreach ($event_ids as $eid) {
-            $users = wpem_get_all_match_making_attendees($current_user, $eid);
+            $users = wpem_get_all_matchmaking_participants($current_user, $eid);
 
-            foreach ($users as $u) {
-                $uid = $u['user_id'] ?? $u['ID'];
+            foreach ($users as $user) {
+                $uid       = $user['user_id'];
+                $user_meta = get_user_meta($uid);
 
-                $regs = get_posts([
-                    'post_type'      => 'event_registration',
-                    'post_status'    => ['new', 'confirmed', 'archived'],
-                    'post_parent'    => $eid,
-                    'author'         => $uid,
-                    'meta_query'     => [
-                        [
-                            'key'     => '_create_matchmaking',
-                            'value'   => '1',
-                            'compare' => '='
-                        ]
-                    ],
-                    'fields' => 'ids'
-                ]);
+                // Base info
+                $profile = [
+                    'user_id'      => $uid,
+                    'display_name' => $user['display_name'],
+                    'email'        => $user['user_email'],
+                    'first_name'   => $user_meta['first_name'][0] ?? '',
+                    'last_name'    => $user_meta['last_name'][0] ?? '',
+                ];
 
-                if (!empty($regs)) {
-                    $filtered_users[$uid] = $u;
+                // Dynamic fields
+                foreach ($fields as $field_key => $field_config) {
+                    $raw_value = isset($user_meta["_".$field_key][0]) ? maybe_unserialize($user_meta["_".$field_key][0]) : '';
+                    $type      = $field_config['type'] ?? 'text';
+                    $value     = '';
+
+                    switch ($type) {
+                        case 'text':
+                        case 'email':
+                        case 'number': 
+                        case 'textarea':
+                        case 'select':
+                        case 'term-select':
+                            $value = sanitize_text_field($raw_value);
+                            break;
+
+                        case 'checkbox':
+                        case 'radio':
+                            $value = !empty($raw_value) ? 1 : 0;
+                            break;
+
+                        case 'multiselect':
+                        case 'checkbox_multi':
+                            $arr   = is_array($raw_value) ? $raw_value : (array) $raw_value;
+                            $value = array_map('sanitize_text_field', $arr);
+                            break;
+
+                        case 'url':
+                        case 'file':
+                            if (is_array($raw_value)) {
+                                $raw_value = reset($raw_value);
+                            }
+                            $value = esc_url_raw($raw_value);
+                            break;
+
+                        case 'term-multiselect':
+                        case 'term-checkbox':
+                            $value = $raw_value;
+                            break;
+
+                        default:
+                            $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
+                            break;
+                    }
+                    $profile[$field_key] = $value;
                 }
+
+                // Photos / logos
+                $profile['profile_photo'] = get_wpem_user_profile_photo($uid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+                $org_logo = get_user_meta($uid, '_organization_logo', true);
+                $org_logo = is_array($org_logo) ? reset($org_logo) : $org_logo;
+                $profile['organization_logo'] = $org_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+
+                // Matchmaking / meeting meta
+                $profile['matchmaking_profile']   = (int) get_user_meta($uid, '_matchmaking_profile', true);
+                if(get_option('participant_activation') === 'manual')
+                    $profile['approve_profile_status'] =  (int) get_user_meta($uid, '_approve_profile_status', true);
+                else {
+                    $profile_status = get_user_meta($uid, '_approve_profile_status', true);
+                    $profile['approve_profile_status'] =  ($profile_status !== '' && $profile_status !== null) ? ((int)$profile_status === 0 ? 0 : 1) : 1;
+                }
+                $profile['wpem_meeting_request_mode'] = get_user_meta($uid, '_wpem_meeting_request_mode', true) ?: 'approval';
+                $meta = get_user_meta($uid, '_available_for_meeting', true);
+                $profile['available_for_meeting'] = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+
+                $filtered_users[$uid] = $profile;
             }
         }
 
@@ -568,9 +671,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return self::prepare_error_for_response(404);
         }
 
-        // Step 3: Apply filters
+        // Step 3: Apply filters (search, profession, etc.) — keep your existing filter logic here
         $final_users = [];
-
         foreach ($users as $user) {
             // Search (name, profession, company, country, city, skills, interests)
             if (!empty($filters['search'])) {
@@ -645,9 +747,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Step 4: Pagination
-        $page     = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
-        $per_page = isset($filters['per_page']) ? max(1, (int) $filters['per_page']) : 5;
-        $offset   = ($page - 1) * $per_page;
+        $page        = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
+        $per_page    = isset($filters['per_page']) ? max(1, (int) $filters['per_page']) : 5;
+        $offset      = ($page - 1) * $per_page;
         $paged_users = array_slice($final_users, $offset, $per_page);
 
         $response = self::prepare_error_for_response(200);
@@ -659,6 +761,85 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             'users'       => $paged_users,
         ];
 
+        return wp_send_json($response);
+    }
+
+    /**
+     * This function is used to get event list for which current loggedin user has registered
+     * @since 1.3.0
+     */
+    public function get_wpem_matchmaking_user_events($request){       
+        $user_id = wpem_rest_get_current_user_id();
+
+        // Get all registrations authored by user (lightweight query)
+        $registrations = get_posts(array(
+            'post_type'      => 'event_registration',
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'author'         => $user_id,
+            'no_found_rows'  => true,
+        ));
+
+        // Collect unique parent event IDs
+        $event_ids = array();
+        foreach ($registrations as $registration_id) {
+            $parent_id = (int) wp_get_post_parent_id($registration_id);
+            if ($parent_id > 0) {
+                $post_type = get_post_field('post_type', $parent_id);
+                if ($post_type === 'event_listing') {
+                    $event_ids[$parent_id] = true; // unique map
+                }
+            }
+        }
+
+        $all_event_ids = array_keys($event_ids);
+
+        // Get all events that actually exist (any status: publish, cancelled, expired, etc.)
+        $all_existing_events = get_posts(array(
+            'post_type'      => 'event_listing',
+            'post_status'    => array('publish', 'expired'),
+            'post__in'       => $all_event_ids,
+            'orderby'        => 'post__in',
+            'posts_per_page' => -1,
+            'no_found_rows'  => true,
+        ));
+
+        $total = count($all_existing_events);
+
+        // Pagination
+        $per_page = max(1, (int) $request->get_param('per_page') ?: 10);
+        $page     = max(1, (int) $request->get_param('page') ?: 1);
+        $offset   = ($page - 1) * $per_page;
+        $event_posts = array_slice($all_existing_events, $offset, $per_page);
+
+        // Build response items
+        $events = array();
+        foreach ($event_posts as $event_post) {
+            $event_id = $event_post->ID;
+            $images   = function_exists('get_event_banner') ? get_event_banner($event_post) : wpem_get_event_banner($event_post);
+
+            $events[] = array(
+                'event_id'   => $event_id,
+                'title'      => $event_post->post_title,
+                'status'     => $event_post->post_status,
+                'start_date' => get_post_meta($event_id, '_event_start_date', true),
+                'end_date'   => get_post_meta($event_id, '_event_end_date', true),
+                'location'   => get_post_meta($event_id, '_event_location', true),
+                'banner'     => $images,
+            );
+        }
+
+        $total_pages = (int) ceil($total / $per_page);
+
+        $response = self::prepare_error_for_response(200);
+        $response['data'] = array(
+            'total_post_count' => $total,
+            'current_page'     => $page,
+            'last_page'        => max(1, $total_pages),
+            'total_pages'      => $total_pages,
+            'events'           => $events,
+        );
         return wp_send_json($response);
     }
 }
