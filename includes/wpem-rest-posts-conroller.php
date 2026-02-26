@@ -531,7 +531,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
          *
          * @param array  Array of allowed WP_Query query vars.
          */
-        $valid_vars = apply_filters( 'query_vars', $wp->public_query_vars );
+        $valid_vars = apply_filters( 'wpem_query_vars', $wp->public_query_vars );
 
         $post_type_obj = get_post_type_object( $this->post_type );
         if( current_user_can( $post_type_obj->cap->edit_posts ) ) {

@@ -38,7 +38,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
     public function __construct() {
         global $wpdb;
-        $this->table = $wpdb->prefix . 'wpem_matchmaking_users_meetings';
+        $this->table = esc_sql($wpdb->prefix . 'wpem_matchmaking_users_meetings');
         add_action('rest_api_init', array($this, 'register_routes'), 10);
     }
 
@@ -503,8 +503,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $participants_raw = array_filter(array_map('intval', $participants), function($pid) use ($user_id){ return $pid && $pid !== $user_id; });
         $participants_map = array_fill_keys($participants_raw, -1);
 
-        $start_time = date('H:i', strtotime($slot));
-        $end_time   = date('H:i', strtotime($slot . ' +1 hour'));
+        $start_time = gmdate('H:i', strtotime($slot));
+        $end_time   = gmdate('H:i', strtotime($slot . ' +1 hour'));
 
         // Availability check: host and all selected participants must be free (no accepted meetings) in this slot
         $check_ids = array_unique(array_merge(array($user_id), $participants_raw));
@@ -610,8 +610,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $formats = array();
 
         if (null !== ($val = $request->get_param('meeting_date'))) { $fields['meeting_date'] = sanitize_text_field($val); $formats[] = '%s'; }
-        if (null !== ($val = $request->get_param('meeting_start'))) { $fields['meeting_start_time'] = date('H:i', strtotime($val)); $formats[] = '%s'; }
-        if (null !== ($val = $request->get_param('meeting_end'))) { $fields['meeting_end_time'] = date('H:i', strtotime($val)); $formats[] = '%s'; }
+        if (null !== ($val = $request->get_param('meeting_start'))) { $fields['meeting_start_time'] = gmdate('H:i', strtotime($val)); $formats[] = '%s'; }
+        if (null !== ($val = $request->get_param('meeting_end'))) { $fields['meeting_end_time'] = gmdate('H:i', strtotime($val)); $formats[] = '%s'; }
         if (null !== ($val = $request->get_param('message'))) { $fields['message'] = sanitize_textarea_field($val); $formats[] = '%s'; }
         if (null !== ($val = $request->get_param('meeting_status'))) { $fields['meeting_status'] = (int) $val; $formats[] = '%d'; }
         if (null !== ($val = $request->get_param('participants'))) {

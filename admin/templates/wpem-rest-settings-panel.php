@@ -1,7 +1,10 @@
 <?php
+if( !defined( 'ABSPATH' ) ) {
+    exit;
+}
 wp_enqueue_style('wp-color-picker');
 
-$tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'general';
+$tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash($_GET['tab']) ) : 'general';
 $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array();?>
 <div class="wpem-admin-bottom-content">
   <?php
@@ -38,25 +41,25 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                     switch ( $option['type'] ) {
                         case "checkbox" : ?>
                             <label>
-                                <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" name="<?php echo esc_attr( $option['name'] ); ?>" type="checkbox" value="1" <?php echo implode( ' ', $attributes ); ?> <?php checked( '1', $value ); ?> />
+                                <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" name="<?php echo esc_attr( $option['name'] ); ?>" type="checkbox" value="1" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php checked( '1', $value ); ?> />
                                 <?php echo esc_html( $option['cb_label'] ); ?>
                             </label>
                         <?php
                             if ( $option['desc'] ) {
-                                echo ' <p class="description">' . esc_html_e($option['desc']) . '</p>';
+                                echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                             }
                         break;
                     case "textarea" : ?>
-                        <textarea id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="large-text" cols="50" rows="3" name="<?php echo esc_attr($option['name']); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo esc_html( $placeholder ); ?>>
+                        <textarea id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="large-text" cols="50" rows="3" name="<?php echo esc_attr($option['name']); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_html( $placeholder ); ?>>
                             <?php echo esc_textarea( $value ); ?>
                         </textarea>
                         <?php
                         if ( $option['desc'] ) {
-                            echo ' <p class="description">' . esc_html_e( $option['desc'] ) . '</p>';
+                            echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
                         break;
                     case "select" : ?>
-                        <select id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" name="<?php echo esc_attr( $option['name'] ); ?>" <?php echo implode( ' ', $attributes ); ?>>
+                        <select id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" name="<?php echo esc_attr( $option['name'] ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?>>
                             <?php
                             foreach( $option['options'] as $key => $name ) {
                                 echo '<option value="' . esc_attr($key) . '" ' . selected($value, $key, false) . '>' . esc_html($name) . '</option>';
@@ -64,7 +67,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                         </select>
                         <?php
                         if ( $option['desc'] ) {
-                            echo ' <p class="description">' . esc_html_e( $option['desc'] ) . '</p>';
+                            echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
                         break;
                     case "radio": ?>
@@ -74,7 +77,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                             </legend>
                             <?php
                             if ( $option['desc'] ) {
-                                echo '<p class="description">' . esc_html_e( $option['desc'] ) . '</p>';
+                                echo '<p class="description">' . esc_html( $option['desc']) . '</p>';
                             }
                             foreach( $option['options'] as $key => $name ) {
                                 echo '<label><input name="' . esc_attr( $option['name'] ) . '" type="radio" value="' . esc_attr( $key ) . '" ' . checked( $value, $key, false ) . ' />' . esc_html( $name ) . '</label><br>';
@@ -88,20 +91,20 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                             'id'               => $option['name'],
                             'sort_column'      => 'menu_order',
                             'sort_order'       => 'ASC',
-                            'show_option_none' => __('--no page--', 'wp-event-manager'),
+                            'show_option_none' => __('--no page--', 'wpem-rest-api'),
                             'echo'             => false,
                             'selected'         => absint($value)
                         );
-                        echo str_replace(' id=', " data-placeholder='" . __( 'Select a page&hellip;', 'wp-event-manager' ) .  "' id=", wp_dropdown_pages( $args ));
+                        echo str_replace(' id=', " data-placeholder='" . __( 'Select a page&hellip;', 'wpem-rest-api' ) .  "' id=", wp_dropdown_pages( $args ));
                         if ($option['desc'] ) {
-                            echo ' <p class="description">' . esc_html_e( $option['desc'] ) . '</p>';
+                            echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
                         break;
                     case "password" : ?>
-                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="password" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> />
+                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="password" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr( $value ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> />
                         <?php
                         if ( $option['desc'] ) {
-                            echo ' <p class="description">' . esc_html_e( $option['desc'] ) . '</p>';
+                            echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
                         break;
                     case "" :
@@ -110,22 +113,22 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                         $default_name = 'WP Event Manager';
                         $current_name = get_option( 'wpem_rest_api_app_name', $default_name );
                         if (empty($current_name)) {
-                            update_option( 'wpem_rest_api_app_name', 'WP Event Manager' );
+                            update_option( 'wpem_rest_api_app_name', 'wpem-rest-api' );
                             $current_name = $default_name;
                         }; ?>
-                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr_e( $current_name ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> />
+                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr( $current_name ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> />
                         <?php
                         if ( $option['desc'] ) {
-                            echo ' <p class="description">' . esc_html_e( $option['desc'] ) . '</p>';
+                            echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
                         break;    
                     case "multi-select-checkbox":
                         $this->create_multi_select_checkbox( $option );
                         break;
                     case "color-picker": ?>
-                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text wpem-colorpicker" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr_e( $value ); ?>" <?php echo implode( ' ', $attributes ); ?> <?php echo $placeholder; ?> /><?php
+                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text wpem-colorpicker" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr( $value ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> /><?php
                         if ( $option['desc'] ) {
-                            echo ' <p class="description">' . esc_html_e( $option['desc'] ) . '</p>';
+                            echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
                         break;
                     case "file" : ?>
@@ -146,7 +149,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                                 }  ?>
                                 <span class="file_url">
                                     <input type="text" name="<?php echo esc_attr( $option['name'] ); ?>" id="<?php echo esc_attr( $option['name'] ); ?>" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
-                                    <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api' ); ?>">
+                                    <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
                                         <?php esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
                                     </button>
                                 </span>

@@ -242,9 +242,10 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         // --- Event selection logic ---
         if ($current_user_id) {
             global $wpdb;
+            $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
             $settings_row = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT event_show_by, selected_events FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",
+                    "SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d",
                     $current_user_id
                 ),
                 ARRAY_A
@@ -480,8 +481,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
                     $validation_errors =  $form_submit_event_instance->get_errors();
                     foreach( $validation_errors as $error ) {
-                        echo esc_html__( $error );
-                    }
+                        echo esc_html( $error );                    }
                     return;
                 }
                 $event = get_post( $form_submit_event_instance->get_event_id() );
@@ -936,7 +936,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
     }
      public function get_items( $request ) {
         global $wpdb;
-
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         $user_id = intval( $request['user_id'] );
         $auth_check = $this->wpem_check_authorized_user( $user_id );
         if ($auth_check) {
@@ -946,7 +946,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
 
             $settings_row = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT event_show_by, selected_events FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",
+                    "SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d",
                     $user_id
                 ),
                 ARRAY_A

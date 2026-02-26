@@ -273,12 +273,12 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
     }
 }
 
-if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
+if( !function_exists( 'wpem_get_rest_api_ecosystem_info' ) ) {
     /**
      * This function is used to get ecosystem information of website
      * @since 1.0.1
      */
-    function get_wpem_rest_api_ecosystem_info(){
+    function wpem_get_rest_api_ecosystem_info(){
         // Create required plugin list for wpem rest api
         $required_plugins = apply_filters( 'wpem_rest_api_required_plugin_list', array(
             'woocommerce' => 'Woocommerce',
@@ -307,7 +307,7 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
                     $licence_activate = get_option( $plugin['TextDomain'] . '_licence_key' );
 
                     if( !empty ( $licence_activate ) ) {
-                        $license_status = check_wpem_license_expire_date($licence_activate );
+                        $license_status = wpem_check_license_expire_date($licence_activate );
                         $ecosystem_info[$plugin["TextDomain"]] = array(
                             'version' => $plugin["Version"],
                             'activated' => $license_status,
@@ -341,11 +341,11 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
     }
 }
 
-if( !function_exists( 'check_wpem_license_expire_date' ) ) {
+if( !function_exists( 'wpem_check_license_expire_date' ) ) {
     /**
      * This function is used to check plugin license key is expired or not
      */
-    function check_wpem_license_expire_date($licence_key) {
+    function wpem_check_license_expire_date($licence_key) {
         
         $args = array();
         $defaults = array(
@@ -374,14 +374,14 @@ if( !function_exists( 'check_wpem_license_expire_date' ) ) {
     }
 }
 
-if( !function_exists( 'get_wpem_event_users' ) ) {
+if( !function_exists( 'wpem_get_event_users' ) ) {
 
     /**
      * This function used to get all event users
      * 
      * @since 1.0.1
      */
-     function get_wpem_event_users() {
+     function wpem_get_event_users() {
         // Get allowed roles from settings; default to organizer and wpem-scanner
         $allowed_roles = get_option( 'wpem_rest_allowed_roles' );
         if ( empty( $allowed_roles ) || ! is_array( $allowed_roles ) ) {
@@ -444,7 +444,7 @@ if( !function_exists( 'wpem_rest_get_current_user_id' ) ) {
     }
 }
 
-if( !function_exists( 'check_wpem_plugin_activation' ) ) {
+if( !function_exists( 'wpem_check_plugin_activation' ) ) {
     /**
      * This function is used to check perticular plugin license activated or not.
      *
@@ -452,14 +452,14 @@ if( !function_exists( 'check_wpem_plugin_activation' ) ) {
      * @param string $context Request context.
      * @return array
      */
-    function check_wpem_plugin_activation($plugin_domain) {
+    function wpem_check_plugin_activation($plugin_domain) {
         if(!is_plugin_active($plugin_domain.'/'.$plugin_domain.'.php')) {
             return WPEM_REST_CRUD_Controller::prepare_error_for_response(203);
         } else {
             $licence_activate = get_option( $plugin_domain . '_licence_key' );
 
             if( !empty ( $licence_activate ) ) {
-                $license_status = check_wpem_license_expire_date($licence_activate );
+                $license_status = wpem_check_license_expire_date($licence_activate );
 
                 if( $license_status ) {
                     return true;
@@ -512,14 +512,14 @@ function wpem_get_user_login_status($user_id) {
         $user_status['is_matchmaking'] = 0;
     }
 
-    $table_name = $wpdb->prefix . 'wpem_rest_api_keys';
+    $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
     $user_info = $wpdb->get_row(
         $wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $user_id)
     );
 
     if ($user_info) {
         $date_expires = strtotime($user_info->date_expires);
-        $today = strtotime(date('Y-m-d'));
+        $today = strtotime(gmdate('Y-m-d'));
 
         if ($date_expires < $today) {
             $user_status['is_organizer'] = 0;

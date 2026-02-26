@@ -7,11 +7,11 @@ defined('ABSPATH') || exit; ?>
     <div class="app-branding-mode">
         <div class="wpem-light-mode button">
             <label>Day</label>
-            <img src="<?php echo WPEM_REST_API_PLUGIN_URL;?>/assets/images/sun.png" alt="">
+            <img src="<?php echo esc_url(WPEM_REST_API_PLUGIN_URL . '/assets/images/sun.png'); ?>" alt="">
         </div>
         <div class="wpem-dark-mode button">
             <label>Night</label>
-            <img src="<?php echo WPEM_REST_API_PLUGIN_URL;?>/assets/images/moon.png" alt="">
+            <img src="<?php echo esc_url(WPEM_REST_API_PLUGIN_URL . '/assets/images/moon.png'); ?>" alt="">
         </div>
     </div>
 

@@ -42,7 +42,7 @@ class WPEM_Rest_API_Keys {
      */
     public static function page_output(){
         // Hide the save button.
-        $GLOBALS['hide_save_button'] = true;
+        $GLOBALS['wpem_hide_save_button'] = true;
         wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
         if( isset( $_GET['create-key'] ) || isset( $_GET['edit-key'] ) ) {
@@ -66,10 +66,10 @@ class WPEM_Rest_API_Keys {
      * Add screen option.
      */
     public function screen_option() {
-        global $keys_table_list;
+        global $wpem_keys_table_list;
 
         if( !isset( $_GET['create-key'] ) && !isset( $_GET['edit-key'] ) && $this->is_api_keys_settings_page() ) { // WPCS: input var okay, CSRF ok.
-            $keys_table_list = new WPEM_API_Keys_Table_List();
+            $wpem_keys_table_list = new WPEM_API_Keys_Table_List();
 
             // Add screen option.
             add_screen_option(
@@ -87,13 +87,14 @@ class WPEM_Rest_API_Keys {
      * Table list output.
      */
     private static function table_list_output() {
-        global $wpdb, $keys_table_list;
- 		$keys_table_list = new WPEM_API_Keys_Table_List();
+        global $wpdb, $wpem_keys_table_list;
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
+ 		$wpem_keys_table_list = new WPEM_API_Keys_Table_List();
 
         $add_key = false;
-        $all_users = get_wpem_event_users();
+        $all_users = wpem_get_event_users();
         global $wpdb;
-        $app_user = $wpdb->get_col("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys");
+        $app_user = $wpdb->get_col("SELECT user_id FROM {$table_name}");
         $user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
         foreach ( $all_users as $user ) { 
 			if(!in_array($user['ID'], $app_user) || $user_id == $user['ID']) {
@@ -106,13 +107,13 @@ class WPEM_Rest_API_Keys {
         else
             echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wpem-rest-api' ) . '</h3>';
         // Get the API keys count.
-        $count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1;" );
+        $count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1;" );
 
         if (absint($count) && $count > 0 ) {
-            $keys_table_list->prepare_items();
-            $keys_table_list->views();
-            $keys_table_list->search_box(__( 'Search by User', 'wp-event-manager-organizer-app-access' ), 'user' );
-            $keys_table_list->display();
+            $wpem_keys_table_list->prepare_items();
+            $wpem_keys_table_list->views();
+            $wpem_keys_table_list->search_box(__( 'Search by User', 'wpem-rest-api' ), 'user' );
+            $wpem_keys_table_list->display();
 
         } else {
             echo '<div class="wpem-rest-api-BlankState wpem-rest-api-BlankState--api wpem-admin-body">'; ?>
@@ -137,7 +138,7 @@ class WPEM_Rest_API_Keys {
      */
     private static function get_key_data( $key_id ){
         global $wpdb;
-
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         $empty = array(
             'key_id'        => 0,
             'user_id'       => '',
@@ -156,7 +157,7 @@ class WPEM_Rest_API_Keys {
         $key = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, event_show_by, selected_events, date_expires
-				FROM {$wpdb->prefix}wpem_rest_api_keys
+				FROM {$table_name}
 				WHERE key_id = %d",
                 $key_id
             ),
@@ -204,11 +205,12 @@ class WPEM_Rest_API_Keys {
      */
     private function revoke_key(){
         global $wpdb;
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         check_admin_referer('revoke');
 
         if ( isset( $_REQUEST['revoke-key'] ) ) { // WPCS: input var okay, CSRF ok.
             $key_id  = absint( $_REQUEST['revoke-key'] ); // WPCS: input var okay, CSRF ok.
-            $user_id = (int) $wpdb->get_var($wpdb->prepare( "SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys WHERE key_id = %d", $key_id ) );
+            $user_id = (int) $wpdb->get_var($wpdb->prepare( "SELECT user_id FROM {$table_name} WHERE key_id = %d", $key_id ) );
 
             if ( $key_id && $user_id && ( current_user_can( 'edit_user', $user_id ) || get_current_user_id() === $user_id ) ) {
                 $this->remove_key( $key_id );
@@ -270,7 +272,8 @@ class WPEM_Rest_API_Keys {
      */
     private function remove_key( $key_id ) {
         global $wpdb;
-        $delete = $wpdb->delete( $wpdb->prefix . 'wpem_rest_api_keys', array( 'key_id' => $key_id ), array( '%d' ) );
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
+        $delete = $wpdb->delete( $table_name, array( 'key_id' => $key_id ), array( '%d' ) );
         return $delete;
     }
 }

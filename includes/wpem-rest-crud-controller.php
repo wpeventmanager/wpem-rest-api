@@ -660,7 +660,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
          * @param array        $query_params JSON Schema-formatted collection parameters.
          * @param WP_Post_Type $post_type    Post type object.
          */
-        return apply_filters( "rest_{$this->post_type}_collection_params", $params, $this->post_type );
+        return apply_filters( "wpem_rest_{$this->post_type}_collection_params", $params, $this->post_type );
     }
 
     /**
@@ -699,13 +699,13 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             if (!wp_check_password($user_data['password'], $user->user_pass, $user->ID)) {
                 return self::prepare_error_for_response(405);
             } else {
-                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = $user->ID "));
+                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID));
                 $user_meta = get_user_meta( $user->ID, '_matchmaking_profile', true );
                 if($user_info){ 
-                    $date_expires = date('Y-m-d', strtotime($user_info->date_expires));
+                    $date_expires = gmdate('Y-m-d', strtotime($user_info->date_expires));
                     if( $user_info->permissions == 'write'){
                         return self::prepare_error_for_response(203);
-                    } else if( $date_expires < date('Y-m-d') ){
+                    } else if( $date_expires < gmdate('Y-m-d') ){
                         if(!empty( $user_meta ) && $user_meta == 1){
                             if (!get_option('enable_matchmaking', false)) {
                                 return self::prepare_error_for_response(506);
@@ -744,7 +744,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         list($header, $payload, $signature) = $parts;
 
         $expected_signature = wpem_base64url_encode(
-            hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true)
+            hash_hmac('sha256', "$header.$payload", WPEM_JWT_SECRET_KEY, true)
         ); 
 
         if (!hash_equals($expected_signature, $signature)) {

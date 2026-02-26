@@ -20,7 +20,7 @@ class WPEM_Rest_APP_Branding {
      */
     public static function page_output(){
         // Hide the save button.
-        $GLOBALS['hide_save_button'] = true;
+        $GLOBALS['wpem_hide_save_button'] = true;
         wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
         $primary_color = !empty( get_option( 'wpem_primary_color' ) ) ? get_option( 'wpem_primary_color' ) : '#3366FF';
