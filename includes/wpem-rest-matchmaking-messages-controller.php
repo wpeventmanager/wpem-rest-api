@@ -35,7 +35,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      */
     public function __construct() {
         global $wpdb;
-        $this->table = $wpdb->prefix . 'wpem_matchmaking_users_messages';
+        $this->table = esc_sql($wpdb->prefix . 'wpem_matchmaking_users_messages');
         add_action('rest_api_init', array($this, 'register_routes'), 10);
     }
 
@@ -83,7 +83,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             array(
                 'args'   => array(
                     'id' => array(
-                        'description' => __('Unique identifier for the message.'),
+                        'description' => __('Unique identifier for the message.', 'wpem-rest-api'),
                         'type'        => 'integer',
                     ),
                 ),
@@ -117,14 +117,14 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
                     'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(
                         'paged' => array(
-                            'description'       => __('Current page of the collection.'),
+                            'description'       => __('Current page of the collection.', 'wpem-rest-api'),
                             'type'              => 'integer',
                             'default'           => 1,
                             'minimum'           => 1,
                             'validate_callback' => 'rest_validate_request_arg',
                         ),
                         'per_page' => array(
-                            'description'       => __('Maximum number of items to be returned in result set.'),
+                            'description'       => __('Maximum number of items to be returned in result set.', 'wpem-rest-api'),
                             'type'              => 'integer',
                             'default'           => 10,
                             'minimum'           => 1,
@@ -417,7 +417,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
                 'profession'           => get_user_meta( $partner_id, '_profession', true ),
                 'company_name'         => get_user_meta( $partner_id, '_company_name', true ),
                 'last_message'         => $last_message_row ? $last_message_row->message : null,
-                'message_time'         => $last_message_row ? date( 'Y-m-d H:i:s', strtotime( $last_message_row->created_at ) ) : null,
+                'message_time'         => $last_message_row ? gmdate( 'Y-m-d H:i:s', strtotime( $last_message_row->created_at ) ) : null,
                 'last_message_is_image'=> $is_image,
             ];
         }
@@ -550,7 +550,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $params = parent::get_collection_params();
         $params['context']['default'] = 'view';
         $params['partner_id'] = array(
-            'description'       => __('Limit results to messages sent by a specific user.'),
+            'description'       => __('Limit results to messages sent by a specific user.', 'wpem-rest-api'),
             'type'              => 'integer',
             'validate_callback' => 'rest_validate_request_arg',
         );

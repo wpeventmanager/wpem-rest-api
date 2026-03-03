@@ -355,7 +355,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
-        $file = $_FILES['file'];
+        $file = map_deep($_FILES['file'], 'wp_kses_post');
         $upload_overrides = array('test_form' => false);
         $movefile = wp_handle_upload($file, $upload_overrides);
         if (!isset($movefile['url'])) {

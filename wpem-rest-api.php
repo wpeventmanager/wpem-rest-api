@@ -12,7 +12,7 @@
 * Version: 1.3.0
 * Since: 1.0.0
 * 
-* Requires WordPress Version at least: 6.5.1
+* Requires WordPress Version at least: 6.7
 * Copyright: 2019 WP Event Manager
 * License: GNU General Public License v3.0
 * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -35,21 +35,21 @@ class WPEM_Rest_API{
      */
     public function __construct()    {
         //if wp event manager not active return from the plugin
-        if( !in_array( 'wp-event-manager/wp-event-manager.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+        if( !in_array( 'wp-event-manager/wp-event-manager.php', apply_filters( 'wpem_active_plugins', get_option( 'active_plugins' ) ) ) ) {
             return;
         }
 
         // Define constants
-        define( 'WPEM_REST_API_VERSION', '1.3.0' );
+        define( 'WPEM_REST_API_VERSION', '1.4.0' );
         define( 'WPEM_REST_API_FILE', __FILE__ );
         define( 'WPEM_REST_API_PLUGIN_DIR', untrailingslashit( plugin_dir_path(__FILE__ ) ) );
         define( 'WPEM_REST_API_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path(__FILE__) ), basename(__FILE__) ) ) );
         define( 'WPEM_PLUGIN_ACTIVATION_API_URL', 'https://wp-eventmanager.com/?wc-api=wpemstore_licensing_expire_license' );
-        if (!defined('JWT_SECRET_KEY')) {
-            define('JWT_SECRET_KEY', '9s59d4s9d49ed94sf46dsf74d96');
+        if (!defined('WPEM_JWT_SECRET_KEY')) {
+            define('WPEM_JWT_SECRET_KEY', '9s59d4s9d49ed94sf46dsf74d96');
         }
-        if (!defined('JWT_ALGO')) {
-            define('JWT_ALGO', 'HS256');
+        if (!defined('WPEM_JWT_ALGO')) {
+            define('WPEM_JWT_ALGO', 'HS256');
         }
         if( is_admin() ) {
             include 'admin/wpem-rest-api-admin.php';
@@ -94,7 +94,7 @@ class WPEM_Rest_API{
      **/
     public function load_plugin_textdomain(){
         $domain = 'wpem-rest-api';
-        $locale = apply_filters( 'plugin_locale', get_locale(), $domain );
+        $locale = apply_filters( 'wpem_plugin_locale', get_locale(), $domain );
         load_textdomain( $domain, WP_LANG_DIR . "/wpem-rest-api/".$domain."-" .$locale. ".mo" );
         load_plugin_textdomain( $domain, false, dirname( plugin_basename(__FILE__) ) . '/languages/' );
     }
@@ -137,9 +137,10 @@ class WPEM_Rest_API{
 
         include_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         // Table for storing licence keys for purchases
         $sql = "
-            CREATE TABLE {$wpdb->prefix}wpem_rest_api_keys (
+            CREATE TABLE {$table_name} (
             key_id BIGINT UNSIGNED NOT NULL auto_increment,
             app_key varchar(200) NOT NULL,	
             user_id BIGINT UNSIGNED NOT NULL,
@@ -163,7 +164,6 @@ class WPEM_Rest_API{
         dbDelta( $sql );
         
         // Check if we need to alter existing table
-		$table_name = $wpdb->prefix . 'wpem_rest_api_keys';
 		$columns = $wpdb->get_col("DESC {$table_name}", 0);
 		
 		// Add event_show_by column if it doesn't exist
@@ -352,11 +352,11 @@ function wpem_rest_api_pre_check_before_installing_event_rest_api() {
     /*
     * Check weather WP Event Manager is installed or not
     */
-    if( !in_array( 'wp-event-manager/wp-event-manager.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+    if( !in_array( 'wp-event-manager/wp-event-manager.php', apply_filters( 'wpem_active_plugins', get_option( 'active_plugins' ) ) ) ) {
             global $pagenow;
         if($pagenow == 'plugins.php' ) {
             echo '<div id="error" class="error notice is-dismissible"><p>';
-            echo __( 'WP Event Manager is require to use WP Event Manager Rest API ', 'wpem-rest-api' );
+            echo esc_html__( 'WP Event Manager is require to use WP Event Manager Rest API ', 'wpem-rest-api' );
             echo '</p></div>';
         }
         return false;

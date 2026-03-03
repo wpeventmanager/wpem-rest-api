@@ -39,26 +39,28 @@ defined( 'ABSPATH' ) || exit; ?>
 					<td class="forminp">
 						<?php
 						$disabled = "";
-						$all_users = get_wpem_event_users();
+						$all_users = wpem_get_event_users();
 						global $wpdb;
-						$app_user = $wpdb->get_col("SELECT user_id FROM {$wpdb->prefix}wpem_rest_api_keys");
+						$table_name = esc_sql( $wpdb->prefix . 'wpem_rest_api_keys' );
+
+						$app_user = $wpdb->get_col("SELECT user_id FROM $table_name");
 						$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
 						if($user_id > 0) 
 							$disabled = "disabled"; ?>
-						<select class="food-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wpem-rest-api' ); ?>" data-allow_clear="true" <?php echo $disabled;?>>
+							<select class="food-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wpem-rest-api' ); ?>" data-allow_clear="true" <?php echo esc_attr( $disabled );?>>
 							<?php
 							foreach ( $all_users as $user ) { 
 								if(!in_array($user['ID'], $app_user) || $user_id == $user['ID']) { ?>
 								<option value="<?php echo esc_attr( $user['ID'] ); ?>"  <?php if($user['ID'] == $user_id )  echo 'selected="selected"';?>><?php 
-								echo '#'; 
-								printf(__('%d','wpem-rest-api'),$user['ID']);
+								echo '#';
+								echo esc_attr( $user['ID'] ); 
 								echo ' ';
-									printf(__('%s','wpem-rest-api'),$user['username']); // htmlspecialchars to prfood XSS when rendered by chosen. ?></option>
+								echo esc_html( $user['username'] );// htmlspecialchars to prfood XSS when rendered by chosen. ?></option>
 								<?php
 								}
 							} ?>
 						</select>
-						<p class="description"><?php _e( 'Name of the owner of the Key.', 'wpem-rest-api' );?></p> 
+						<p class="description"><?php esc_attr_e( 'Name of the owner of the Key.', 'wpem-rest-api' );?></p> 
 					</td>
 				</tr>
 				<tr valign="top">
@@ -71,7 +73,7 @@ defined( 'ABSPATH' ) || exit; ?>
 						<?php
 						//convert date and time into date format
 						if( isset( $key_data['date_expires'] ) && !empty( $key_data['date_expires'] ) ) {
-							$expiry_date = date( 'Y-m-d', strtotime( $key_data['date_expires'] ) ); 
+							$expiry_date = gmdate( 'Y-m-d', strtotime( $key_data['date_expires'] ) ); 
 						} else { 
 							$expiry_date = '';  
 						} ?>
@@ -196,7 +198,7 @@ defined( 'ABSPATH' ) || exit; ?>
 								<?php
 								if ( ! empty( $key_data['last_access'] ) ) {
 									/* translators: 1: last access date 2: last access time */
-									$date = sprintf( __( '%1$s at %2$s', 'wp-event-manager-organizer-app-access' ), date_i18n( get_option('date_format'), strtotime( $key_data['last_access'] ) ), date_i18n(get_option('time_format'), strtotime( $key_data['last_access'] ) ) );
+									$date = sprintf( __( '%1$s at %2$s', 'wpem-rest-api' ), date_i18n( get_option('date_format'), strtotime( $key_data['last_access'] ) ), date_i18n(get_option('time_format'), strtotime( $key_data['last_access'] ) ) );
 
 									echo esc_html( apply_filters( 'wpem_api_key_last_access_datetime', $date, $key_data['last_access'] ) );
 								} else {
@@ -224,11 +226,11 @@ defined( 'ABSPATH' ) || exit; ?>
 	<?php do_action( 'wpem_admin_key_fields', $key_data ); 
 
 	if ( 0 === intval( $key_id ) ) {
-		submit_button( __( 'Generate API key', 'wp-event-manager-organizer-app-access' ), 'primary wpem-backend-theme-button', 'update_api_key' );
+		submit_button( __( 'Generate API key', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'update_api_key' );
 		echo '<div id="api_key_loader" class="loader" style="display:none;margin-left: 20px;"></div>';
 	} else { ?>
 		<p class="submit">
-			<?php submit_button( __( 'Save changes', 'wp-event-manager-organizer-app-access' ), 'primary wpem-backend-theme-button', 'update_api_key', false ); ?>
+			<?php submit_button( __( 'Save changes', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'update_api_key', false ); ?>
 			<a class="wpem-backend-theme-button wpem-revoke-button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wpem-rest-api' ); ?></a>
 		</p>
 		<?php

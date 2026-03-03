@@ -167,7 +167,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		if ( !hash_equals( $this->user->consumer_secret, $consumer_secret ) ) { // @codingStandardsIgnoreLine
 			return parent::prepare_error_for_response(401);
 		}
-		$current_date = date('Y-m-d H:i:s');
+		$current_date = gmdate('Y-m-d H:i:s');
 
 		//Check for key expiry
 		if ( isset($this->user->date_expires) && $current_date>$this->user->date_expires) {
@@ -492,13 +492,14 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 */
 	private function get_user_data_by_consumer_key( $consumer_key ) {
 		global $wpdb;
+		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 		$consumer_key = sanitize_text_field( $consumer_key ); //NEED TO IMPROVE LATER WITH GLOBAL API
 
 		$user         = $wpdb->get_row(
 			$wpdb->prepare(
 				"
 					SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created`
-					FROM {$wpdb->prefix}wpem_rest_api_keys
+					FROM {$table_name}
 					WHERE consumer_key = %s
 				",
 				$consumer_key
@@ -544,9 +545,9 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 */
 	private function update_last_access() {
 		global $wpdb;
-
+		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 		$wpdb->update(
-			$wpdb->prefix . 'wpem_rest_api_keys',
+			$table_name,
 			array( 'last_access' => current_time( 'mysql' ) ),
 			array( 'key_id' => $this->user->key_id ),
 			array( '%s' ),
@@ -635,20 +636,20 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				return parent::prepare_error_for_response(401);
 			} else {
 				global $wpdb;
-
+				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 				$user_id = $user->ID;
 				$key_data = $wpdb->get_row(
 					$wpdb->prepare(
 						"
 							SELECT *
-							FROM {$wpdb->prefix}wpem_rest_api_keys
+							FROM {$table_name}
 							WHERE user_id = %s
 						",
 						$user_id
 					)
 				);
 		
-				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( date('Y-m-d H:i:s') ) ){
+				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( gmdate('Y-m-d H:i:s') ) ){
 					$key_data->expiry  = false;
 				} else {
 					return parent::prepare_error_for_response(503);
@@ -683,7 +684,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				return parent::prepare_error_for_response(401);
 			} else {
 				global $wpdb;
-
+				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 				$user_id = $user->ID;
 
 				$token = $this->wpem_generate_jwt_token($user->ID, $password);
@@ -820,13 +821,13 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				// Keep the API key check logic unchanged
 				$key_data = $wpdb->get_row(
 					$wpdb->prepare(
-						"SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %s",
+						"SELECT * FROM {$table_name} WHERE user_id = %s",
 						$user_id
 					)
 				);
 				
 				if (!empty($key_data)) {
-					if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(date('Y-m-d H:i:s'))) {
+					if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {
 						$key_data->expiry = false;
 					} else {
 						$key_data->expiry = true;
@@ -868,7 +869,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		]));
 
 		// Signature
-		$signature = wpem_base64url_encode(hash_hmac('sha256', "$header.$payload", JWT_SECRET_KEY, true));
+		$signature = wpem_base64url_encode(hash_hmac('sha256', "$header.$payload", WPEM_JWT_SECRET_KEY, true));
 
 		// Return standard JWT format
 		return $header . '.' . $payload . '.' . $signature;
@@ -887,7 +888,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 			return $this->validate_jwt_token($token);
 		}
 
-		return new WP_Error( 'rest_forbidden', __( 'Missing or invalid authorization token.', 'textdomain' ), array( 'status' => 401 ) );
+		return new WP_Error( 'rest_forbidden', __( 'Missing or invalid authorization token.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 	}
 	/**
 	 * This function will used to check validation of jwt token 
@@ -896,19 +897,19 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	private function validate_jwt_token($token) {
 		$parts = explode('.', $token);
 		if (count($parts) !== 3) {
-			return new WP_Error( 'rest_forbidden', __( 'Malformed token.', 'textdomain' ), array( 'status' => 401 ) );
+			return new WP_Error( 'rest_forbidden', __( 'Malformed token.', 'wpem-rest-api' ), array( 'status' => 401 ) );
 		}
 
 		list($header_b64, $payload_b64, $signature_b64) = $parts;
 
 		// Recalculate the signature
 		$expected_signature = wpem_base64url_encode(
-			hash_hmac('sha256', "$header_b64.$payload_b64", JWT_SECRET_KEY, true)
+			hash_hmac('sha256', "$header_b64.$payload_b64", WPEM_JWT_SECRET_KEY, true)
 		);
 
 		// Timing-attack-safe comparison
 		if (!hash_equals($expected_signature, $signature_b64)) {
-			return new WP_Error( 'rest_forbidden', __( 'Invalid token signature.', 'textdomain' ), [ 'status' => 401 ] );
+			return new WP_Error( 'rest_forbidden', __( 'Invalid token signature.', 'wpem-rest-api' ), [ 'status' => 401 ] );
 		}
 
 		// Decode payload
@@ -916,12 +917,12 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		$payload = json_decode($payload_json, true);
 
 		if (json_last_error() !== JSON_ERROR_NONE || !isset($payload['user']['id'])) {
-			return new WP_Error( 'rest_forbidden', __( 'Invalid token payload.', 'textdomain' ), [ 'status' => 401 ] );
+			return new WP_Error( 'rest_forbidden', __( 'Invalid token payload.', 'wpem-rest-api' ), [ 'status' => 401 ] );
 		}
 
 		// Optionally: check expiration
 		if (isset($payload['exp']) && time() > $payload['exp']) {
-			return new WP_Error( 'rest_forbidden', __( 'Token has expired.', 'textdomain' ), [ 'status' => 401 ] );
+			return new WP_Error( 'rest_forbidden', __( 'Token has expired.', 'wpem-rest-api' ), [ 'status' => 401 ] );
 		}
 		// Return decoded payload if needed
 		return true;

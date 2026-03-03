@@ -119,7 +119,7 @@ class WPEM_Rest_API_Settings {
 		      		if(isset($option['name']) && isset($option['std']) )
 		      			add_option( $option['name'], $option['std'] );
 
-		      		register_setting( $this->settings_group, $option['name'] );
+		      		register_setting( map_deep($this->settings_group, 'wp_kses_post'), map_deep($option['name'], 'wp_kses_post') );
 		      	}
 			}
 		}
@@ -136,7 +136,7 @@ class WPEM_Rest_API_Settings {
 		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.min.css' );
 		wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
-		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field($_REQUEST['tab']) : 'general';
+		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field(wp_unslash($_REQUEST['tab'])) : 'general';
 
 		$action = '';
 		if(in_array($current_tab, ['general','settings'])){
@@ -174,7 +174,7 @@ class WPEM_Rest_API_Settings {
 									<?php
 										if (!empty($_GET['settings-updated'])) {
 											flush_rewrite_rules();
-											echo '<div class="updated fade event-manager-updated"><p>' . __( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
+											echo '<div class="updated fade event-manager-updated"><p>' . esc_html__( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
 										}	
 										include('templates/wpem-rest-settings-panel.php'); ?>
 								</div>
@@ -224,9 +224,13 @@ class WPEM_Rest_API_Settings {
 			echo '<p class="description">' . esc_html( $option['desc'] ) . '</p>';
 		}
 		foreach ( (array) $option['options'] as $key => $label ) {
-			$checked = in_array( $key, $saved, true ) ? 'checked="checked"' : '';
 			echo '<label style="display:block; margin:2px 0;">';
-			echo '<input type="checkbox" name="' . esc_attr( $option['name'] ) . '[]" value="' . esc_attr( $key ) . '" ' . $checked . ' /> ' . esc_html( $label );
+			echo '<input type="checkbox" 
+				name="' . esc_attr( $option['name'] ) . '[]" 
+				value="' . esc_attr( $key ) . '" ' 
+				. checked( in_array( $key, $saved, true ), true, false ) . 
+			' /> ' . esc_html( $label );
+
 			echo '</label>';
 		}
 		echo '</fieldset>';
