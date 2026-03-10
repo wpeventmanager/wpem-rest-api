@@ -9,7 +9,7 @@
 * 
 * Text Domain: wpem-rest-api
 * Domain Path: /languages
-* Version: 1.3.0
+* Version: 1.4.0
 * Since: 1.0.0
 * 
 * Requires WordPress Version at least: 6.7
