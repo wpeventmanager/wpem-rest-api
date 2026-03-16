@@ -28,7 +28,7 @@ class WPEM_Rest_API_Admin{
         add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ));
         add_filter('event_manager_admin_screen_ids', array($this,'wpem_rest_api_add_admin_screen'));
 
-        add_action("wp_ajax_save_rest_api_keys", array($this, "update_api_key"));
+        add_action("wp_ajax_save_rest_api_keys", array($this, "wpem_update_api_key"));
     }
 
     /**
@@ -47,8 +47,8 @@ class WPEM_Rest_API_Admin{
             wp_localize_script(
                 'wpem-rest-api-admin-js', 'wpem_rest_api_admin', array(            
                     'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-                    'save_api_nonce' =>  wp_create_nonce( 'save-api-key' ),
-                    'save_app_branding_nonce' =>  wp_create_nonce( 'save-api-branding' ),
+                    'save_api_nonce' =>  wp_create_nonce( 'wpem-save-api-key' ),
+                    'save_app_branding_nonce' =>  wp_create_nonce( 'wpem-save-api-branding' ),
                 ) 
             );
 
@@ -85,12 +85,12 @@ class WPEM_Rest_API_Admin{
      *
      * @throws Exception On invalid or empty description, user, or permissions.
      */
-    public  function update_api_key(){
+    public  function wpem_update_api_key(){
         ob_start();
 
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-        check_ajax_referer('save-api-key', 'security');
+        check_ajax_referer('wpem-save-api-key', 'security');
         $response = array();
         try {
             if( empty( $_POST['description'] ) ) {

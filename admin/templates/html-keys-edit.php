@@ -226,11 +226,11 @@ defined( 'ABSPATH' ) || exit; ?>
 	<?php do_action( 'wpem_admin_key_fields', $key_data ); 
 
 	if ( 0 === intval( $key_id ) ) {
-		submit_button( __( 'Generate API key', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'update_api_key' );
+		submit_button( __( 'Generate API key', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'wpem_update_api_key' );
 		echo '<div id="api_key_loader" class="loader" style="display:none;margin-left: 20px;"></div>';
 	} else { ?>
 		<p class="submit">
-			<?php submit_button( __( 'Save changes', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'update_api_key', false ); ?>
+			<?php submit_button( __( 'Save changes', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'wpem_update_api_key', false ); ?>
 			<a class="wpem-backend-theme-button wpem-revoke-button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wpem-rest-api' ); ?></a>
 		</p>
 		<?php

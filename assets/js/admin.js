@@ -1,7 +1,7 @@
 var WPEMRestAPIAdmin = (function () {
     return {
         init: function () {
-            jQuery("#update_api_key").on("click", WPEMRestAPIAdmin.actions.saveApiKey),
+            jQuery("#wpem_update_api_key").on("click", WPEMRestAPIAdmin.actions.saveApiKey),
             jQuery("select#key_user").chosen(),
             jQuery("select#event_id").chosen(),
             jQuery("#select_events").chosen();
@@ -66,7 +66,7 @@ var WPEMRestAPIAdmin = (function () {
                 var a = this;
                 if(jQuery("#key_user").val() !== "" && jQuery("#key_user").val() !== "0" && jQuery("#key_user").val() !== null) {
                     jQuery("#api_key_loader").show(),
-                    jQuery("#update_api_key").attr("disabled", !0),
+                    jQuery("#wpem_update_api_key").attr("disabled", !0),
                     jQuery.ajax({
                         type: "POST",
                         url: wpem_rest_api_admin.ajaxUrl,
@@ -115,7 +115,7 @@ var WPEMRestAPIAdmin = (function () {
                                 .append('<div class="wpem-api-message error"><p>' + n + "</p></div>");
                         },
                         complete: function (e, t) {
-                            jQuery("#api_key_loader").hide(), jQuery("#update_api_key").attr("disabled", !1);
+                            jQuery("#api_key_loader").hide(), jQuery("#wpem_update_api_key").attr("disabled", !1);
                         },
                     });
                 } else {
@@ -135,7 +135,7 @@ var WPEMRestAPIAdmin = (function () {
                         type: "POST",
                         url: wpem_rest_api_admin.ajaxUrl,
                         data: {
-                            action: "save_app_branding",
+                            action: "wpem_save_app_branding",
                             security: wpem_rest_api_admin.save_app_branding_nonce,
                             wpem_primary_color: jQuery('input[name="wpem_primary_color"]').val(),
                             wpem_success_color: jQuery('input[name="wpem_success_color"]').val(),
@@ -173,7 +173,7 @@ var WPEMRestAPIAdmin = (function () {
                     url: wpem_rest_api_admin.ajaxUrl,
                     type: "POST",
                     dataType: "HTML",
-                    data: { action: "change_brighness_color", color: a },
+                    data: { action: "wpem_change_brighness_color", color: a },
                     success: function (e) {
                         const a = e
                             .replace(/&amp;/g, "&")

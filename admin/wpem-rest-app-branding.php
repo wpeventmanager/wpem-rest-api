@@ -11,8 +11,8 @@ class WPEM_Rest_APP_Branding {
      */
     public function __construct(){
         // Ajax
-        add_action( 'wp_ajax_change_brighness_color', array( $this, 'change_brighness_color' ) );
-        add_action( "wp_ajax_save_app_branding", array( $this, "save_app_branding" ) );
+        add_action( 'wp_ajax_wpem_change_brighness_color', array( $this, 'wpem_change_brighness_color' ) );
+        add_action( "wp_ajax_wpem_save_app_branding", array( $this, "wpem_save_app_branding" ) );
     }
 
     /**
@@ -44,7 +44,7 @@ class WPEM_Rest_APP_Branding {
      * @param  int $key_id API Key ID.
      * @return bool
      */
-    public function change_brighness_color() {
+    public function wpem_change_brighness_color() {
         $output = '';
         if( isset( $_REQUEST['color'] ) && !empty( $_REQUEST['color'] ) ) {
             $color_code = sanitize_hex_color($_REQUEST['color']);
@@ -75,9 +75,9 @@ class WPEM_Rest_APP_Branding {
      * @param  int $key_id API Key ID.
      * @return bool
      */
-    public function save_app_branding(){
+    public function wpem_save_app_branding(){
 
-        check_ajax_referer( 'save-api-branding', 'security' );
+        check_ajax_referer( 'wpem-save-api-branding', 'security' );
 
         //normal colors
         if( isset( $_POST['wpem_primary_color'] ) ) {

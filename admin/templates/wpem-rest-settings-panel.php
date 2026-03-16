@@ -95,7 +95,11 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                             'echo'             => false,
                             'selected'         => absint($value)
                         );
-                        echo str_replace(' id=', " data-placeholder='" . __( 'Select a page&hellip;', 'wpem-rest-api' ) .  "' id=", wp_dropdown_pages( $args ));
+                        echo str_replace(
+                            ' id=',
+                            " data-placeholder='" . esc_attr__( 'Select a page…', 'wpem-rest-api' ) . "' id=",
+                            wp_dropdown_pages( $args )
+                        );
                         if ($option['desc'] ) {
                             echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
