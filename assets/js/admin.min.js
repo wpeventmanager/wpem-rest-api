@@ -71,7 +71,7 @@ var WPEMRestAPIAdmin = (function () {
                         type: "POST",
                         url: wpem_rest_api_admin.ajaxUrl,
                         data: {
-                            action: "save_rest_api_keys",
+                            action: "wpem_save_rest_api_keys",
                             security: wpem_rest_api_admin.save_api_nonce,
                             key_id: jQuery("#key_id").val(),
                             description: jQuery("#key_description").val(),

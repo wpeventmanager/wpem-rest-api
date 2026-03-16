@@ -28,7 +28,7 @@ class WPEM_Rest_API_Admin{
         add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ));
         add_filter('event_manager_admin_screen_ids', array($this,'wpem_rest_api_add_admin_screen'));
 
-        add_action("wp_ajax_save_rest_api_keys", array($this, "wpem_update_api_key"));
+        add_action("wp_ajax_wpem_save_rest_api_keys", array($this, "wpem_update_api_key"));
     }
 
     /**

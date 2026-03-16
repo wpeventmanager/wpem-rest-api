@@ -52,7 +52,7 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 		register_rest_route($this->namespace, '/' . $this->rest_base, array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_echosystem_overview' ),
+				'callback'            => array( $this, 'wpem_get_echosystem_overview' ),
 				'permission_callback' => array( $this, 'get_items_permissions_check' ),
 			)
 		));
@@ -61,7 +61,7 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller {
 	/**
 	 * This function is used to get all required plugin with activation status
 	 */
-	public function get_echosystem_overview() {
+	public function wpem_get_echosystem_overview() {
 		$auth_check = $this->wpem_check_authorized_user();
         if($auth_check){
             return self::prepare_error_for_response(405);

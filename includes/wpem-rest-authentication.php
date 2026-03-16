@@ -32,12 +32,12 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * Initialize authentication actions.
 	 */
 	public function __construct() {
-		add_filter( 'determine_current_user', array( $this, 'authenticate' ), 15 );
-		add_filter( 'rest_authentication_errors', array( $this, 'check_authentication_error' ), 15 );
+		add_filter( 'determine_current_user', array( $this, 'wpem_rest_authenticate' ), 15 );
+		add_filter( 'rest_authentication_errors', array( $this, 'wpem_rest_check_authentication_error' ), 15 );
 
 		//rest pre and post allows to authorize the user request
-		add_filter( 'rest_post_dispatch', array( $this, 'send_unauthorized_headers' ), 50 );
-		add_filter( 'rest_pre_dispatch', array( $this, 'check_user_permissions' ), 10, 3 );
+		add_filter( 'rest_post_dispatch', array( $this, 'wpem_rest_send_unauthorized_headers' ), 50 );
+		add_filter( 'rest_pre_dispatch', array( $this, 'wpem_rest_check_user_permissions' ), 10, 3 );
 
 		//register rout here for app key and login
 		add_action( 'rest_api_init', array( $this, 'register_routes' ), 10 );
@@ -73,7 +73,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param int|false $user_id User ID if one has been determined, false otherwise.
 	 * @return int|false
 	 */
-	public function authenticate( $user_id ) {
+	public function wpem_rest_authenticate( $user_id ) {
 		// Do not authenticate twice and check if is a request to our endpoint in the WP REST API.
 		if ( !empty( $user_id ) || !$this->is_request_to_rest_api() ) {
 			return $user_id;
@@ -95,7 +95,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param WP_Error|null|bool $error Error data.
 	 * @return WP_Error|null|bool
 	 */
-	public function check_authentication_error( $error ) {
+	public function wpem_rest_check_authentication_error( $error ) {
 		// Pass through other errors.
 		if ( !empty( $error ) ) {
 			return $error;
@@ -563,7 +563,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param WP_REST_Response $response Current response being served.
 	 * @return WP_REST_Response
 	 */
-	public function send_unauthorized_headers( $response ) {
+	public function wpem_rest_send_unauthorized_headers( $response ) {
 		if ( is_wp_error( $this->get_error() ) && 'basic_auth' === $this->auth_method ) {
 			$auth_message = __( 'WPEM API. Use a consumer key in the username field and a consumer secret in the password field.', 'wpem-rest-api' );
 			$response->header( 'WWW-Authenticate', 'Basic realm="' . $auth_message . '"', true );
@@ -579,7 +579,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param WP_REST_Request $request Request used to generate the response.
 	 * @return mixed
 	 */
-	public function check_user_permissions( $result, $server, $request ) {
+	public function wpem_rest_check_user_permissions( $result, $server, $request ) {
 		if ( $this->user ) {
 			// Check API Key permissions.
 			$allowed = $this->check_permissions( $request->get_method() );
