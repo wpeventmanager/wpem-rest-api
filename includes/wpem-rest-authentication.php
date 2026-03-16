@@ -142,14 +142,14 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 		// If the $_GET parameters are present, use those first.
 		if ( !empty( $_GET['consumer_key'] ) && !empty( $_GET['consumer_secret'] ) ) { // WPCS: CSRF ok.
-			$consumer_key    = sanitize_text_field($_GET['consumer_key']); // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = sanitize_text_field($_GET['consumer_secret']); // WPCS: CSRF ok, sanitization ok.
+			$consumer_key    = sanitize_text_field(wp_unslash($_GET['consumer_key'])); // WPCS: CSRF ok, sanitization ok.
+			$consumer_secret = sanitize_text_field(wp_unslash($_GET['consumer_secret'])); // WPCS: CSRF ok, sanitization ok.
 		}
 
 		// If the above is not present, we will do full basic auth.
 		if ( !$consumer_key && !empty( $_SERVER['PHP_AUTH_USER'] ) && !empty( $_SERVER['PHP_AUTH_PW'] ) ) {
-			$consumer_key    = sanitize_text_field($_SERVER['PHP_AUTH_USER']); // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = sanitize_text_field($_SERVER['PHP_AUTH_PW']); // WPCS: CSRF ok, sanitization ok.
+			$consumer_key    = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_USER'])); // WPCS: CSRF ok, sanitization ok.
+			$consumer_secret = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_PW'])); // WPCS: CSRF ok, sanitization ok.
 		}
 
 		// Stop if don't have any key.
@@ -218,7 +218,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 */
 	public function get_authorization_header() {
 		if ( !empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
-			return wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ); // WPCS: sanitization ok.
+			return wp_kses_post(wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] )); // WPCS: sanitization ok.
 		}
 		if ( function_exists( 'getallheaders' ) ) {
 			$headers = getallheaders();
@@ -347,8 +347,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @return true|WP_Error
 	 */
 	private function check_oauth_signature( $user, $params ) {
-		$http_method  = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( $_SERVER['REQUEST_METHOD'] ) : ''; // WPCS: sanitization ok.
-		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) : ''; // WPCS: sanitization ok.
+		$http_method  = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( wp_kses_post ( wp_unslash ( $_SERVER['REQUEST_METHOD'])) ) : ''; // WPCS: sanitization ok.
+		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH ) : ''; // WPCS: sanitization ok.
 		$wp_base      = get_home_url( null, '/', 'relative' );
 		if ( substr( $request_path, 0, strlen( $wp_base ) ) === $wp_base ) {
 			$request_path = substr( $request_path, strlen( $wp_base ) );

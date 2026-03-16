@@ -323,11 +323,11 @@ if( !function_exists( 'wpem_rest_get_current_user_id' ) ) {
         } 
         // Try for some server environments
         elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $token = trim(str_replace('Bearer', '', $_SERVER['HTTP_AUTHORIZATION']));
+            $token = trim(str_replace('Bearer', '', sanitize_text_field( wp_unslash( $_SERVER['HTTP_AUTHORIZATION']))));
         }
         // NGINX or fastcgi_pass may use this
         elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-            $token = trim(str_replace('Bearer', '', $_SERVER['REDIRECT_HTTP_AUTHORIZATION']));
+            $token = trim(str_replace('Bearer', '', sanitize_text_field( wp_unslash( $_SERVER['REDIRECT_HTTP_AUTHORIZATION']))));
         }
         if(empty($token)) {
             return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);
@@ -407,6 +407,7 @@ function wpem_get_user_login_status($user_id) {
  * Legacy for WPEM functions with old and new core compatibility.
  */
 if ( ! function_exists('wpem_addon_get_event_banner') ) {
+
     function wpem_addon_get_event_banner( $event = null ) {
 
         if ( function_exists('wpem_get_event_banner') ) {

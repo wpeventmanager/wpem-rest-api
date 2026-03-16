@@ -47,7 +47,7 @@ class WPEM_Rest_APP_Branding {
     public function wpem_change_brighness_color() {
         $output = '';
         if( isset( $_REQUEST['color'] ) && !empty( $_REQUEST['color'] ) ) {
-            $color_code = sanitize_hex_color($_REQUEST['color']);
+            $color_code = sanitize_hex_color(wp_unslash($_REQUEST['color']));
 
             for( $i = 1; $i < 10; $i++ ) {
 
@@ -81,23 +81,23 @@ class WPEM_Rest_APP_Branding {
 
         //normal colors
         if( isset( $_POST['wpem_primary_color'] ) ) {
-            update_option( 'wpem_primary_color', sanitize_hex_color($_POST['wpem_primary_color'] ) );
+            update_option( 'wpem_primary_color', sanitize_hex_color(wp_unslash($_POST['wpem_primary_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_success_color'] ) ) {
-            update_option( 'wpem_success_color', sanitize_hex_color($_POST['wpem_success_color'] ) );
+            update_option( 'wpem_success_color', sanitize_hex_color(wp_unslash($_POST['wpem_success_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_info_color'] ) ) {
-            update_option( 'wpem_info_color', sanitize_hex_color($_POST['wpem_info_color'] ) );
+            update_option( 'wpem_info_color', sanitize_hex_color(wp_unslash($_POST['wpem_info_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_warning_color'] ) ) {
-            update_option( 'wpem_warning_color', sanitize_hex_color($_POST['wpem_warning_color'] ) );
+            update_option( 'wpem_warning_color', sanitize_hex_color(wp_unslash($_POST['wpem_warning_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_danger_color'] ) ) {
-            update_option( 'wpem_danger_color', sanitize_hex_color($_POST['wpem_danger_color'] ) );
+            update_option( 'wpem_danger_color', sanitize_hex_color(wp_unslash($_POST['wpem_danger_color'] ) ) );
         }
 
         $primary_color = !empty( get_option( 'wpem_primary_color' ) ) ? get_option( 'wpem_primary_color' ) : '#3366FF';
@@ -108,23 +108,23 @@ class WPEM_Rest_APP_Branding {
 
         //dark mode colors
         if( isset( $_POST['wpem_primary_dark_color'] ) ) {
-            update_option( 'wpem_primary_dark_color', sanitize_hex_color($_POST['wpem_primary_dark_color'] ) );
+            update_option( 'wpem_primary_dark_color', sanitize_hex_color(wp_unslash($_POST['wpem_primary_dark_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_success_dark_color'] ) ) {
-            update_option( 'wpem_success_dark_color', sanitize_hex_color($_POST['wpem_success_dark_color'] ) );
+            update_option( 'wpem_success_dark_color', sanitize_hex_color(wp_unslash($_POST['wpem_success_dark_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_info_dark_color'] ) ) {
-            update_option( 'wpem_info_dark_color', sanitize_hex_color($_POST['wpem_info_dark_color'] ) );
+            update_option( 'wpem_info_dark_color', sanitize_hex_color(wp_unslash($_POST['wpem_info_dark_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_warning_dark_color'] ) ) {
-            update_option( 'wpem_warning_dark_color', sanitize_hex_color($_POST['wpem_warning_dark_color'] ) );
+            update_option( 'wpem_warning_dark_color', sanitize_hex_color(wp_unslash($_POST['wpem_warning_dark_color'] ) ) );
         }
 
         if( isset( $_POST['wpem_danger_dark_color'] ) ) {
-            update_option( 'wpem_danger_dark_color', sanitize_hex_color($_POST['wpem_danger_dark_color'] ) );
+            update_option( 'wpem_danger_dark_color', sanitize_hex_color(wp_unslash($_POST['wpem_danger_dark_color'] ) ) );
         }
         $primary_dark_color = !empty( get_option( 'wpem_primary_dark_color' ) ) ? get_option( 'wpem_primary_dark_color' ) : '#3366FF';
         $success_dark_color = !empty( get_option( 'wpem_success_dark_color' ) ) ? get_option( 'wpem_success_dark_color' ) : '#77DD37';
@@ -147,12 +147,12 @@ class WPEM_Rest_APP_Branding {
         }
 
         if (isset($_POST['active_mode'])) {
-            update_option('wpem_active_mode', sanitize_text_field($_POST['active_mode']));
+            update_option('wpem_active_mode', sanitize_text_field(wp_unslash($_POST['active_mode'])));
         }
 
         $response = [];
         $response['message'] = __( 'Your preferred color for your app branding has been successfully saved.', 'wpem-rest-api' );
-        $response['mode'] = sanitize_text_field( $_POST['active_mode'] );
+        $response['mode'] = sanitize_text_field( wp_unslash( $_POST['active_mode'] ));
 
         wp_send_json_success($response);
 

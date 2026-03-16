@@ -679,11 +679,11 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         } 
         // Try for some server environments
         elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $token = trim(str_replace('Bearer', '', $_SERVER['HTTP_AUTHORIZATION']));
+            $token = trim(str_replace('Bearer', '', wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION']))));
         }
         // NGINX or fastcgi_pass may use this
         elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-            $token = trim(str_replace('Bearer', '', $_SERVER['REDIRECT_HTTP_AUTHORIZATION']));
+            $token = trim(str_replace('Bearer', '', sanitize_text_field(wp_unslash($_SERVER['REDIRECT_HTTP_AUTHORIZATION']))));
         }
         if(empty($token)) {
             return WPEM_REST_CRUD_Controller::prepare_error_for_response(405);
