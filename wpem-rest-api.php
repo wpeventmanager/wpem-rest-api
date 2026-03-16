@@ -33,7 +33,7 @@ class WPEM_Rest_API{
     /**
      * __construct function.
      */
-    public function __construct()    {
+    public function __construct() {
         //if wp event manager not active return from the plugin
         if( !in_array( 'wp-event-manager/wp-event-manager.php', apply_filters( 'wpem_active_plugins', get_option( 'active_plugins' ) ) ) ) {
             return;
