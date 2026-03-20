@@ -339,6 +339,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             }
         }
         if( $event_venue_id ) {
+            if(is_array($event_venue_id))
+                $event_venue_id = $event_venue_id[0];
             $venue = get_post( $event_venue_id );
             if( $venue ) {
                 $venue_name   = $venue->post_title; 
