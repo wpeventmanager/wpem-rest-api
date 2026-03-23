@@ -38,7 +38,6 @@ class WPEM_Rest_API_Admin{
      * @access public
      * @return void
      */
-
     public function admin_enqueue_scripts(){
         if( isset( $_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ) {
 
@@ -90,7 +89,7 @@ class WPEM_Rest_API_Admin{
         ob_start();
 
         global $wpdb;
-
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         check_ajax_referer('save-api-key', 'security');
         $response = array();
         try {
@@ -109,11 +108,11 @@ class WPEM_Rest_API_Admin{
             $permissions = ( in_array( wp_unslash( $_POST['permissions'] ), array( 'read', 'write', 'read_write' ), true ) ) ? sanitize_text_field( wp_unslash( $_POST['permissions'] ) ) : 'read';
             $user_id      = absint( $_POST['user'] );
             $event_id     = !empty( $_POST['event_id'] ) ?  absint( $_POST['event_id'] ) : '' ;
-            $date_expires = !empty( $_POST['date_expires'] ) ?  date( 'Y-m-d H:i:s', strtotime( str_replace( '-', '/', $_POST['date_expires'] ) ) ) : null ;
-            $restrict_check_in = isset( $_POST['restrict_check_in'] ) ? sanitize_text_field( $_POST['restrict_check_in'] ) : '';
-            $event_show_by = isset($_POST['event_show_by']) ? sanitize_text_field($_POST['event_show_by']) : 'loggedin';
-			$select_events = isset($_POST['select_events']) ? maybe_serialize(array_map('absint', $_POST['select_events'])) : maybe_serialize(array());
-            $mobile_menu = isset($_POST['mobile_menu']) ? array_map('sanitize_text_field', $_POST['mobile_menu']) : array();
+            $date_expires = !empty( $_POST['date_expires'] ) ?  gmdate( 'Y-m-d H:i:s', strtotime( str_replace( '-', '/', wp_kses_post(wp_unslash($_POST['date_expires'])) ) ) ) : null ;
+            $restrict_check_in = isset( $_POST['restrict_check_in'] ) ? sanitize_text_field( wp_unslash($_POST['restrict_check_in']) ) : '';
+            $event_show_by = isset($_POST['event_show_by']) ? sanitize_text_field(wp_unslash($_POST['event_show_by'])) : 'loggedin';
+			$select_events = isset($_POST['select_events']) ? maybe_serialize(array_map('absint', wp_unslash($_POST['select_events']))) : maybe_serialize(array());
+            $mobile_menu = isset($_POST['mobile_menu']) ? array_map('sanitize_text_field', wp_unslash($_POST['mobile_menu'])) : array();
             
             update_user_meta($user_id, '_mobile_menu', $mobile_menu);
             
@@ -136,7 +135,7 @@ class WPEM_Rest_API_Admin{
                 );
 
                 $wpdb->update(
-                    $wpdb->prefix . 'wpem_rest_api_keys',
+                    $table_name,
                     $data,
                     array( 'key_id' => $key_id ),
                         array(
@@ -176,7 +175,7 @@ class WPEM_Rest_API_Admin{
 					'selected_events' => $select_events,
                 );
                 $wpdb->insert(
-                    $wpdb->prefix . 'wpem_rest_api_keys',
+                    $table_name,
                     $data,
                     array(
                         '%d',

@@ -1,11 +1,11 @@
 === WP Event Manager - REST API ===
 
-Contributors: wpeventmanager,ashokdudhat,krinay
+Contributors: wpeventmanager,ashokdudhat
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
-Requires at least: 6.5.1
-Tested up to: 6.8
-Stable tag: 1.2.0
+Requires at least: 6.7
+Tested up to: 6.9
+Stable tag: 1.4.0
 
 Requires PHP: 8.0.0
 License: GPLv3
@@ -119,6 +119,27 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 
 == Changelog ==
+
+= 1.4.0 [ 2nd March 2026 ] =
+
+Fixed : Securities Issues fixed.
+Added : Match making profile and other new features.
+
+= 1.3.0 [ 29th January 2026 ] =
+
+Fixed : On home page past event is not showing
+Added : Need to improve apis for meeting with new endpoints
+Fixed : Need to improve match-making setting api
+Fixed : Need to create profile api with proper code
+Added : Need to repair message apis
+Added : Need to combine Filter user api with profile api
+Fixed : Get Meetings API provides incomplete information.
+Added : QR code API is required( For my Ticket QR code)
+Added : QR code API is required ( For Scan QR code)
+Added : QR code API is required ( For venue QR code)
+Added : My Contact API is required
+Added : Need to remove endpoints of old api
+Fixed : Various bug fixes and code Improvements
 
 = 1.2.0 [ 10th September 2025 ] =
 

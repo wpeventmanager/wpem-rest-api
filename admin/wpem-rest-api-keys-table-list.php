@@ -214,7 +214,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
      */
     public function prepare_items() {
         global $wpdb;
-
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         $per_page     = $this->get_items_per_page( '10' );
         $current_page = $this->get_pagenum();
 
@@ -231,7 +231,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
         $search = '';
 
         if ( ! empty( $_REQUEST['s'] ) ) { // WPCS: input var okay, CSRF ok.
-            $term = wp_unslash( $_REQUEST['s'] ); // WPCS: input var okay, CSRF ok.
+            $term = wp_kses_post(wp_unslash( $_REQUEST['s'] )); // WPCS: input var okay, CSRF ok.
             $like = '%' . $wpdb->esc_like( $term ) . '%';
 
             // Find users matching by display name, username, or email.
@@ -254,12 +254,12 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 
         // Get the API keys.
         $keys = $wpdb->get_results(
-            "SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search}" .
+            "SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM " . $table_name . " WHERE 1 = 1 {$search}" .
             $wpdb->prepare( 'ORDER BY key_id DESC LIMIT %d OFFSET %d;', $per_page, $offset ),
             ARRAY_A
         ); // WPCS: unprepared SQL ok.
 
-        $count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$wpdb->prefix}wpem_rest_api_keys WHERE 1 = 1 {$search};"); // WPCS: unprepared SQL ok.
+        $count = $wpdb->get_var( "SELECT COUNT(key_id) FROM " . $table_name . " WHERE 1 = 1 {$search};"); // WPCS: unprepared SQL ok.
         $this->_column_headers = array( $columns, $hidden, $sortable );
         $this->items = $keys;
 
