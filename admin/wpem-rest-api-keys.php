@@ -98,7 +98,9 @@ class WPEM_Rest_API_Keys {
         global $wpdb;
         $key_id   = isset( $_GET['edit-key'] ) ? absint( $_GET['edit-key'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
         $key_data = self::get_key_data( $key_id );
-        $app_user = $wpdb->get_col("SELECT user_id FROM {$table_name}"); //phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
+        $app_user = $wpdb->get_col(
+            "SELECT user_id FROM {$table_name}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
+        );
         $user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
         foreach ( $all_users as $user ) { 
 			if(!in_array($user['ID'], $app_user) || $user_id == $user['ID']) {
@@ -111,7 +113,9 @@ class WPEM_Rest_API_Keys {
         else
             echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wpem-rest-api' ) . '</h3>';
         // Get the API keys count.
-        $count = $wpdb->get_var( "SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1;" );
+        $count = $wpdb->get_var(
+            "SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
+        );
 
         if (absint($count) && $count > 0 ) {
             $wpem_keys_table_list->prepare_items();
@@ -160,9 +164,10 @@ class WPEM_Rest_API_Keys {
 
         $key = $wpdb->get_row(
             $wpdb->prepare(
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
                 "SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, event_show_by, selected_events, date_expires
-				FROM {$table_name}
-				WHERE key_id = %d",
+                 FROM {$table_name}
+                 WHERE key_id = %d",
                 $key_id
             ),
             ARRAY_A
