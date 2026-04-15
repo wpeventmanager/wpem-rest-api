@@ -230,8 +230,8 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
 
         $search = '';
 
-        if ( ! empty( $_REQUEST['s'] ) ) { // WPCS: input var okay, CSRF ok.
-            $term = wp_kses_post(wp_unslash( $_REQUEST['s'] )); // WPCS: input var okay, CSRF ok.
+        if ( ! empty( $_REQUEST['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended 
+            $term = wp_kses_post(wp_unslash( $_REQUEST['s'] )); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- input var okay, CSRF ok.
             $like = '%' . $wpdb->esc_like( $term ) . '%';
 
             // Find users matching by display name, username, or email.
@@ -253,13 +253,15 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
         }
 
         // Get the API keys.
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $keys = $wpdb->get_results(
-            "SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM " . $table_name . " WHERE 1 = 1 {$search}" .
-            $wpdb->prepare( 'ORDER BY key_id DESC LIMIT %d OFFSET %d;', $per_page, $offset ),
-            ARRAY_A
-        ); // WPCS: unprepared SQL ok.
-
-        $count = $wpdb->get_var( "SELECT COUNT(key_id) FROM " . $table_name . " WHERE 1 = 1 {$search};"); // WPCS: unprepared SQL ok.
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name + dynamic search are safe and controlled.
+            "SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search}" . $wpdb->prepare( ' ORDER BY key_id DESC LIMIT %d OFFSET %d', $per_page, $offset ), ARRAY_A );
+        
+        $count = $wpdb->get_var(
+    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and search are safely constructed.
+    "SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1 {$search}"
+);
         $this->_column_headers = array( $columns, $hidden, $sortable );
         $this->items = $keys;
 
@@ -280,12 +282,12 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
      * @param string $input_id Input ID.
      */
     public function search_box( $text, $input_id ) {
-        if ( empty( $_REQUEST['s'] ) && !$this->has_items() ) { // WPCS: input var okay, CSRF ok.
+        if ( empty( $_REQUEST['s'] ) && !$this->has_items() ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             return;
         }
 
         $input_id     = $input_id . '-search-input';
-        $search_query = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash($_REQUEST['s'] ) ) : ''; // WPCS: input var okay, CSRF ok.
+        $search_query = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash($_REQUEST['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- input var okay, CSRF ok.
 
         echo '<div class="wpem-admin-body">';
         echo '<p class="search-box">';

@@ -431,12 +431,15 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter} 
                     ORDER BY meeting_date ASC, meeting_start_time ASC 
                     LIMIT %d OFFSET %d";
-
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_count = $wpdb->prepare($sql_count, $params);
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
 
         // Execute queries
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $total = (int) $wpdb->get_var($sql_count);
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
 
         // Format rows
@@ -517,9 +520,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 $like_clauses[] = 'participant_ids LIKE %s';
                 $like_params[]  = '%' . $wpdb->esc_like('i:' . (int)$cid) . '%';
             }
-
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
             $availability_sql = "SELECT * FROM {$this->table} WHERE meeting_date = %s AND NOT (meeting_end_time <= %s OR meeting_start_time >= %s) AND (user_id IN ($in_placeholders) OR " . implode(' OR ', $like_clauses) . ")";
             $availability_params = array_merge(array($meeting_date, $start_time, $end_time), $check_ids, $like_params);
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
             $overlapping_rows = $wpdb->get_results($wpdb->prepare($availability_sql, $availability_params), ARRAY_A);
 
             $conflicts = array();
@@ -767,7 +771,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // Fetch meeting
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
 		$meeting = $wpdb->get_row(
+		    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->prepare("SELECT * FROM " . $this->table . " WHERE id = %d", $meeting_id)
 		);
         //send mail to all participants
@@ -1037,16 +1043,21 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // --- SQL queries ---
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
         $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$status_filter}";
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
         $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$status_filter}
                     ORDER BY meeting_date ASC, meeting_start_time ASC
                     LIMIT %d OFFSET %d";
-
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
         $sql_count = $wpdb->prepare($sql_count, $params);
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
         $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
 
         // Execute queries
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $total = (int) $wpdb->get_var($sql_count);
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
 
         // Format rows

@@ -337,7 +337,26 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             if($key == '_event_online' && $meta_data[$key] == 'no' ) {
                 $event_venue_id = get_post_meta( $event->ID, '_event_venue_ids', true );
             }
+            
+            if ($key == '_paid_tickets') {
+
+                $paid_tickets = [];
+        
+                foreach ($value as $v) {
+                    $unserialized = maybe_unserialize($v);
+        
+                    if (!empty($unserialized) && is_array($unserialized)) {
+                        $paid_tickets = array_merge($paid_tickets, $unserialized);
+                    }
+                }
+        
+                // 🔥 fix indexes
+                $meta_data[$key] = array_values($paid_tickets);
+        
+            }
         }
+        error_log($event->ID.' '.print_r($meta_data['_paid_tickets'], true));
+        
         if( $event_venue_id ) {
             if(is_array($event_venue_id))
                 $event_venue_id = $event_venue_id[0];

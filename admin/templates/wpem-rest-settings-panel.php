@@ -3,7 +3,7 @@ if( !defined( 'ABSPATH' ) ) {
     exit;
 }
 wp_enqueue_style('wp-color-picker');
-
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Non-sensitive tab switch.
 $tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash($_GET['tab']) ) : 'general';
 $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array();?>
 <div class="wpem-admin-bottom-content">
@@ -27,7 +27,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
 
                     $placeholder    = ( !empty( $option['placeholder'] ) ) ? 'placeholder="' . $option['placeholder'] . '"' : '';
                     $class          = !empty( $option['class'] ) ? $option['class'] : '';
-                    $value          = get_option( $option['name'] );
+                    $value          = !empty( $option['name'] ) ? wp_unslash( get_option( $option['name'] ) ) : '';
                     $option['type'] = !empty( $option['type'] ) ? $option['type'] : '';
                     $attributes     = array();
                     if (!empty( $option['attributes'] ) && is_array( $option['attributes'] ) ) {
@@ -95,17 +95,18 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                             'echo'             => false,
                             'selected'         => absint($value)
                         );
-                        echo str_replace(
+                        echo wp_kses_post( str_replace(
                             ' id=',
                             " data-placeholder='" . esc_attr__( 'Select a page…', 'wpem-rest-api' ) . "' id=",
                             wp_dropdown_pages( $args )
-                        );
+                        ) );
+                        
                         if ($option['desc'] ) {
                             echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
                         break;
                     case "password" : ?>
-                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="password" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr( $value ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> />
+                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="password" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php echo esc_attr( $value ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> />
                         <?php
                         if ( $option['desc'] ) {
                             echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
@@ -120,7 +121,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                             update_option( 'wpem_rest_api_app_name', 'wpem-rest-api' );
                             $current_name = $default_name;
                         }; ?>
-                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr( $current_name ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> />
+                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php echo esc_attr( $current_name ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> />
                         <?php
                         if ( $option['desc'] ) {
                             echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
@@ -130,7 +131,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                         $this->create_multi_select_checkbox( $option );
                         break;
                     case "color-picker": ?>
-                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text wpem-colorpicker" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php esc_attr( $value ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> /><?php
+                        <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text wpem-colorpicker" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php echo esc_attr( $value ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> /><?php
                         if ( $option['desc'] ) {
                             echo ' <p class="description">' . esc_html( $option['desc']) . '</p>';
                         }
@@ -142,8 +143,8 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                                 foreach ( (array) $option['value'] as $value ) { ?>
                                     <span class="file_url">
                                         <input type="text" name="<?php echo esc_attr( $option['name'] ); ?>[]" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
-                                        <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
-                                            <?php esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
+                                        <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php echo esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
+                                            <?php echo esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
                                         </button>
                                     </span>
                                 <?php
@@ -153,15 +154,15 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                                 }  ?>
                                 <span class="file_url">
                                     <input type="text" name="<?php echo esc_attr( $option['name'] ); ?>" id="<?php echo esc_attr( $option['name'] ); ?>" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
-                                    <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
-                                        <?php esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
+                                    <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php echo esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
+                                        <?php echo esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
                                     </button>
                                 </span>
                                 <?php
                             }
                             if( !empty( $option['multiple'] ) ) { ?>
-                                <button class="button button-small wp_event_manager_add_another_file_button" data-field_name="<?php echo esc_attr($key); ?>" data-field_placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" data-uploader_button_text="<?php esc_html_e( 'Use file', 'wpem-rest-api' ); ?>" data-uploader_button="<?php esc_html_e( 'Upload', 'wpem-rest-api' ); ?>">
-                                    <?php esc_html_e( 'Add file', 'wpem-rest-api' ); ?>
+                                <button class="button button-small wp_event_manager_add_another_file_button" data-field_name="<?php echo esc_attr($key); ?>" data-field_placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" data-uploader_button_text="<?php echo esc_html_e( 'Use file', 'wpem-rest-api' ); ?>" data-uploader_button="<?php echo esc_html_e( 'Upload', 'wpem-rest-api' ); ?>">
+                                    <?php echo esc_html_e( 'Add file', 'wpem-rest-api' ); ?>
                                 </button>
                             <?php
                             } ?>

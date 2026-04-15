@@ -42,8 +42,8 @@ defined( 'ABSPATH' ) || exit; ?>
 						$all_users = wpem_get_event_users();
 						global $wpdb;
 						$table_name = esc_sql( $wpdb->prefix . 'wpem_rest_api_keys' );
-
-						$app_user = $wpdb->get_col("SELECT user_id FROM $table_name");
+						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
+						$app_user = $wpdb->get_col("SELECT user_id FROM {$table_name}");
 						$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
 						if($user_id > 0) 
 							$disabled = "disabled"; ?>

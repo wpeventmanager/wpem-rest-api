@@ -39,6 +39,7 @@ class WPEM_Rest_API_Admin{
      * @return void
      */
     public function admin_enqueue_scripts(){
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Non-sensitive tab switch.
         if( isset( $_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings' ) {
 
             wp_enqueue_media();

@@ -158,10 +158,10 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $page     = max(1, intval($request->get_param('page') ?: 1));
         $per_page = max(1, min(100, intval($request->get_param('per_page') ?: 10))); // hard cap
         $offset   = ($page - 1) * $per_page;
-
+        $table = esc_sql( $this->table );
         // Total message count (union not needed here)
         $total_messages = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $this->table
+            "SELECT COUNT(*) FROM $table
             WHERE (sender_id = %d AND receiver_id = %d) 
                 OR (sender_id = %d AND receiver_id = %d)",
             $user_id, $partner_id, $partner_id, $user_id
@@ -170,11 +170,11 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         // Optimized paginated messages using UNION ALL (index friendly)
         $sql = $wpdb->prepare(
             "(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at 
-            FROM $this->table
+            FROM $table
             WHERE sender_id = %d AND receiver_id = %d)
             UNION ALL
             (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at 
-            FROM $this->table
+            FROM $table
             WHERE sender_id = %d AND receiver_id = %d)
             ORDER BY created_at DESC
             LIMIT %d OFFSET %d",
@@ -182,7 +182,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             $partner_id, $user_id,
             $per_page, $offset
         );
-
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $messages = $wpdb->get_results($sql, ARRAY_A);
 
         // Process messages (split text & image)
@@ -390,7 +390,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         foreach ( $paginated_ids as $partner_id ) {
             $last_message_row = $wpdb->get_row( $wpdb->prepare( "
                 SELECT message, created_at
-                FROM $messages_tbl
+                FROM $this->table
                 WHERE (sender_id = %d AND receiver_id = %d)
                 OR (sender_id = %d AND receiver_id = %d)
                 ORDER BY created_at DESC
