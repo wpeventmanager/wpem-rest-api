@@ -141,15 +141,15 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		$consumer_secret   = '';
 
 		// If the $_GET parameters are present, use those first.
-		if ( !empty( $_GET['consumer_key'] ) && !empty( $_GET['consumer_secret'] ) ) { // WPCS: CSRF ok.
-			$consumer_key    = sanitize_text_field(wp_unslash($_GET['consumer_key'])); // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = sanitize_text_field(wp_unslash($_GET['consumer_secret'])); // WPCS: CSRF ok, sanitization ok.
+		if ( !empty( $_GET['consumer_key'] ) && !empty( $_GET['consumer_secret'] ) ) { 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- values used for read-only purpose (no data modification).
+			$consumer_key    = sanitize_text_field(wp_unslash($_GET['consumer_key'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query params.
+			$consumer_secret = sanitize_text_field(wp_unslash($_GET['consumer_secret'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query params.
 		}
 
 		// If the above is not present, we will do full basic auth.
 		if ( !$consumer_key && !empty( $_SERVER['PHP_AUTH_USER'] ) && !empty( $_SERVER['PHP_AUTH_PW'] ) ) {
-			$consumer_key    = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_USER'])); // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_PW'])); // WPCS: CSRF ok, sanitization ok.
+			$consumer_key    = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_USER'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only server variable.
+			$consumer_secret = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_PW'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only server variable.
 		}
 
 		// Stop if don't have any key.
@@ -240,54 +240,60 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @return array|WP_Error
 	 */
 	public function get_oauth_parameters() {
-		$params = array_merge( $_GET, $_POST ); // WPCS: CSRF ok.
-		$params = wp_unslash( $params );
-		$header = $this->get_authorization_header();
 
-		if ( !empty( $header ) ) {
-			// Trim leading spaces.
-			$header        = trim( $header );
-			$header_params = $this->parse_header( $header );
-			if ( !empty( $header_params ) ) {
-				$params = array_merge( $params, $header_params );
-			}
-		}
-		$param_names = array(
-			'oauth_consumer_key',
-			'oauth_timestamp',
-			'oauth_nonce',
-			'oauth_signature',
-			'oauth_signature_method',
-		);
-
-		$errors   = array();
-		$have_one = false;
-
-		// Check for required OAuth parameters.
-		foreach ( $param_names as $param_name ) {
-			if ( empty( $params[ $param_name ] ) ) {
-				$errors[] = $param_name;
-			} else {
-				$have_one = true;
-			}
-		}
-
-		// All keys are missing, so we're probably not even trying to use OAuth.
-		if ( !$have_one ) {
-			return array();
-		}
-
-		// If we have at least one supplied piece of data, and we have an error,
-		// then it's a failed authentication.
-		if ( !empty( $errors ) ) {
-			$message = sprintf(
-				/* translators: %s: amount of errors */
-				_n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wpem-rest-api' ),
-				implode( ', ', $errors )
-			);
-			return parent::prepare_error_for_response(401);
-		}
-		return $params;
+	    $param_names = array(
+	        'oauth_consumer_key',
+	        'oauth_timestamp',
+	        'oauth_nonce',
+	        'oauth_signature',
+	        'oauth_signature_method',
+	    );
+	
+	    $params = array();
+	
+	    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth request parameters (read-only, validated via signature).
+	    foreach ( $param_names as $key ) {
+	        if ( isset( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	            $params[ $key ] = sanitize_text_field( wp_unslash( $_GET[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	        } elseif ( isset( $_POST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- OAuth parameters, validated via signature.
+	            $params[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- OAuth parameters, validated via signature.
+	        }
+	    }
+	
+	    // Authorization header
+	    $header = $this->get_authorization_header();
+	
+	    if ( ! empty( $header ) ) {
+	        $header = trim( $header );
+	        $header_params = $this->parse_header( $header );
+	
+	        if ( ! empty( $header_params ) ) {
+	            $params = array_merge( $params, $header_params );
+	        }
+	    }
+	
+	    $errors   = array();
+	    $have_one = false;
+	
+	    foreach ( $param_names as $param_name ) {
+	        if ( empty( $params[ $param_name ] ) ) {
+	            $errors[] = $param_name;
+	        } else {
+	            $have_one = true;
+	        }
+	    }
+	
+	    if ( ! $have_one ) {
+	        return array();
+	    }
+	
+	    if ( ! empty( $errors ) ) {
+	        $message = sprintf( /* translators: %s: amount of errors */
+		    _n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wpem-rest-api' ), implode( ', ', $errors ) ); 
+		    return parent::prepare_error_for_response(401);
+	    }
+	
+	    return $params;
 	}
 
 	/**
@@ -494,17 +500,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 		$consumer_key = sanitize_text_field( $consumer_key ); //NEED TO IMPROVE LATER WITH GLOBAL API
-
-		$user         = $wpdb->get_row(
-			$wpdb->prepare(
-				"
-					SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created`
-					FROM {$table_name}
-					WHERE consumer_key = %s
-				",
-				$consumer_key
-			)
-		);
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		$user = $wpdb->get_row($wpdb->prepare("SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created` FROM {$table_name} WHERE consumer_key = %s",$consumer_key));
 		return $user;
 	}
 
@@ -638,16 +635,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				global $wpdb;
 				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 				$user_id = $user->ID;
-				$key_data = $wpdb->get_row(
-					$wpdb->prepare(
-						"
-							SELECT *
-							FROM {$table_name}
-							WHERE user_id = %s
-						",
-						$user_id
-					)
-				);
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+				$key_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %s ",$user_id ));
 		
 				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( gmdate('Y-m-d H:i:s') ) ){
 					$key_data->expiry  = false;
@@ -819,12 +808,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				}
 
 				// Keep the API key check logic unchanged
-				$key_data = $wpdb->get_row(
-					$wpdb->prepare(
-						"SELECT * FROM {$table_name} WHERE user_id = %s",
-						$user_id
-					)
-				);
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+				$key_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE user_id = %s", $user_id));
 				
 				if (!empty($key_data)) {
 					if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {

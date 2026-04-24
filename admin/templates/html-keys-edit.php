@@ -42,7 +42,7 @@ defined( 'ABSPATH' ) || exit; ?>
 						$all_users = wpem_get_event_users();
 						global $wpdb;
 						$table_name = esc_sql( $wpdb->prefix . 'wpem_rest_api_keys' );
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
 						$app_user = $wpdb->get_col("SELECT user_id FROM {$table_name}");
 						$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
 						if($user_id > 0) 

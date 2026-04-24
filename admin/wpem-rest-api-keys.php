@@ -161,14 +161,12 @@ class WPEM_Rest_API_Keys {
         if ( 0 === $key_id ) {
             return $empty;
         }
-
+        
+        $table = esc_sql( $table_name );
         $key = $wpdb->get_row(
             $wpdb->prepare(
                 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
-                "SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, event_show_by, selected_events, date_expires
-                 FROM {$table_name}
-                 WHERE key_id = %d",
-                $key_id
+                "SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, event_show_by, selected_events, date_expires FROM {$table} WHERE key_id = %d", $key_id
             ),
             ARRAY_A
         );
@@ -186,11 +184,13 @@ class WPEM_Rest_API_Keys {
     public function actions() {
         if ( $this->is_api_keys_settings_page() ) {
             // Revoke key.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             if( isset( $_REQUEST['revoke-key'] ) ) { // WPCS: input var okay, CSRF ok.
                 $this->revoke_key();
             }
 
             // Bulk actions.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             if( isset( $_REQUEST['action'] ) && isset($_REQUEST['key'] ) ) { // WPCS: input var okay, CSRF ok.
                 $this->bulk_actions();
             }
@@ -201,7 +201,9 @@ class WPEM_Rest_API_Keys {
      * Notices.
      */
     public static function notices() {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
         if( isset( $_GET['revoked'] ) ) { // WPCS: input var okay, CSRF ok.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             $revoked = absint( $_GET['revoked'] ); // WPCS: input var okay, CSRF ok.
 
             /* translators: %d: count */
@@ -219,7 +221,10 @@ class WPEM_Rest_API_Keys {
 
         if ( isset( $_REQUEST['revoke-key'] ) ) { // WPCS: input var okay, CSRF ok.
             $key_id  = absint( $_REQUEST['revoke-key'] ); // WPCS: input var okay, CSRF ok.
-            $user_id = (int) $wpdb->get_var($wpdb->prepare( "SELECT user_id FROM {$table_name} WHERE key_id = %d", $key_id ) );
+            $table = esc_sql( $table_name );
+            $user_id = (int) $wpdb->get_var(
+                $wpdb->prepare( "SELECT user_id FROM {$table} WHERE key_id = %d", $key_id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
+            );
 
             if ( $key_id && $user_id && ( current_user_can( 'edit_user', $user_id ) || get_current_user_id() === $user_id ) ) {
                 $this->remove_key( $key_id );
@@ -240,10 +245,10 @@ class WPEM_Rest_API_Keys {
             wp_die( esc_html__( 'You do not have permission to edit API Keys', 'wpem-rest-api' ) );
         }
 
-        if ( isset( $_REQUEST['action'] ) ) { // WPCS: input var okay, CSRF ok.
-            $action = sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ); // WPCS: input var okay, CSRF ok.
-            $keys   = isset( $_REQUEST['key'] ) ? array_map( 'absint', (array) $_REQUEST['key']) : array(); // WPCS: input var okay, CSRF ok.
-
+        if ( isset( $_REQUEST['action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
+            $action = sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
+            $keys   = isset( $_REQUEST['key'] ) ? array_map( 'absint', (array) $_REQUEST['key']) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             if ( 'revoke' === $action ) {
                 $this->bulk_revoke_key( $keys );
             }

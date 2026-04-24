@@ -136,7 +136,7 @@ class WPEM_Rest_API_Settings {
 		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.min.css' );
 		wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
-		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field(wp_unslash($_REQUEST['tab'])) : 'general';
+		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field(wp_unslash($_REQUEST['tab'])) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- used for tab navigation only.
 
 		$action = '';
 		if(in_array($current_tab, ['general','settings'])){
@@ -156,7 +156,7 @@ class WPEM_Rest_API_Settings {
 							<ul class="wpem-admin-left-menu">
 								<?php foreach ( $this->settings as $key => $section ) { ?>
 									<li class="wpem-admin-left-menu-item">
-										<a class="wpem-icon-<?php echo isset($section['icon']) ? esc_attr($section['icon']) : 'meter';?> nav-tab <?php if ( isset( $_GET['tab'] ) && ( $_GET['tab'] == $key )  ) echo 'nav-tab-active'; ?>" href="<?php echo  esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab='.$key ) );?>"><?php echo esc_html( $section['label'] ) ;?></a>
+										<a class="wpem-icon-<?php echo isset($section['icon']) ? esc_attr($section['icon']) : 'meter'; ?> nav-tab <?php echo ( $current_tab === $key ) ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=' . $key ) ); ?>"><?php echo esc_html( $section['label'] ); ?></a>
 									</li>
 								<?php } ?>
 							</ul>
@@ -172,7 +172,9 @@ class WPEM_Rest_API_Settings {
 							<div class="metabox-holder wpem-admin-right-container-holder">
 								<div class="wpem-admin-top-title-section postbox">
 									<?php
-										if (!empty($_GET['settings-updated'])) {
+										// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core adds this flag after settings save.
+										$settings_updated = isset( $_GET['settings-updated'] ) ? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ): '';
+										if ( ! empty( $settings_updated ) ) {
 											flush_rewrite_rules();
 											echo '<div class="updated fade event-manager-updated"><p>' . esc_html__( 'Settings successfully saved', 'wpem-rest-api' ) . '</p></div>';
 										}	

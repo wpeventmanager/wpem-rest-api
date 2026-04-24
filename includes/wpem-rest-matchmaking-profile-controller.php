@@ -349,14 +349,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if (!$user) {
             return self::prepare_error_for_response(404);
         }
-
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
         if (empty($_FILES['file'])) {
             return self::prepare_error_for_response(400, array('message' => 'No file uploaded.'));
         }
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
-        $file = map_deep($_FILES['file'], 'wp_kses_post');
-        $upload_overrides = array('test_form' => false);
+        $file = map_deep($_FILES['file'], 'wp_kses_post'); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
+        $upload_overrides = array('test_form' => false); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
         $movefile = wp_handle_upload($file, $upload_overrides);
         if (!isset($movefile['url'])) {
             return self::prepare_error_for_response(500, array('message' => 'File upload failed.'));

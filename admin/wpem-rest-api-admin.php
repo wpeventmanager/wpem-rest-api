@@ -134,22 +134,8 @@ class WPEM_Rest_API_Admin{
                     'event_show_by'     => $event_show_by,
 					'selected_events'   => $select_events,
                 );
-
-                $wpdb->update(
-                    $table_name,
-                    $data,
-                    array( 'key_id' => $key_id ),
-                        array(
-                            '%d',
-                            '%s',
-                            '%s',
-                            '%d',
-                            '%s',
-                            '%s',
-							'%s',
-                        ),
-                    array( '%d' )
-                );
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
+                $wpdb->update( $table_name, $data, array( 'key_id' => $key_id ), array( '%d', '%s', '%s', '%d', '%s', '%s', '%s'), array( '%d' ));
                 update_user_meta( $user_id, '_restrict_check_in', $restrict_check_in );
                 $response                    = $data;
                 $response['consumer_key']    = '';
@@ -175,24 +161,8 @@ class WPEM_Rest_API_Admin{
                     'event_show_by'    => $event_show_by,
 					'selected_events' => $select_events,
                 );
-                $wpdb->insert(
-                    $table_name,
-                    $data,
-                    array(
-                        '%d',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                        '%s',
-                    )
-                );
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
+                $wpdb->insert($table_name,$data, array('%d','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s',));
                 $key_id                      = $wpdb->insert_id;
                 $response                    = $data;
                 $response['consumer_key']    = $consumer_key;

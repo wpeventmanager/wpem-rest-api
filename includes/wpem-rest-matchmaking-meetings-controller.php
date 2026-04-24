@@ -472,6 +472,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -586,6 +587,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         $meeting_id = $wpdb->insert_id;
         WP_Event_Manager_Registrations_MatchMaking::send_matchmaking_meeting_emails($meeting_id, $user_id, $event_id, $participants_raw, $meeting_date, $start_time, $end_time, $message);
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -605,6 +607,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -661,7 +664,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($updated === false) {
             return self::prepare_error_for_response(500);
         }
-
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -686,7 +689,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($status!= 0 && $status!= 1 && $status!= -1) {
             return self::prepare_error_for_response(400);
         }
-
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -721,7 +724,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($updated === false) {
             return self::prepare_error_for_response(500);
         }
-
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -741,6 +744,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -797,6 +801,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);

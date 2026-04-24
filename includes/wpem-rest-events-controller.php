@@ -243,13 +243,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         if ($current_user_id) {
             global $wpdb;
             $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-            $settings_row = $wpdb->get_row(
-                $wpdb->prepare(
-                    "SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d",
-                    $current_user_id
-                ),
-                ARRAY_A
-            );
+		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d", $current_user_id),ARRAY_A);
             $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
             $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];
 
@@ -355,8 +350,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         
             }
         }
-        error_log($event->ID.' '.print_r($meta_data['_paid_tickets'], true));
-        
         if( $event_venue_id ) {
             if(is_array($event_venue_id))
                 $event_venue_id = $event_venue_id[0];
@@ -964,14 +957,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             return parent::get_items($request);
         } else {
             $query_args = $this->prepare_objects_query($request);
-
-            $settings_row = $wpdb->get_row(
-                $wpdb->prepare(
-                    "SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d",
-                    $user_id
-                ),
-                ARRAY_A
-            );
+		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d",$user_id),ARRAY_A);
 
             $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
             $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];

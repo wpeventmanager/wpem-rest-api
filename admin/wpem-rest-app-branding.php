@@ -46,8 +46,8 @@ class WPEM_Rest_APP_Branding {
      */
     public function wpem_change_brighness_color() {
         $output = '';
-        if( isset( $_REQUEST['color'] ) && !empty( $_REQUEST['color'] ) ) {
-            $color_code = sanitize_hex_color(wp_unslash($_REQUEST['color']));
+        if( isset( $_REQUEST['color'] ) && !empty( $_REQUEST['color'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $color_code = sanitize_hex_color(wp_unslash($_REQUEST['color'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
             for( $i = 1; $i < 10; $i++ ) {
 

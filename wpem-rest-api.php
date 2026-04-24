@@ -95,6 +95,7 @@ class WPEM_Rest_API{
         $domain = 'wpem-rest-api';
         $locale = apply_filters( 'wpem_plugin_locale', get_locale(), $domain );
         load_textdomain( $domain, WP_LANG_DIR . "/wpem-rest-api/".$domain."-" .$locale. ".mo" );
+        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- needed for non-dotorg plugin.
         load_plugin_textdomain( $domain, false, dirname( plugin_basename(__FILE__) ) . '/languages/' );
     }
 
@@ -163,15 +164,20 @@ class WPEM_Rest_API{
         dbDelta( $sql );
         
         // Check if we need to alter existing table
-		$columns = $wpdb->get_col("DESC {$table_name}", 0);
+		$table = esc_sql( $table_name );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+        $columns = $wpdb->get_col( "DESC {$table}", 0 );
 		
 		// Add event_show_by column if it doesn't exist
 		if (!in_array('event_show_by', $columns)) {
+		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
 			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN event_show_by varchar(20) NULL DEFAULT 'loggedin'");
 		}
 		
 		// Add selected_events column if it doesn't exist
 		if (!in_array('selected_events', $columns)) {
+		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
 			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN selected_events longtext NULL");
 		}
 

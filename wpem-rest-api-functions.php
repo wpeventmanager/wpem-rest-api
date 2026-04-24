@@ -273,6 +273,107 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
     }
 }
 
+if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
+    /**
+     * This function is used to get ecosystem information of website
+     * @since 1.0.1
+     */
+    function get_wpem_rest_api_ecosystem_info(){
+        // Create required plugin list for wpem rest api
+        $required_plugins = apply_filters( 'wpem_rest_api_required_plugin_list', array(
+            'woocommerce' => 'Woocommerce',
+            'wp-event-manager' => 'WP Event Manager',
+            'wpem-rest-api' => 'WPEM Rest API',
+            'wp-event-manager-sell-tickets' => 'WP Event Manager Sell Tickets',
+            'wp-event-manager-registrations' => 'WP Event Manager Registrations',
+            'wpem-guests' => 'WP Event Manager Guests',
+            'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule',
+			'wpem-name-badges'	=> 'WP Event Manager - Name Badges',
+        ) );
+
+        // Get ecosystem data
+        $plugins = get_plugins();
+        $ecosystem_info = array();
+        
+        foreach( $plugins as $filename => $plugin ) {
+            if( 'woocommerce' == $plugin['TextDomain'] || 'wp-event-manager' == $plugin['TextDomain'] || 'wpem-rest-api' == $plugin['TextDomain']){
+                $ecosystem_info[$plugin["TextDomain"]] = array(
+                    'version' => $plugin["Version"],
+                    'activated' => is_plugin_active( $filename ),
+                    'plugin_name' => $plugin["Name"]
+                );
+            } else{
+                if( $plugin['AuthorName'] == 'WP Event Manager' && is_plugin_active( $filename ) ) {
+                    $licence_activate = get_option( $plugin['TextDomain'] . '_licence_key' );
+
+                    if( !empty ( $licence_activate ) ) {
+                        $license_status = check_wpem_license_expire_date($licence_activate );
+                        $ecosystem_info[$plugin["TextDomain"]] = array(
+                            'version' => $plugin["Version"],
+                            'activated' => $license_status,
+                            'plugin_name' => $plugin["Name"]
+                        );
+                    } else {
+                        $ecosystem_info[$plugin["TextDomain"]] = array(
+                            'version' => $plugin["Version"],
+                            'activated' => false,
+                            'plugin_name' => $plugin["Name"]
+                        );
+                    }
+                }
+            }
+        }
+
+        $plugin_list = array();
+        // Check id required plugin is not in list
+        foreach( $required_plugins as $plugin_key => $plugin_name){
+            if( array_key_exists( $plugin_key, $ecosystem_info ) ) {
+                $plugin_list[$plugin_key] = $ecosystem_info[$plugin_key];
+            } else {
+                $plugin_list[$plugin_key] = array(
+                    'version' => '',
+                    'activated' => false,
+                    'plugin_name' => $plugin_name
+                );
+            }
+        }
+        return $plugin_list;
+    }
+}
+
+if( !function_exists( 'check_wpem_license_expire_date' ) ) {
+    /**
+     * This function is used to check plugin license key is expired or not
+     */
+    function check_wpem_license_expire_date($licence_key) {
+        
+        $args = array();
+        $defaults = array(
+            'request'        => 'check_expire_key',
+            'licence_key'    => $licence_key,
+        );
+
+        $args    = wp_parse_args($args, $defaults);
+        $request = wp_remote_get(WPEM_PLUGIN_ACTIVATION_API_URL . '&' . http_build_query($args, '', '&'));
+
+        if(is_wp_error($request) || wp_remote_retrieve_response_code($request) != 200) {
+            return false;
+        }
+
+        $response = json_decode(wp_remote_retrieve_body($request),true);
+        $response = (object)$response;
+
+        if ( isset( $response->error ) ) {
+            return false;
+        }
+
+        // Set version variables
+        if ( isset( $response ) && is_object( $response ) && $response !== false ) {
+            return true;
+        }
+    }
+}
+
 if( !function_exists( 'wpem_get_event_users' ) ) {
 
     /**
@@ -383,9 +484,8 @@ function wpem_get_user_login_status($user_id) {
     }
 
     $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-    $user_info = $wpdb->get_row(
-        $wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $user_id)
-    );
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+    $user_info = $wpdb->get_row( $wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $user_id));
 
     if ($user_info) {
         $date_expires = strtotime($user_info->date_expires);

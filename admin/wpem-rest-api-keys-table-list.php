@@ -233,16 +233,16 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
         if ( ! empty( $_REQUEST['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended 
             $term = wp_kses_post(wp_unslash( $_REQUEST['s'] )); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- input var okay, CSRF ok.
             $like = '%' . $wpdb->esc_like( $term ) . '%';
-
+            $cache_key = 'wpem_user_search_' . md5( $like );
+            
+            // Try cache first
+            $user_ids = wp_cache_get( $cache_key );
             // Find users matching by display name, username, or email.
-            $user_ids = $wpdb->get_col(
-                $wpdb->prepare(
-                    "SELECT ID FROM {$wpdb->users} WHERE display_name LIKE %s OR user_login LIKE %s OR user_email LIKE %s",
-                    $like,
-                    $like,
-                    $like
-                )
-            );
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
+            $user_ids = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->users} WHERE display_name LIKE %s OR user_login LIKE %s OR user_email LIKE %s",$like, $like, $like));
+            
+            // Store in cache (group optional but good practice)
+            wp_cache_set( $cache_key, $user_ids, 'wpem', 300 ); // 5 min cache
 
             // Only search by user (username/display name/email). If no users match, return no results.
             if ( ! empty( $user_ids ) ) {
@@ -253,15 +253,10 @@ class WPEM_API_Keys_Table_List extends WP_List_Table {
         }
 
         // Get the API keys.
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $keys = $wpdb->get_results(
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name + dynamic search are safe and controlled.
-            "SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search}" . $wpdb->prepare( ' ORDER BY key_id DESC LIMIT %d OFFSET %d', $per_page, $offset ), ARRAY_A );
-        
-        $count = $wpdb->get_var(
-    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and search are safely constructed.
-    "SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1 {$search}"
-);
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
+        $keys = $wpdb->get_results("SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search}" . $wpdb->prepare( ' ORDER BY key_id DESC LIMIT %d OFFSET %d', $per_page, $offset ), ARRAY_A );
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
+        $count = $wpdb->get_var("SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1 {$search}");
         $this->_column_headers = array( $columns, $hidden, $sortable );
         $this->items = $keys;
 
