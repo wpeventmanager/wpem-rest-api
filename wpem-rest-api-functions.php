@@ -273,12 +273,12 @@ if( !function_exists( 'wpem_response_default_status' ) ) {
     }
 }
 
-if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
+if( !function_exists( 'wpem_rest_api_get_ecosystem_info' ) ) {
     /**
      * This function is used to get ecosystem information of website
      * @since 1.0.1
      */
-    function get_wpem_rest_api_ecosystem_info(){
+    function wpem_rest_api_get_ecosystem_info(){
         // Create required plugin list for wpem rest api
         $required_plugins = apply_filters( 'wpem_rest_api_required_plugin_list', array(
             'woocommerce' => 'Woocommerce',
@@ -307,7 +307,7 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
                     $licence_activate = get_option( $plugin['TextDomain'] . '_licence_key' );
 
                     if( !empty ( $licence_activate ) ) {
-                        $license_status = check_wpem_license_expire_date($licence_activate );
+                        $license_status = wpem_rest_api_check_license_expire_date($licence_activate );
                         $ecosystem_info[$plugin["TextDomain"]] = array(
                             'version' => $plugin["Version"],
                             'activated' => $license_status,
@@ -341,11 +341,11 @@ if( !function_exists( 'get_wpem_rest_api_ecosystem_info' ) ) {
     }
 }
 
-if( !function_exists( 'check_wpem_license_expire_date' ) ) {
+if( !function_exists( 'wpem_rest_api_check_license_expire_date' ) ) {
     /**
      * This function is used to check plugin license key is expired or not
      */
-    function check_wpem_license_expire_date($licence_key) {
+    function wpem_rest_api_check_license_expire_date($licence_key) {
         
         $args = array();
         $defaults = array(
@@ -484,7 +484,7 @@ function wpem_get_user_login_status($user_id) {
     }
 
     $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
     $user_info = $wpdb->get_row( $wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $user_id));
 
     if ($user_info) {

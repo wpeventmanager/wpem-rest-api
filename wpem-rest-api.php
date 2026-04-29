@@ -166,18 +166,18 @@ class WPEM_Rest_API{
         // Check if we need to alter existing table
 		$table = esc_sql( $table_name );
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $columns = $wpdb->get_col( "DESC {$table}", 0 );
 		
 		// Add event_show_by column if it doesn't exist
 		if (!in_array('event_show_by', $columns)) {
-		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN event_show_by varchar(20) NULL DEFAULT 'loggedin'");
 		}
 		
 		// Add selected_events column if it doesn't exist
 		if (!in_array('selected_events', $columns)) {
-		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN selected_events longtext NULL");
 		}
 

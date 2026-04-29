@@ -98,9 +98,7 @@ class WPEM_Rest_API_Keys {
         global $wpdb;
         $key_id   = isset( $_GET['edit-key'] ) ? absint( $_GET['edit-key'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
         $key_data = self::get_key_data( $key_id );
-        $app_user = $wpdb->get_col(
-            "SELECT user_id FROM {$table_name}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
-        );
+        $app_user = $wpdb->get_col("SELECT user_id FROM {$table_name}");// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
         foreach ( $all_users as $user ) { 
 			if(!in_array($user['ID'], $app_user) || $user_id == $user['ID']) {
@@ -113,9 +111,7 @@ class WPEM_Rest_API_Keys {
         else
             echo '<h3 class="wpem-admin-tab-title">' . esc_html__( 'REST API', 'wpem-rest-api' ) . '</h3>';
         // Get the API keys count.
-        $count = $wpdb->get_var(
-            "SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
-        );
+        $count = $wpdb->get_var("SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
         if (absint($count) && $count > 0 ) {
             $wpem_keys_table_list->prepare_items();
@@ -163,13 +159,7 @@ class WPEM_Rest_API_Keys {
         }
         
         $table = esc_sql( $table_name );
-        $key = $wpdb->get_row(
-            $wpdb->prepare(
-                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
-                "SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, event_show_by, selected_events, date_expires FROM {$table} WHERE key_id = %d", $key_id
-            ),
-            ARRAY_A
-        );
+        $key = $wpdb->get_row($wpdb->prepare("SELECT key_id, user_id, event_id, description, permissions, truncated_key, last_access, event_show_by, selected_events, date_expires FROM {$table} WHERE key_id = %d", $key_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
         if ( is_null( $key ) ) {
             return $empty;
@@ -222,9 +212,7 @@ class WPEM_Rest_API_Keys {
         if ( isset( $_REQUEST['revoke-key'] ) ) { // WPCS: input var okay, CSRF ok.
             $key_id  = absint( $_REQUEST['revoke-key'] ); // WPCS: input var okay, CSRF ok.
             $table = esc_sql( $table_name );
-            $user_id = (int) $wpdb->get_var(
-                $wpdb->prepare( "SELECT user_id FROM {$table} WHERE key_id = %d", $key_id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
-            );
+            $user_id = (int) $wpdb->get_var($wpdb->prepare( "SELECT user_id FROM {$table} WHERE key_id = %d", $key_id )); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
             if ( $key_id && $user_id && ( current_user_can( 'edit_user', $user_id ) || get_current_user_id() === $user_id ) ) {
                 $this->remove_key( $key_id );
@@ -287,7 +275,7 @@ class WPEM_Rest_API_Keys {
     private function remove_key( $key_id ) {
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-        $delete = $wpdb->delete( $table_name, array( 'key_id' => $key_id ), array( '%d' ) );
+        $delete = $wpdb->delete( $table_name, array( 'key_id' => $key_id ), array( '%d' ) );// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         return $delete;
     }
 }

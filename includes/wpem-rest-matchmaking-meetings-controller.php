@@ -428,18 +428,18 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // SQL queries
         $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter}";
+        
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $sql_count = $wpdb->prepare($sql_count, ...$params);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $total = (int) $wpdb->get_var($sql_count); 
+        
         $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter} 
                     ORDER BY meeting_date ASC, meeting_start_time ASC 
                     LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $sql_count = $wpdb->prepare($sql_count, $params);
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
-
-        // Execute queries
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $total = (int) $wpdb->get_var($sql_count);
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
 
         // Format rows
@@ -472,8 +472,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
+        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         if (!$row) {
             return self::prepare_error_for_response(404);
         }
@@ -524,7 +523,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
             $availability_sql = "SELECT * FROM {$this->table} WHERE meeting_date = %s AND NOT (meeting_end_time <= %s OR meeting_start_time >= %s) AND (user_id IN ($in_placeholders) OR " . implode(' OR ', $like_clauses) . ")";
             $availability_params = array_merge(array($meeting_date, $start_time, $end_time), $check_ids, $like_params);
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
             $overlapping_rows = $wpdb->get_results($wpdb->prepare($availability_sql, $availability_params), ARRAY_A);
 
             $conflicts = array();
@@ -567,9 +566,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ), 409);
             }
         }
-
-        $inserted = $wpdb->insert(
-            $this->table,
+        $table = esc_sql($this->table);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $inserted = $wpdb->insert($table,
             array(
                 'user_id'            => $user_id,
                 'participant_ids'    => serialize($participants_map),
@@ -587,7 +586,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         $meeting_id = $wpdb->insert_id;
         WP_Event_Manager_Registrations_MatchMaking::send_matchmaking_meeting_emails($meeting_id, $user_id, $event_id, $participants_raw, $meeting_date, $start_time, $end_time, $message);
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+        $table = esc_sql($this->table);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -607,7 +607,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -659,12 +659,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if (empty($fields)) {
             return self::prepare_error_for_response(400);
         }
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $updated = $wpdb->update($this->table, $fields, array('id' => $meeting_id), $formats, array('%d'));
         if ($updated === false) {
             return self::prepare_error_for_response(500);
         }
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -689,7 +689,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($status!= 0 && $status!= 1 && $status!= -1) {
             return self::prepare_error_for_response(400);
         }
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -709,9 +709,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // Compute overall meeting status: accepted if any participant accepted
         $meeting_status = in_array(1, $participant_data, true) ? 1 : 0;
-
-        $updated = $wpdb->update(
-            $this->table,
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $updated = $wpdb->update($this->table,
             array(
                 'participant_ids' => maybe_serialize($participant_data),
                 'meeting_status'  => $meeting_status,
@@ -724,7 +723,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($updated === false) {
             return self::prepare_error_for_response(500);
         }
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -744,7 +743,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -762,7 +761,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // Re-serialize
         $participant_serialized = maybe_serialize( $participants );
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $updated = $wpdb->update(
             $this->table,
             array('meeting_status' => -1, 'participant_ids' => $participant_serialized),
@@ -775,11 +774,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // Fetch meeting
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-		$meeting = $wpdb->get_row(
-		    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->prepare("SELECT * FROM " . $this->table . " WHERE id = %d", $meeting_id)
-		);
+        $table = esc_sql($this->table);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $meeting = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $meeting_id));
         //send mail to all participants
         $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
         $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $meeting);
@@ -801,12 +798,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id  = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
         }
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $deleted = $wpdb->delete($this->table, array('id' => $meeting_id), array('%d'));
         if (!$deleted) {
             return self::prepare_error_for_response(500);
@@ -1054,15 +1051,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$status_filter}
                     ORDER BY meeting_date ASC, meeting_start_time ASC
                     LIMIT %d OFFSET %d";
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-        $sql_count = $wpdb->prepare($sql_count, $params);
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-        $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
-
-        // Execute queries
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $sql_count = $wpdb->prepare($sql_count, ...$params);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total = (int) $wpdb->get_var($sql_count);
+        
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
 
         // Format rows

@@ -298,7 +298,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
         $args['paged']               = $request['page'];
         $args['author']              = $request['author'];
         $args['post__in']            = $request['include'];
-        $args['post__not_in']        = $request['exclude'];
+        $args['post__not_in']        = $request['exclude']; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
         $args['posts_per_page']      = $request['per_page'];
         $args['name']                = $request['slug'];
         $args['post_parent__in']     = $request['parent'];
@@ -581,7 +581,8 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             'format'             => 'date-time',
             'validate_callback'  => 'rest_validate_request_arg',
         );
-        $params['exclude'] = array(
+        // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude
+        $params['exclude'] = array( 
             'description'       => __( 'Ensure result set excludes specific IDs.', 'wpem-rest-api' ),
             'type'              => 'array',
             'items'             => array(
@@ -699,7 +700,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller {
             if (!wp_check_password($user_data['password'], $user->user_pass, $user->ID)) {
                 return self::prepare_error_for_response(405);
             } else {
-                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID));
+                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
                 $user_meta = get_user_meta( $user->ID, '_matchmaking_profile', true );
                 if($user_info){ 
                     $date_expires = gmdate('Y-m-d', strtotime($user_info->date_expires));

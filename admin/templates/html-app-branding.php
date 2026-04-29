@@ -63,6 +63,7 @@ defined('ABSPATH') || exit; ?>
             <tr valign="top">
                 <td scope="row" id="wpem_primary_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -70,7 +71,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($primary_color, $adjust_percentage);
-
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness).'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
                         } else {
@@ -80,6 +81,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_success_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -88,6 +90,7 @@ defined('ABSPATH') || exit; ?>
                         }
 
                         $code = wpem_rest_api_color_brightness($success_color, $adjust_percentage);
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                         if($i < 5) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
                         } else {
@@ -97,6 +100,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_info_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -104,7 +108,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($info_color, $adjust_percentage);
-
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
                         } else {
@@ -114,6 +118,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_warning_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = (1000 - $i*100);
                         $adjust_percentage = $i/10;
@@ -121,6 +126,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($warning_color, $adjust_percentage);
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
@@ -131,6 +137,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_danger_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1 ; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -138,6 +145,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($danger_color, $adjust_percentage);
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
@@ -190,6 +198,7 @@ defined('ABSPATH') || exit; ?>
             <tr valign="top">
                 <td scope="row" id="wpem_primary_dark_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1 ; $i < 10 ; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -197,7 +206,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($primary_dark_color, $adjust_percentage);
-
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
                         } else {
@@ -207,6 +216,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_success_dark_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -214,7 +224,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($success_dark_color, $adjust_percentage);
-
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
                         } else {
@@ -224,6 +234,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_info_dark_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -231,6 +242,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($info_dark_color, $adjust_percentage);
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
@@ -241,6 +253,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_warning_dark_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -248,6 +261,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($warning_dark_color, $adjust_percentage);
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    
@@ -258,6 +272,7 @@ defined('ABSPATH') || exit; ?>
                 </td>
                 <td scope="row" id="wpem_danger_dark_color">
                     <?php
+                    // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     for( $i = 1; $i < 10; $i++ ) {
                         $brightness = ( 1000 - $i*100 );
                         $adjust_percentage = $i/10;
@@ -265,6 +280,7 @@ defined('ABSPATH') || exit; ?>
                             $adjust_percentage = 0;
                         }
                         $code = wpem_rest_api_color_brightness($danger_dark_color, $adjust_percentage);
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
                         if( $i < 5 ) {
                             echo '<div class="wpem-color-pallet-wrapper"><div>'. esc_html($brightness) .'</div> <div class="wpem-color-pallet" style="background-color:'.esc_html($code).'" data-color-code="'.esc_html($code).'"><span style="color:#fff">'.esc_html($code).'</span></div></div>';    

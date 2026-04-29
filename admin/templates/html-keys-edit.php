@@ -1,5 +1,7 @@
 <?php
-defined( 'ABSPATH' ) || exit; ?>
+defined( 'ABSPATH' ) || exit; 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+?>
 
 <div id="key-fields" class="settings-panel">
 	<h3 class="wpem-admin-tab-title"><?php esc_html_e( 'Key details', 'wpem-rest-api' ); ?></h3>
@@ -25,8 +27,9 @@ defined( 'ABSPATH' ) || exit; ?>
 					</th>
 					<td class="forminp">
 						<?php
-						$event_id        = ! empty( $key_data['event_id'] ) ? absint( $key_data['event_id'] ) : '';
-						$events = array(); ?>
+						$event_id        = ! empty( $key_data['event_id'] ) ? absint( $key_data['event_id'] ) : ''; 
+						$events = array();
+						 ?>
 					</td>
 				</tr>
 				<tr valign="top">
@@ -223,7 +226,9 @@ defined( 'ABSPATH' ) || exit; ?>
 		</table>	
 	</div>
 
-	<?php do_action( 'wpem_admin_key_fields', $key_data ); 
+	<?php 
+	// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+	do_action( 'wpem_admin_key_fields', $key_data ); 
 
 	if ( 0 === intval( $key_id ) ) {
 		submit_button( __( 'Generate API key', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'wpem_update_api_key' );

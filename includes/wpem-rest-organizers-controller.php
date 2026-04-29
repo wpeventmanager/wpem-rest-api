@@ -206,7 +206,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         }
         // Filter by term.
         if( !empty( $tax_query ) ) {
-            $args['tax_query'] = $tax_query; // WPCS: slow query ok.
+            $args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
         }
         $args['post_type'] = $this->post_type;
         return $args;

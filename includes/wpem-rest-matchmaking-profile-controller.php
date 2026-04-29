@@ -554,6 +554,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 'author'         => $current_user,
                 'numberposts'    => -1,
                 'fields'         => 'ids',
+                // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
                 'meta_query'     => [
                     [
                         'key'     => '_create_matchmaking',

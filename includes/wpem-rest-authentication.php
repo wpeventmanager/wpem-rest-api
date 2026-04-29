@@ -480,13 +480,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		}
 		$used_nonces = maybe_serialize( $used_nonces );
 
-		$wpdb->update(
-			$wpdb->prefix . 'wpem_organizer_api_keys',
-			array( 'nonces' => $used_nonces ),
-			array( 'key_id' => $user->key_id ),
-			array( '%s' ),
-			array( '%d' )
-		);
+		$wpdb->update($wpdb->prefix . 'wpem_organizer_api_keys', array( 'nonces' => $used_nonces ), array( 'key_id' => $user->key_id ), array( '%s' ), array( '%d' )); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return true;
 	}
 
@@ -501,7 +495,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 		$consumer_key = sanitize_text_field( $consumer_key ); //NEED TO IMPROVE LATER WITH GLOBAL API
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-		$user = $wpdb->get_row($wpdb->prepare("SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created` FROM {$table_name} WHERE consumer_key = %s",$consumer_key));
+		$user = $wpdb->get_row($wpdb->prepare("SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created` FROM {$table_name} WHERE consumer_key = %s",$consumer_key)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $user;
 	}
 
@@ -543,13 +537,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	private function update_last_access() {
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-		$wpdb->update(
-			$table_name,
-			array( 'last_access' => current_time( 'mysql' ) ),
-			array( 'key_id' => $this->user->key_id ),
-			array( '%s' ),
-			array( '%d' )
-		);
+		$wpdb->update($table_name,array( 'last_access' => current_time( 'mysql' ) ), array( 'key_id' => $this->user->key_id ),array( '%s' ),array( '%d' )); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/**
@@ -635,8 +623,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				global $wpdb;
 				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 				$user_id = $user->ID;
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-				$key_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %s ",$user_id ));
+				$key_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %s ",$user_id ));// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		
 				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( gmdate('Y-m-d H:i:s') ) ){
 					$key_data->expiry  = false;
@@ -808,8 +795,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				}
 
 				// Keep the API key check logic unchanged
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-				$key_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE user_id = %s", $user_id));
+				$key_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE user_id = %s", $user_id)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				
 				if (!empty($key_data)) {
 					if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {

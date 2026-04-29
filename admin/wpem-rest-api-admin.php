@@ -54,7 +54,7 @@ class WPEM_Rest_API_Admin{
             );
 
             wp_enqueue_style( 'jquery-ui' );  
-            wp_enqueue_style( 'jquery-ui-style', EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array() );
+            wp_enqueue_style( 'jquery-ui-style', EVENT_MANAGER_PLUGIN_URL. '/assets/js/jquery-ui/jquery-ui.min.css', array(), WPEM_REST_API_VERSION );
         }
     }
 

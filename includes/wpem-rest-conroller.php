@@ -376,7 +376,7 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      */
     protected function add_meta_query( $args, $meta_query ) {
         if( empty($args['meta_query'] ) ) {
-            $args['meta_query'] = array();
+            $args['meta_query'] = array(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
         }
         $args['meta_query'][] = $meta_query;
 

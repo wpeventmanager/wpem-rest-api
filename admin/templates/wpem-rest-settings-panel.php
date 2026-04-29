@@ -5,6 +5,7 @@ if( !defined( 'ABSPATH' ) ) {
 wp_enqueue_style('wp-color-picker');
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Non-sensitive tab switch.
 $tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash($_GET['tab']) ) : 'general';
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array();?>
 <div class="wpem-admin-bottom-content">
   <?php
@@ -169,7 +170,9 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                         </p>
                         <?php
                     default :
+                        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
                         do_action('wp_event_manager_admin_field_' . $option['type'], $option, $attributes, $value, $placeholder);
+                        // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                         break;
                     }
                 }

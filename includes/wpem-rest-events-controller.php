@@ -235,7 +235,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         }
         // Filter by term.
         if( !empty( $tax_query ) ) {
-            $args['tax_query'] = $tax_query; // WPCS: slow query ok.
+            $args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
         }
 
         $args['post_type'] = $this->post_type;
@@ -243,8 +243,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
         if ($current_user_id) {
             global $wpdb;
             $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d", $current_user_id),ARRAY_A);
+            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d", $current_user_id),ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
             $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];
 
@@ -957,9 +956,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
             return parent::get_items($request);
         } else {
             $query_args = $this->prepare_objects_query($request);
-		    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d",$user_id),ARRAY_A);
-
+            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d",$user_id),ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
             $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];
 

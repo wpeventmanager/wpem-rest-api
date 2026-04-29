@@ -299,7 +299,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
         $args['orderby']              = $request['orderby'];
         $args['paged']                = $request['page'];
         $args['post__in']             = $request['include'];
-        $args['post__not_in']         = $request['exclude'];
+        $args['post__not_in']         = $request['exclude']; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
         $args['posts_per_page']       = $request['per_page'];
         $args['name']                 = $request['slug'];
         $args['post_parent__in']      = $request['parent'];
@@ -611,6 +611,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller {
             'format'             => 'date-time',
             'validate_callback'  => 'rest_validate_request_arg',
         );
+        // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude
         $params['exclude'] = array(
             'description'       => __( 'Ensure result set excludes specific IDs.', 'wpem-rest-api' ),
             'type'              => 'array',

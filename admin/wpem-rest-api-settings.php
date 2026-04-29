@@ -119,7 +119,9 @@ class WPEM_Rest_API_Settings {
 		      		if(isset($option['name']) && isset($option['std']) )
 		      			add_option( $option['name'], $option['std'] );
 
-		      		register_setting( map_deep($this->settings_group, 'wp_kses_post'), map_deep($option['name'], 'wp_kses_post') );
+		      		// register_setting( map_deep($this->settings_group, 'wp_kses_post'), map_deep($option['name'], 'wp_kses_post') );
+		      		
+		      		register_setting( $this->settings_group, $option['name'], ['sanitize_callback' => 'sanitize_text_field']);
 		      	}
 			}
 		}
@@ -133,7 +135,7 @@ class WPEM_Rest_API_Settings {
 	public function output() {
 		$this->init_settings();
 
-		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.min.css' );
+		wp_enqueue_style( 'wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL.'/assets/css/backend.min.css', array(), WPEM_REST_API_VERSION );
 		wp_enqueue_script( 'wpem-rest-api-admin-js' );
 
 		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field(wp_unslash($_REQUEST['tab'])) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- used for tab navigation only.

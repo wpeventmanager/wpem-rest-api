@@ -160,7 +160,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $offset   = ($page - 1) * $per_page;
         $table = esc_sql( $this->table );
         // Total message count (union not needed here)
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $total_messages = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d)", $user_id, $partner_id, $partner_id, $user_id));
 
         // Optimized paginated messages using UNION ALL (index friendly)
@@ -168,7 +168,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
         $sql = $wpdb->prepare("(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) UNION ALL (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", $user_id, $partner_id, $partner_id, $user_id, $per_page, $offset );
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
         $messages = $wpdb->get_results($sql, ARRAY_A);
 
         // Process messages (split text & image)
@@ -262,10 +262,11 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // --- Conversation Parent ID ---
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name + dynamic search are safe and controlled.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $parent_id = (int) $wpdb->get_var( $wpdb->prepare("SELECT id FROM $this->table WHERE (receiver_id = %d AND sender_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at ASC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id ) );
 
         // --- Insert Message ---
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $wpdb->insert(
             $this->table,
             [
@@ -343,7 +344,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         /**
          * Step 1: Find unique conversation partners
          */
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name + dynamic search are safe and controlled.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $conversation_user_ids = $wpdb->get_col( $wpdb->prepare( " SELECT DISTINCT other_user FROM ( SELECT receiver_id AS other_user FROM $this->table WHERE sender_id = %d UNION SELECT sender_id AS other_user FROM $this->table WHERE receiver_id = %d ) AS temp WHERE other_user != %d ", $user_id, $user_id, $user_id ) );
 
         if ( empty( $conversation_user_ids ) ) {
@@ -363,8 +364,9 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
          */
         $results = [];
         foreach ( $paginated_ids as $partner_id ) {
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name + dynamic search are safe and controlled.
-            $last_message_row = $wpdb->get_row( $wpdb->prepare( "SELECT message, created_at FROM $this->table WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id ) );
+            $table = esc_sql($this->table);
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $last_message_row = $wpdb->get_row($wpdb->prepare("SELECT message, created_at FROM {$table} WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id ));
 
             // Build display name
             $display_name = get_user_meta( $partner_id, 'display_name', true );
@@ -432,10 +434,10 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         if ( ! $text_message && ! $image_url ) {
             return self::prepare_error_for_response( 400 );
         }
-
+        $table = esc_sql($this->table);
         // --- Validate Message Exists ---
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name + dynamic search are safe and controlled.
-        $message = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $this->table WHERE id = %d AND sender_id = %d", $message_id, $user_id) );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $message = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id) );
 
         if ( ! $message ) {
             return self::prepare_error_for_response( 404 ); // message not found
@@ -448,6 +450,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // --- Update Message ---
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->update(
             $this->table,
             [
@@ -480,16 +483,17 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         $user_id    = wpem_rest_get_current_user_id();
         $message_id = (int) $request->get_param( 'id' );
-
+        $table = esc_sql($this->table);
         // Validate Message
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name + dynamic search are safe and controlled.
-        $message = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $this->table WHERE id = %d AND sender_id = %d", $message_id, $user_id ) );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $message = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id ) );
 
         if ( ! $message ) {
             return self::prepare_error_for_response( 404 );
         }
 
         // Delete
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $deleted = $wpdb->delete(
             $this->table,
             [ 'id' => $message_id ],
