@@ -216,7 +216,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $user = get_userdata($pid);
             if(!$user) continue;
             $pid = (int) $pid;
+            
+            // participant status convert int to str
             $status = (int) $status;
+            if($status == 0) : $p_status = 'rejected'; endif;
+            if($status == 1) : $p_status = 'accepted'; endif;
+            if($status == -1) : $p_status = 'pending'; endif;
 
             // Build display name
             $display_name = '';
@@ -279,7 +284,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
             $participants_info[] = array(
                 'id'            => $pid,
-                'status'        => $status,
+                'participant_status'        => $p_status,
                 'name'          => $display_name,
                 'profile_photo' => !empty($profile_photo) ? esc_url($profile_photo) : '',
                 'profession'    => $profession_slug,
@@ -345,17 +350,27 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'company_name'  => !empty($host_company) ? $host_company : '',
         );
 
+        $event_title = get_the_title( $row['event_id'] );
+
+        // meeting status convert int to str
+        $m_status = (int) $row['meeting_status'];
+        if($m_status == 0) : $m_status_str = 'pending'; endif;
+        if($m_status == 1) : $m_status_str = 'accept'; endif;
+        if($m_status == -1) : $m_status_str = 'cancel'; endif;
+        if($m_status == -2) : $m_status_str = 'expire'; endif;
+
             // Build final payload
             return array(
                 'meeting_id'     => (int) $row['id'],
                 'event_id'       => isset($row['event_id']) ? (int) $row['event_id'] : 0,
+                'event_title'    => $event_title,
                 'meeting_date'   => date_i18n('l, d F Y', strtotime($row['meeting_date'])),
                 'start_time'     => date_i18n('H:i', strtotime($row['meeting_start_time'])),
                 'end_time'       => date_i18n('H:i', strtotime($row['meeting_end_time'])),
                 'message'        => isset($row['message']) ? $row['message'] : '',
                 'host_info'      => $host_info,
                 'participants'   => $participants_info,
-                'meeting_status' => (int) $row['meeting_status'],
+                'meeting_status' => $m_status_str,
             );
 
     }
