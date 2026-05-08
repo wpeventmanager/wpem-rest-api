@@ -251,11 +251,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller {
                 $args['post__in'] = array_map('intval', $selected_events);
                 $args['orderby'] = 'post__in';
                 unset($args['author']);
-            } else {
-                $args['author'] = $current_user_id;
             }
-        } else {
-            $args['author'] = $current_user_id;
         }
         return $args; 
     }
