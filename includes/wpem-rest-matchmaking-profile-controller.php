@@ -334,10 +334,10 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Upload profile image
-        if (!empty($_FILES['profile_image'])) {
+        if (!empty($_FILES['profile_photo'])) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            $file = $_FILES['profile_image'];
+            $file = $_FILES['profile_photo'];
             $upload_overrides = array(
                 'test_form' => false,
             );
