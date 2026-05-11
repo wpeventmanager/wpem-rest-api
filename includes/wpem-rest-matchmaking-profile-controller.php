@@ -332,6 +332,40 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if ($request->get_param('last_name')) {
             update_user_meta($user_id, 'last_name', sanitize_text_field($request->get_param('last_name')));
         }
+
+        // Upload profile image
+        if (!empty($_FILES['profile_image'])) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $file = $_FILES['profile_image'];
+            $upload_overrides = array(
+                'test_form' => false,
+            );
+            $movefile = wp_handle_upload($file, $upload_overrides);
+            if (!empty($movefile['url'])) {
+                $file_url = esc_url_raw($movefile['url']);
+                update_user_meta($user_id, '_profile_photo', $file_url);
+            } else {
+                update_user_meta($user_id, '_profile_photo', '');
+            }
+        }
+
+        // Upload oraganization logo
+        if (!empty($_FILES['organization_logo'])) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $file = $_FILES['organization_logo'];
+            $upload_overrides = array(
+                'test_form' => false,
+            );
+            $movefile = wp_handle_upload($file, $upload_overrides);
+            if (!empty($movefile['url'])) {
+                $file_url = esc_url_raw($movefile['url']);
+                update_user_meta($user_id, '_organization_logo', $file_url);
+            } else {
+                update_user_meta($user_id, '_organization_logo', '');
+            }
+        }
        
         return self::prepare_error_for_response(200);
     }
