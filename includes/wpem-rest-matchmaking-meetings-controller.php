@@ -427,19 +427,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // --- Filters ---
         if ($partner_id) {
-            // Bi-directional filter
+            // Show all meetings where this user is either: host or participant
             $filter_sql = ' AND (
-                (user_id = %d AND participant_ids LIKE %s)
-                OR (user_id = %d AND participant_ids LIKE %s)
+                user_id = %d
+                OR participant_ids LIKE %s
             )';
-
-            $params[] = $user_id;
-            $params[] = '%' . $wpdb->esc_like((string) $partner_id) . '%';
             $params[] = $partner_id;
-            $params[] = '%' . $wpdb->esc_like((string) $user_id) . '%';
+            $params[] = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
         } else {
-            // Default user-only filter
-            $filter_sql = ' AND (user_id = %d OR participant_ids LIKE %s)';
+            // Default current logged-in user meetings
+            $filter_sql = ' AND (
+                user_id = %d
+                OR participant_ids LIKE %s
+            )';
             $params[] = $user_id;
             $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
         }
