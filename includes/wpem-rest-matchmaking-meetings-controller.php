@@ -14,7 +14,8 @@ defined('ABSPATH') || exit;
  *
  * @extends WPEM_REST_CRUD_Controller
  */
-class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controller {
+class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controller
+{
 
     /**
      * Endpoint namespace.
@@ -36,7 +37,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      */
     protected $table;
 
-    public function __construct() {
+    public function __construct()
+    {
         global $wpdb;
         $this->table = esc_sql($wpdb->prefix . 'wpem_matchmaking_users_meetings');
         add_action('rest_api_init', array($this, 'register_routes'), 10);
@@ -45,22 +47,23 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     /**
      * Register the routes for meetings.
      */
-    public function register_routes() {
+    public function register_routes()
+    {
         register_rest_route(
             $this->namespace,
             '/' . $this->rest_base,
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_items'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_items'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_collection_params(),
+                    'args' => $this->get_collection_params(),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::CREATABLE,
-                    'callback'            => array($this, 'create_meeting'),
+                    'methods' => WP_REST_Server::CREATABLE,
+                    'callback' => array($this, 'create_meeting'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
+                    'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
             )
@@ -70,32 +73,32 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $this->namespace,
             '/' . $this->rest_base . '/(?P<id>[\d]+)',
             array(
-                'args'   => array(
+                'args' => array(
                     'id' => array(
                         'description' => __('Unique identifier for the resource.', 'wpem-rest-api'),
-                        'type'        => 'integer',
+                        'type' => 'integer',
                     ),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_item'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_item'),
                     'permission_callback' => array($this, 'permission_check'),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
-                    'callback'            => array($this, 'update_item'),
+                    'methods' => WP_REST_Server::EDITABLE,
+                    'callback' => array($this, 'update_item'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
+                    'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::DELETABLE,
-                    'callback'            => array($this, 'delete_item'),
+                    'methods' => WP_REST_Server::DELETABLE,
+                    'callback' => array($this, 'delete_item'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(
+                    'args' => array(
                         'force' => array(
-                            'default'     => false,
+                            'default' => false,
                             'description' => __('Whether to bypass trash and force deletion.', 'wpem-rest-api'),
-                            'type'        => 'boolean',
+                            'type' => 'boolean',
                         ),
                     ),
                 ),
@@ -111,19 +114,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 'args' => array(
                     'id' => array(
                         'description' => __('Meeting ID.', 'wpem-rest-api'),
-                        'type'        => 'integer',
+                        'type' => 'integer',
                     ),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
-                    'callback'            => array($this, 'update_participant_status'),
+                    'methods' => WP_REST_Server::EDITABLE,
+                    'callback' => array($this, 'update_participant_status'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(
+                    'args' => array(
                         'status' => array(
-                            'required'    => true,
+                            'required' => true,
                             'description' => __('Your participant status (-1 pending, 0 declined, 1 accepted).', 'wpem-rest-api'),
-                            'type'        => 'integer',
-                            'enum'        => array(-1, 0, 1),
+                            'type' => 'integer',
+                            'enum' => array(-1, 0, 1),
                         ),
                     ),
                 ),
@@ -138,12 +141,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 'args' => array(
                     'id' => array(
                         'description' => __('Meeting ID.', 'wpem-rest-api'),
-                        'type'        => 'integer',
+                        'type' => 'integer',
                     ),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
-                    'callback'            => array($this, 'cancel_item'),
+                    'methods' => WP_REST_Server::EDITABLE,
+                    'callback' => array($this, 'cancel_item'),
                     'permission_callback' => array($this, 'permission_check'),
                 ),
             )
@@ -152,13 +155,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Availability slots endpoint (for compatibility)
         register_rest_route(
             $this->namespace,
-            '/' . $this->rest_base. '/slots',
+            '/' . $this->rest_base . '/slots',
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_available_slots'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_available_slots'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(),
+                    'args' => array(),
                 ),
             )
         );
@@ -166,36 +169,37 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Update availability slots endpoint (for compatibility)
         register_rest_route(
             $this->namespace,
-            '/' . $this->rest_base. '/slots',
+            '/' . $this->rest_base . '/slots',
             array(
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
-                    'callback'            => array($this, 'update_available_slots'),
+                    'methods' => WP_REST_Server::EDITABLE,
+                    'callback' => array($this, 'update_available_slots'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(),
+                    'args' => array(),
                 ),
             )
         );
 
         register_rest_route(
             $this->namespace,
-            '/' . $this->rest_base. '/organizer',
+            '/' . $this->rest_base . '/organizer',
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_meeting_list_for_organizer'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_meeting_list_for_organizer'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_collection_params(),
+                    'args' => $this->get_collection_params(),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
             )
         );
     }
-    
+
     /**
      * Format a DB row as API response data.
      */
-    protected function format_meeting_row($row) {
+    protected function format_meeting_row($row)
+    {
         // Participants map: [user_id => status]
         $host_id = (int) $row['user_id'];
 
@@ -212,16 +216,24 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             : array();
 
         foreach ($participant_map as $pid => $status) {
-            if($pid == $host_id) continue;
+            if ($pid == $host_id)
+                continue;
             $user = get_userdata($pid);
-            if(!$user) continue;
+            if (!$user)
+                continue;
             $pid = (int) $pid;
-            
+
             // participant status convert int to str
             $status = (int) $status;
-            if($status == 0) : $p_status = 'rejected'; endif;
-            if($status == 1) : $p_status = 'accepted'; endif;
-            if($status == -1) : $p_status = 'pending'; endif;
+            if ($status == 0):
+                $p_status = 'rejected';
+            endif;
+            if ($status == 1):
+                $p_status = 'accepted';
+            endif;
+            if ($status == -1):
+                $p_status = 'pending';
+            endif;
 
             // Build display name
             $display_name = '';
@@ -229,7 +241,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 $display_name = $user->display_name;
             } else {
                 $first_name = get_user_meta($pid, 'first_name', true);
-                $last_name  = get_user_meta($pid, 'last_name', true);
+                $last_name = get_user_meta($pid, 'last_name', true);
                 $display_name = trim($first_name . ' ' . $last_name);
             }
 
@@ -283,12 +295,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $company_name = get_user_meta($pid, '_company_name', true);
 
             $participants_info[] = array(
-                'id'            => $pid,
-                'participant_status'        => $p_status,
-                'name'          => $display_name,
+                'id' => $pid,
+                'participant_status' => $p_status,
+                'name' => $display_name,
                 'profile_photo' => !empty($profile_photo) ? esc_url($profile_photo) : '',
-                'profession'    => $profession_slug,
-                'company_name'  => !empty($company_name) ? $company_name : '',
+                'profession' => $profession_slug,
+                'company_name' => !empty($company_name) ? $company_name : '',
             );
         }
 
@@ -343,63 +355,72 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $host_company = get_user_meta($host_id, '_company_name', true);
 
         $host_info = array(
-            'id'            => $host_id,
-            'name'          => $host_name,
+            'id' => $host_id,
+            'name' => $host_name,
             'profile_photo' => !empty($host_profile) ? esc_url($host_profile) : '',
-            'profession'    => $host_prof_slug,
-            'company_name'  => !empty($host_company) ? $host_company : '',
+            'profession' => $host_prof_slug,
+            'company_name' => !empty($host_company) ? $host_company : '',
         );
 
-        $event_title = get_the_title( $row['event_id'] );
+        $event_title = get_the_title($row['event_id']);
 
         // meeting status convert int to str
         $m_status = (int) $row['meeting_status'];
-        if($m_status == 0) : $m_status_str = 'pending'; endif;
-        if($m_status == 1) : $m_status_str = 'accept'; endif;
-        if($m_status == -1) : $m_status_str = 'cancel'; endif;
-        if($m_status == -2) : $m_status_str = 'expire'; endif;
+        if ($m_status == 0):
+            $m_status_str = 'pending';
+        endif;
+        if ($m_status == 1):
+            $m_status_str = 'accept';
+        endif;
+        if ($m_status == -1):
+            $m_status_str = 'cancel';
+        endif;
+        if ($m_status == -2):
+            $m_status_str = 'expire';
+        endif;
 
-            // Build final payload
-            return array(
-                'meeting_id'     => (int) $row['id'],
-                'event_id'       => isset($row['event_id']) ? (int) $row['event_id'] : 0,
-                'event_title'    => $event_title,
-                'meeting_date'   => date_i18n('l, d F Y', strtotime($row['meeting_date'])),
-                'start_time'     => date_i18n('H:i', strtotime($row['meeting_start_time'])),
-                'end_time'       => date_i18n('H:i', strtotime($row['meeting_end_time'])),
-                'message'        => isset($row['message']) ? $row['message'] : '',
-                'host_info'      => $host_info,
-                'participants'   => $participants_info,
-                'meeting_status' => $m_status_str,
-            );
+        // Build final payload
+        return array(
+            'meeting_id' => (int) $row['id'],
+            'event_id' => isset($row['event_id']) ? (int) $row['event_id'] : 0,
+            'event_title' => $event_title,
+            'meeting_date' => date_i18n('l, d F Y', strtotime($row['meeting_date'])),
+            'start_time' => date_i18n('H:i', strtotime($row['meeting_start_time'])),
+            'end_time' => date_i18n('H:i', strtotime($row['meeting_end_time'])),
+            'message' => isset($row['message']) ? $row['message'] : '',
+            'host_info' => $host_info,
+            'participants' => $participants_info,
+            'meeting_status' => $m_status_str,
+        );
 
     }
 
     /**
      * Retrieves a specific matchmaking meeting by ID.
      * GET /matchmaking-meetings
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
-	 * @since 1.2.0
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.2.0
      */
-    public function get_items($request) {
+    public function get_items($request)
+    {
         global $wpdb;
         // Get current user ID
-        $user_id  = wpem_rest_get_current_user_id();
+        $user_id = wpem_rest_get_current_user_id();
         $partner_id = (int) $request->get_param('partner_id');
-        $event_id   = (int) $request->get_param('event_id');
-        $status     = sanitize_text_field($request->get_param('status'));
-        $page       = max(1, (int) $request->get_param('page'));
-        $per_page   = max(1, min(100, (int) $request->get_param('per_page')));
-        $offset   = ($page - 1) * $per_page;
+        $event_id = (int) $request->get_param('event_id');
+        $status = sanitize_text_field($request->get_param('status'));
+        $page = max(1, (int) $request->get_param('page'));
+        $per_page = max(1, min(100, (int) $request->get_param('per_page')));
+        $offset = ($page - 1) * $per_page;
 
         $params = array();
 
         // Base WHERE clause
         if ($event_id) {
             $where_sql = 'WHERE event_id = %d';
-            $params[]  = $event_id;
+            $params[] = $event_id;
         } else {
             $where_sql = 'WHERE 1=1';
         }
@@ -413,14 +434,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             )';
 
             $params[] = $user_id;
-            $params[] = '%' . $wpdb->esc_like((string)$partner_id) . '%';
+            $params[] = '%' . $wpdb->esc_like((string) $partner_id) . '%';
             $params[] = $partner_id;
-            $params[] = '%' . $wpdb->esc_like((string)$user_id) . '%';
+            $params[] = '%' . $wpdb->esc_like((string) $user_id) . '%';
         } else {
             // Default user-only filter
             $filter_sql = ' AND (user_id = %d OR participant_ids LIKE %s)';
-            $params[]   = $user_id;
-            $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+            $params[] = $user_id;
+            $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
         }
 
         // Status filter
@@ -429,12 +450,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             // Map status string to meeting_status integer
             // -2 = pending accept, 1 = accepted, 0 = rejected, -1 = cancelled
             $status_map = array(
-                'pending'  => -2,
+                'pending' => -2,
                 'cancelled' => -1,
                 'accepted' => 1,
                 'rejected' => 0,
             );
-            
+
             if (isset($status_map[$status])) {
                 $status_filter = ' AND meeting_status = %d';
                 $params[] = $status_map[$status];
@@ -443,19 +464,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // SQL queries
         $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter}";
-        
+
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_count = $wpdb->prepare($sql_count, ...$params);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $total = (int) $wpdb->get_var($sql_count); 
-        
-        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter} 
+        $total = (int) $wpdb->get_var($sql_count);
+
+        $sql_rows = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter} 
                     ORDER BY meeting_date ASC, meeting_start_time ASC 
                     LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
+        $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
+        $rows = $wpdb->get_results($sql_rows, ARRAY_A);
 
         // Format rows
         $items = [];
@@ -466,10 +487,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = array(
             'total_post_count' => $total,
-            'current_page'     => $page,
-            'last_page'        => (int) max(1, ceil($total / $per_page)),
-            'total_pages'      => (int) max(1, ceil($total / $per_page)),
-            $this->rest_base   => $items,
+            'current_page' => $page,
+            'last_page' => (int) max(1, ceil($total / $per_page)),
+            'total_pages' => (int) max(1, ceil($total / $per_page)),
+            $this->rest_base => $items,
             'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         );
         return wp_send_json($response_data);
@@ -477,15 +498,16 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
     /**
      * GET /matchmaking-meetings/{id}
-	 * 
-	 * Retrieves a specific matchmaking meeting by ID.
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
-	 * @since 1.2.0
+     * 
+     * Retrieves a specific matchmaking meeting by ID.
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.2.0
      */
-    public function get_item($request) {
+    public function get_item($request)
+    {
         global $wpdb;
-        $user_id  = wpem_rest_get_current_user_id();
+        $user_id = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         if (!$row) {
@@ -498,31 +520,33 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     }
 
     /**
-	 * Create a new matchmaking meeting.
+     * Create a new matchmaking meeting.
      * POST /matchmaking-meetings
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
-	 * @since 1.2.0
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.2.0
      */
-    public function create_meeting($request) {
+    public function create_meeting($request)
+    {
         global $wpdb;
-        $user_id      = wpem_rest_get_current_user_id();
-        $event_id     = sanitize_text_field($request->get_param('event_id'));
+        $user_id = wpem_rest_get_current_user_id();
+        $event_id = sanitize_text_field($request->get_param('event_id'));
         $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
-        $slot         = sanitize_text_field($request->get_param('slot'));
+        $slot = sanitize_text_field($request->get_param('slot'));
         $participants = (array) $request->get_param('meeting_participants');
-        $message      = $request->get_param('message');
+        $message = $request->get_param('message');
 
-        if (!$user_id || empty($event_id) || empty($meeting_date) || empty($slot) || empty($participants) ||!is_array($participants)) {
+        if (!$user_id || empty($event_id) || empty($meeting_date) || empty($slot) || empty($participants) || !is_array($participants)) {
             return self::prepare_error_for_response(400);
         }
 
-        $participants_raw = array_filter(array_map('intval', $participants), function($pid) use ($user_id){ return $pid && $pid !== $user_id; });
+        $participants_raw = array_filter(array_map('intval', $participants), function ($pid) use ($user_id) {
+            return $pid && $pid !== $user_id; });
         $participants_map = array_fill_keys($participants_raw, -1);
 
         $start_time = gmdate('H:i', strtotime($slot));
-        $end_time   = gmdate('H:i', strtotime($slot . ' +1 hour'));
+        $end_time = gmdate('H:i', strtotime($slot . ' +1 hour'));
 
         // Availability check: host and all selected participants must be free (no accepted meetings) in this slot
         $check_ids = array_unique(array_merge(array($user_id), $participants_raw));
@@ -530,10 +554,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $in_placeholders = implode(',', array_fill(0, count($check_ids), '%d'));
 
             $like_clauses = array();
-            $like_params  = array();
+            $like_params = array();
             foreach ($check_ids as $cid) {
                 $like_clauses[] = 'participant_ids LIKE %s';
-                $like_params[]  = '%' . $wpdb->esc_like('i:' . (int)$cid) . '%';
+                $like_params[] = '%' . $wpdb->esc_like('i:' . (int) $cid) . '%';
             }
             // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
             $availability_sql = "SELECT * FROM {$this->table} WHERE meeting_date = %s AND NOT (meeting_end_time <= %s OR meeting_start_time >= %s) AND (user_id IN ($in_placeholders) OR " . implode(' OR ', $like_clauses) . ")";
@@ -545,28 +569,35 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             if (!empty($overlapping_rows)) {
                 foreach ($overlapping_rows as $row) {
                     $participant_ids = maybe_unserialize($row['participant_ids']);
-                    if (!is_array($participant_ids)) { $participant_ids = array(); }
-                    $overall_status = isset($row['meeting_status']) ? (int)$row['meeting_status'] : 0;
+                    if (!is_array($participant_ids)) {
+                        $participant_ids = array();
+                    }
+                    $overall_status = isset($row['meeting_status']) ? (int) $row['meeting_status'] : 0;
 
                     foreach ($check_ids as $cid) {
                         $blocks = false;
-                        if ((int)$row['user_id'] === (int)$cid) {
+                        if ((int) $row['user_id'] === (int) $cid) {
                             // Host blocks if meeting is accepted/confirmed (overall status) or any participant accepted
                             if ($overall_status === 1) {
                                 $blocks = true;
                             } else {
                                 foreach ($participant_ids as $participant_slot) {
-                                    if ((int)$participant_slot === 1) { $blocks = true; break; }
+                                    if ((int) $participant_slot === 1) {
+                                        $blocks = true;
+                                        break;
+                                    }
                                 }
                             }
-                        } elseif (isset($participant_ids[$cid]) && (int)$participant_ids[$cid] === 1) {
+                        } elseif (isset($participant_ids[$cid]) && (int) $participant_ids[$cid] === 1) {
                             // Participant blocks only if they accepted
                             $blocks = true;
                         }
 
                         if ($blocks) {
-                            if (!isset($conflicts[$cid])) { $conflicts[$cid] = array(); }
-                            $conflicts[$cid][] = (int)$row['id'];
+                            if (!isset($conflicts[$cid])) {
+                                $conflicts[$cid] = array();
+                            }
+                            $conflicts[$cid][] = (int) $row['id'];
                         }
                     }
                 }
@@ -574,27 +605,28 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
             if (!empty($conflicts)) {
                 return new WP_REST_Response(array(
-                    'code'    => 409,
-                    'status'  => 'Conflict',
+                    'code' => 409,
+                    'status' => 'Conflict',
                     'message' => 'One or more attendees are busy in the selected time slot.',
-                    'data'    => array('conflicts' => $conflicts),
+                    'data' => array('conflicts' => $conflicts),
                 ), 409);
             }
         }
         $table = esc_sql($this->table);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-        $inserted = $wpdb->insert($table,
+        $inserted = $wpdb->insert(
+            $table,
             array(
-                'user_id'            => $user_id,
-                'participant_ids'    => serialize($participants_map),
-                'meeting_date'       => $meeting_date,
+                'user_id' => $user_id,
+                'participant_ids' => serialize($participants_map),
+                'meeting_date' => $meeting_date,
                 'meeting_start_time' => $start_time,
-                'meeting_end_time'   => $end_time,
-                'event_id'           => $event_id,
-                'message'            => $message,
-                'meeting_status'     => 0,
+                'meeting_end_time' => $end_time,
+                'event_id' => $event_id,
+                'message' => $message,
+                'meeting_status' => 0,
             ),
-            array('%d','%s','%s','%s','%s','%s','%s','%d')
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d')
         );
         if (!$inserted) {
             return self::prepare_error_for_response(500);
@@ -602,7 +634,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $meeting_id = $wpdb->insert_id;
         WP_Event_Manager_Registrations_MatchMaking::send_matchmaking_meeting_emails($meeting_id, $user_id, $event_id, $participants_raw, $meeting_date, $start_time, $end_time, $message);
         $table = esc_sql($this->table);
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -611,18 +643,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     }
 
     /**
-	 * Update an existing matchmaking meeting.
+     * Update an existing matchmaking meeting.
      * PUT/PATCH /matchmaking-meetings/{id}
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
-	 * @since 1.2.0
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.2.0
      */
-    public function update_item($request) {
+    public function update_item($request)
+    {
         global $wpdb;
-        $user_id  = wpem_rest_get_current_user_id();
+        $user_id = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -631,11 +664,26 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $fields = array();
         $formats = array();
 
-        if (null !== ($val = $request->get_param('meeting_date'))) { $fields['meeting_date'] = sanitize_text_field($val); $formats[] = '%s'; }
-        if (null !== ($val = $request->get_param('meeting_start'))) { $fields['meeting_start_time'] = gmdate('H:i', strtotime($val)); $formats[] = '%s'; }
-        if (null !== ($val = $request->get_param('meeting_end'))) { $fields['meeting_end_time'] = gmdate('H:i', strtotime($val)); $formats[] = '%s'; }
-        if (null !== ($val = $request->get_param('message'))) { $fields['message'] = sanitize_textarea_field($val); $formats[] = '%s'; }
-        if (null !== ($val = $request->get_param('meeting_status'))) { $fields['meeting_status'] = (int) $val; $formats[] = '%d'; }
+        if (null !== ($val = $request->get_param('meeting_date'))) {
+            $fields['meeting_date'] = sanitize_text_field($val);
+            $formats[] = '%s';
+        }
+        if (null !== ($val = $request->get_param('meeting_start'))) {
+            $fields['meeting_start_time'] = gmdate('H:i', strtotime($val));
+            $formats[] = '%s';
+        }
+        if (null !== ($val = $request->get_param('meeting_end'))) {
+            $fields['meeting_end_time'] = gmdate('H:i', strtotime($val));
+            $formats[] = '%s';
+        }
+        if (null !== ($val = $request->get_param('message'))) {
+            $fields['message'] = sanitize_textarea_field($val);
+            $formats[] = '%s';
+        }
+        if (null !== ($val = $request->get_param('meeting_status'))) {
+            $fields['meeting_status'] = (int) $val;
+            $formats[] = '%d';
+        }
         if (null !== ($val = $request->get_param('participants'))) {
             if (is_array($val)) {
                 // Accept both a list of user IDs or a map of user_id => status
@@ -679,7 +727,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($updated === false) {
             return self::prepare_error_for_response(500);
         }
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -695,16 +743,17 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * @return WP_REST_Response
      * @since 1.2.1
      */
-    public function update_participant_status($request) {
+    public function update_participant_status($request)
+    {
         global $wpdb;
-        $meeting_id       = (int) $request['id'];
-        $user_id  = (int) wpem_rest_get_current_user_id();
-        $status   = $request['status'];
+        $meeting_id = (int) $request['id'];
+        $user_id = (int) wpem_rest_get_current_user_id();
+        $status = $request['status'];
 
-        if ($status!= 0 && $status!= 1 && $status!= -1) {
+        if ($status != 0 && $status != 1 && $status != -1) {
             return self::prepare_error_for_response(400);
         }
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -725,10 +774,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Compute overall meeting status: accepted if any participant accepted
         $meeting_status = in_array(1, $participant_data, true) ? 1 : 0;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $updated = $wpdb->update($this->table,
+        $updated = $wpdb->update(
+            $this->table,
             array(
                 'participant_ids' => maybe_serialize($participant_data),
-                'meeting_status'  => $meeting_status,
+                'meeting_status' => $meeting_status,
             ),
             array('id' => $meeting_id),
             array('%s', '%d'),
@@ -738,7 +788,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($updated === false) {
             return self::prepare_error_for_response(500);
         }
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
@@ -754,28 +804,29 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * @return WP_REST_Response
      * @since 1.2.1
      */
-    public function cancel_item($request) {
+    public function cancel_item($request)
+    {
         global $wpdb;
-        $user_id  = wpem_rest_get_current_user_id();
+        $user_id = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
         }
         // Unserialize participant_ids safely
-        $participant_ids = maybe_unserialize( $row['participant_ids']);
+        $participant_ids = maybe_unserialize($row['participant_ids']);
 
-        if ( ! is_array( $participant_ids ) ) {
+        if (!is_array($participant_ids)) {
             $participant_ids = [];
         }
         // Update all participants to -1 (cancelled)
-        foreach ( $participant_ids as $participant_id => $status ) {
-            $participants[ $participant_id ] = -1;
+        foreach ($participant_ids as $participant_id => $status) {
+            $participants[$participant_id] = -1;
         }
 
         // Re-serialize
-        $participant_serialized = maybe_serialize( $participants );
+        $participant_serialized = maybe_serialize($participants);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $updated = $wpdb->update(
             $this->table,
@@ -802,18 +853,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     }
 
     /**
-	 * Delete a matchmaking meeting.
+     * Delete a matchmaking meeting.
      * DELETE /matchmaking-meetings/{id}
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
-	 * @since 1.2.0
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.2.0
      */
-    public function delete_item($request) {
+    public function delete_item($request)
+    {
         global $wpdb;
-        $user_id  = wpem_rest_get_current_user_id();
+        $user_id = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
         if (!$row) {
             return self::prepare_error_for_response(404);
@@ -834,57 +886,58 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * JSON Schema for a meeting item
      * @return array
      */
-    public function get_item_schema() {
+    public function get_item_schema()
+    {
         $schema = array(
-            '$schema'    => 'http://json-schema.org/draft-04/schema#',
-            'title'      => 'matchmaking_meeting',
-            'type'       => 'object',
+            '$schema' => 'http://json-schema.org/draft-04/schema#',
+            'title' => 'matchmaking_meeting',
+            'type' => 'object',
             'properties' => array(
                 'id' => array(
                     'description' => __('Unique identifier for the resource.', 'wpem-rest-api'),
-                    'type'        => 'integer',
-                    'context'     => array('view', 'edit'),
-                    'readonly'    => true,
+                    'type' => 'integer',
+                    'context' => array('view', 'edit'),
+                    'readonly' => true,
                 ),
                 'event_id' => array(
                     'description' => __('Event ID.', 'wpem-rest-api'),
-                    'type'        => 'integer',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'integer',
+                    'context' => array('view', 'edit'),
                 ),
                 'host_id' => array(
                     'description' => __('Host user ID.', 'wpem-rest-api'),
-                    'type'        => 'integer',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'integer',
+                    'context' => array('view', 'edit'),
                 ),
                 'meeting_date' => array(
                     'description' => __('Meeting date (Y-m-d).', 'wpem-rest-api'),
-                    'type'        => 'string',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'string',
+                    'context' => array('view', 'edit'),
                 ),
                 'meeting_start' => array(
                     'description' => __('Meeting start time (H:i).', 'wpem-rest-api'),
-                    'type'        => 'string',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'string',
+                    'context' => array('view', 'edit'),
                 ),
                 'meeting_end' => array(
                     'description' => __('Meeting end time (H:i).', 'wpem-rest-api'),
-                    'type'        => 'string',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'string',
+                    'context' => array('view', 'edit'),
                 ),
                 'message' => array(
                     'description' => __('Optional message.', 'wpem-rest-api'),
-                    'type'        => 'string',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'string',
+                    'context' => array('view', 'edit'),
                 ),
                 'participants' => array(
                     'description' => __('Map of participant user_id => status (-1 pending, 0 declined, 1 accepted).', 'wpem-rest-api'),
-                    'type'        => 'object',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'object',
+                    'context' => array('view', 'edit'),
                 ),
                 'meeting_status' => array(
                     'description' => __('Derived overall meeting status.', 'wpem-rest-api'),
-                    'type'        => 'integer',
-                    'context'     => array('view', 'edit'),
+                    'type' => 'integer',
+                    'context' => array('view', 'edit'),
                 ),
             ),
         );
@@ -893,24 +946,25 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
     /**
      * Collection params (pagination + filters)
-	 * 
+     * 
      */
-    public function get_collection_params() {
+    public function get_collection_params()
+    {
         $params = parent::get_collection_params();
         $params['user_id'] = array(
-            'description'       => __('Limit result set to meetings relevant to a user (host or participant).', 'wpem-rest-api'),
-            'type'              => 'integer',
+            'description' => __('Limit result set to meetings relevant to a user (host or participant).', 'wpem-rest-api'),
+            'type' => 'integer',
             'sanitize_callback' => 'absint',
         );
         $params['event_id'] = array(
-            'description'       => __('Limit result set to meetings relevant to a specific event.', 'wpem-rest-api'),
-            'type'              => 'integer',
+            'description' => __('Limit result set to meetings relevant to a specific event.', 'wpem-rest-api'),
+            'type' => 'integer',
             'sanitize_callback' => 'absint',
         );
         $params['status'] = array(
-            'description'       => __('Limit result set to meetings with a specific status (pending, accepted, rejected).', 'wpem-rest-api'),
-            'type'              => 'string',
-            'enum'              => array('pending', 'accepted', 'rejected'),
+            'description' => __('Limit result set to meetings with a specific status (pending, accepted, rejected).', 'wpem-rest-api'),
+            'type' => 'string',
+            'enum' => array('pending', 'accepted', 'rejected'),
             'sanitize_callback' => 'sanitize_text_field',
         );
         // Keep pagination params from parent
@@ -924,27 +978,28 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function get_available_slots($request) {
-       
+    public function get_available_slots($request)
+    {
+
         $user_id = $request->get_param('user_ids') ?: wpem_rest_get_current_user_id();
-        if($user_id == wpem_rest_get_current_user_id()) {
+        if ($user_id == wpem_rest_get_current_user_id()) {
             // Fetch default slots for user (helper aligns with existing implementation)
             $slots = wpem_get_default_meeting_slots_for_matchmaking_participants($user_id);
 
             // Availability flag (_available_for_meeting); default to 1 if not set
-            $meta               = get_user_meta($user_id, '_available_for_meeting', true);
-            $meeting_available  = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
+            $meta = get_user_meta($user_id, '_available_for_meeting', true);
+            $meeting_available = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
 
             $response_data = self::prepare_error_for_response(200);
             $response_data['data'] = array(
                 'available_for_meeting' => $meeting_available,
-                'slots'                 => $slots,
+                'slots' => $slots,
                 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         } else {
             // Fetch slots for other users (if needed)
-            $date     = $request->get_param('date') ? sanitize_text_field($request->get_param('date')) : '';
+            $date = $request->get_param('date') ? sanitize_text_field($request->get_param('date')) : '';
 
             if (!$date && !is_array($user_id)) {
                 return self::prepare_error_for_response(404);
@@ -971,18 +1026,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function update_available_slots($request) {
+    public function update_available_slots($request)
+    {
         $user_id = wpem_rest_get_current_user_id();
         $available_for_meeting = $request->get_param('available_for_meeting') ? 1 : 0;
 
-		$updated_status = update_user_meta($user_id, '_available_for_meeting', (int) $available_for_meeting);
+        $updated_status = update_user_meta($user_id, '_available_for_meeting', (int) $available_for_meeting);
 
-		if($available_for_meeting == 1) {
-            $availability_slots = $request->get_param('availability_slots')??array();
-			$updated_slot = update_user_meta($user_id, '_meeting_availability_slot', $availability_slots);
-		} else {
-			delete_user_meta($user_id, '_meeting_availability_slot');
-		}
+        if ($available_for_meeting == 1) {
+            $availability_slots = $request->get_param('availability_slots') ?? array();
+            $updated_slot = update_user_meta($user_id, '_meeting_availability_slot', $availability_slots);
+        } else {
+            delete_user_meta($user_id, '_meeting_availability_slot');
+        }
 
         return self::prepare_error_for_response(200);
     }
@@ -990,53 +1046,54 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     /**
      * Retrieves a specific matchmaking meeting by ID.
      * GET /matchmaking-meetings
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
-	 * @since 1.2.0
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     * @since 1.2.0
      */
-    public function get_meeting_list_for_organizer($request) {
+    public function get_meeting_list_for_organizer($request)
+    {
         global $wpdb;
 
         // Get current user ID
-        $user_id  = wpem_rest_get_current_user_id();
+        $user_id = wpem_rest_get_current_user_id();
         $event_id = (int) $request->get_param('event_id');
-        $status   = sanitize_text_field($request->get_param('status'));
-        $page     = max(1, (int) $request->get_param('page'));
+        $status = sanitize_text_field($request->get_param('status'));
+        $page = max(1, (int) $request->get_param('page'));
         $per_page = max(1, min(100, (int) $request->get_param('per_page')));
-        $offset   = ($page - 1) * $per_page;
+        $offset = ($page - 1) * $per_page;
 
         $params = [];
 
         // --- Get events created by this organizer (post author of event_listing) ---
         $organizer_events = get_posts([
-            'post_type'      => 'event_listing',
-            'post_status'    => 'publish',
-            'author'         => $user_id,
-            'fields'         => 'ids',
+            'post_type' => 'event_listing',
+            'post_status' => 'publish',
+            'author' => $user_id,
+            'fields' => 'ids',
             'posts_per_page' => -1,
         ]);
 
         // If API request specifies event_id, check if it belongs to this organizer
         if ($event_id && in_array($event_id, $organizer_events)) {
             $where_sql = "WHERE event_id = %d";
-            $params[]  = $event_id;
+            $params[] = $event_id;
         } else {
             // Otherwise get meetings for all organizer’s events
             if (!empty($organizer_events)) {
                 $placeholders = implode(',', array_fill(0, count($organizer_events), '%d'));
-                $where_sql    = "WHERE event_id IN ($placeholders)";
-                $params       = array_merge($params, $organizer_events);
+                $where_sql = "WHERE event_id IN ($placeholders)";
+                $params = array_merge($params, $organizer_events);
             } else {
                 // If no events, return empty
                 $response_data = self::prepare_error_for_response(200);
                 $response_data['data'] = [
                     'total_post_count' => 0,
-                    'current_page'     => $page,
-                    'last_page'        => 1,
-                    'total_pages'      => 1,
-                    $this->rest_base   => [],
-                    'user_status'      => wpem_get_user_login_status($user_id)
+                    'current_page' => $page,
+                    'last_page' => 1,
+                    'total_pages' => 1,
+                    $this->rest_base => [],
+                    'user_status' => wpem_get_user_login_status($user_id)
                 ];
                 return wp_send_json($response_data);
             }
@@ -1048,11 +1105,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             // Map status string to meeting_status integer
             // -2 = pending accept, 1 = accepted, 0 = rejected, -1 = cancelled
             $status_map = array(
-                'pending'  => -2,
+                'pending' => -2,
                 'accepted' => 1,
                 'rejected' => 0,
             );
-            
+
             if (isset($status_map[$status])) {
                 $status_filter = ' AND meeting_status = %d';
                 $params[] = $status_map[$status];
@@ -1063,18 +1120,18 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
         $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$status_filter}";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-        $sql_rows  = "SELECT * FROM {$this->table} {$where_sql}{$status_filter}
+        $sql_rows = "SELECT * FROM {$this->table} {$where_sql}{$status_filter}
                     ORDER BY meeting_date ASC, meeting_start_time ASC
                     LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_count = $wpdb->prepare($sql_count, ...$params);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total = (int) $wpdb->get_var($sql_count);
-        
+
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $sql_rows  = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
+        $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $rows  = $wpdb->get_results($sql_rows, ARRAY_A);
+        $rows = $wpdb->get_results($sql_rows, ARRAY_A);
 
         // Format rows
         $items = [];
@@ -1085,11 +1142,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = [
             'total_post_count' => $total,
-            'current_page'     => $page,
-            'last_page'        => (int) max(1, ceil($total / $per_page)),
-            'total_pages'      => (int) max(1, ceil($total / $per_page)),
-            $this->rest_base   => $items,
-            'user_status'      => wpem_get_user_login_status($user_id)
+            'current_page' => $page,
+            'last_page' => (int) max(1, ceil($total / $per_page)),
+            'total_pages' => (int) max(1, ceil($total / $per_page)),
+            $this->rest_base => $items,
+            'user_status' => wpem_get_user_login_status($user_id)
         ];
 
         return wp_send_json($response_data);

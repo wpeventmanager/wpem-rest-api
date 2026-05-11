@@ -13,7 +13,8 @@ defined('ABSPATH') || exit;
  *
  * @since 1.1.0
  */
-class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controller {
+class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controller
+{
 
     /**
      * Endpoint namespace.
@@ -33,7 +34,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
     /**
      * WPEM_REST_Matchmaking_Messages_Controller constructor.
      */
-    public function __construct() {
+    public function __construct()
+    {
         global $wpdb;
         $this->table = esc_sql($wpdb->prefix . 'wpem_matchmaking_users_messages');
         add_action('rest_api_init', array($this, 'register_routes'), 10);
@@ -44,34 +46,35 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      *
      * @since 1.1.0
      */
-    public function register_routes() {
+    public function register_routes()
+    {
         register_rest_route(
             $this->namespace,
             '/' . $this->rest_base,
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_items'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_items'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_collection_params(),
+                    'args' => $this->get_collection_params(),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::CREATABLE,
-                    'callback'            => array($this, 'send_message'),
+                    'methods' => WP_REST_Server::CREATABLE,
+                    'callback' => array($this, 'send_message'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(),
+                    'args' => array(),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
-                    'callback'            => array($this, 'update_item'),
+                    'methods' => WP_REST_Server::EDITABLE,
+                    'callback' => array($this, 'update_item'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
+                    'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::DELETABLE,
-                    'callback'            => array($this, 'delete_item'),
+                    'methods' => WP_REST_Server::DELETABLE,
+                    'callback' => array($this, 'delete_item'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
+                    'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
             )
@@ -81,26 +84,26 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             $this->namespace,
             '/' . $this->rest_base . '/(?P<id>[\d]+)',
             array(
-                'args'   => array(
+                'args' => array(
                     'id' => array(
                         'description' => __('Unique identifier for the message.', 'wpem-rest-api'),
-                        'type'        => 'integer',
+                        'type' => 'integer',
                     ),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_item'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_item'),
                     'permission_callback' => array($this, 'permission_check'),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
-                    'callback'            => array($this, 'update_message'),
+                    'methods' => WP_REST_Server::EDITABLE,
+                    'callback' => array($this, 'update_message'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
+                    'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::DELETABLE,
-                    'callback'            => array($this, 'delete_message'),
+                    'methods' => WP_REST_Server::DELETABLE,
+                    'callback' => array($this, 'delete_message'),
                     'permission_callback' => array($this, 'permission_check'),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
@@ -112,23 +115,23 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             '/' . $this->rest_base . '/conversation',
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_conversation'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_conversation'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(
+                    'args' => array(
                         'paged' => array(
-                            'description'       => __('Current page of the collection.', 'wpem-rest-api'),
-                            'type'              => 'integer',
-                            'default'           => 1,
-                            'minimum'           => 1,
+                            'description' => __('Current page of the collection.', 'wpem-rest-api'),
+                            'type' => 'integer',
+                            'default' => 1,
+                            'minimum' => 1,
                             'validate_callback' => 'rest_validate_request_arg',
                         ),
                         'per_page' => array(
-                            'description'       => __('Maximum number of items to be returned in result set.', 'wpem-rest-api'),
-                            'type'              => 'integer',
-                            'default'           => 10,
-                            'minimum'           => 1,
-                            'maximum'           => 100,
+                            'description' => __('Maximum number of items to be returned in result set.', 'wpem-rest-api'),
+                            'type' => 'integer',
+                            'default' => 10,
+                            'minimum' => 1,
+                            'maximum' => 100,
                             'validate_callback' => 'rest_validate_request_arg',
                         ),
                     ),
@@ -144,43 +147,46 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_items($request) {
+    public function get_items($request)
+    {
         global $wpdb;
-        
-        $user_id  = wpem_rest_get_current_user_id();
-        $partner_id   = intval($request->get_param('partner_id'));
 
-        if ( !$partner_id ) {
+        $user_id = wpem_rest_get_current_user_id();
+        $partner_id = intval($request->get_param('partner_id'));
+
+        if (!$partner_id) {
             return self::prepare_error_for_response(404);
         }
 
         // Pagination setup
-        $page     = max(1, intval($request->get_param('page') ?: 1));
+        $page = max(1, intval($request->get_param('page') ?: 1));
         $per_page = max(1, min(100, intval($request->get_param('per_page') ?: 10))); // hard cap
-        $offset   = ($page - 1) * $per_page;
-        $table = esc_sql( $this->table );
+        $offset = ($page - 1) * $per_page;
+        $table = esc_sql($this->table);
         // Total message count (union not needed here)
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $total_messages = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d)", $user_id, $partner_id, $partner_id, $user_id));
 
         // Optimized paginated messages using UNION ALL (index friendly)
-        $table_safe = esc_sql( $table );
+        $table_safe = esc_sql($table);
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-        $sql = $wpdb->prepare("(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) UNION ALL (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", $user_id, $partner_id, $partner_id, $user_id, $per_page, $offset );
+        $sql = $wpdb->prepare("(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) UNION ALL (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", $user_id, $partner_id, $partner_id, $user_id, $per_page, $offset);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
         $messages = $wpdb->get_results($sql, ARRAY_A);
 
         // Process messages (split text & image)
         foreach ($messages as &$msg) {
-            $parts      = preg_split("/\n+/", trim($msg['message']));
+            $parts = preg_split("/\n+/", trim($msg['message']));
             $text_parts = [];
 
             foreach ($parts as $part) {
                 $part = trim($part);
 
-                if (filter_var($part, FILTER_VALIDATE_URL) &&
-                    preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $part)) {
+                if (
+                    filter_var($part, FILTER_VALIDATE_URL) &&
+                    preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $part)
+                ) {
                     $msg['image'] = $part;
                 } elseif (!empty($part)) {
                     $text_parts[] = $part;
@@ -196,10 +202,10 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = [
             'total_message_count' => intval($total_messages),
-            'current_page'     => $page,
-            'last_page'        => $total_pages,
-            'total_pages'      => $total_pages,
-            'messages'         => array_filter($messages, function ($msg) {
+            'current_page' => $page,
+            'last_page' => $total_pages,
+            'total_pages' => $total_pages,
+            'messages' => array_filter($messages, function ($msg) {
                 unset($msg['image']);
                 return $msg;
             }),
@@ -213,86 +219,87 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function send_message( WP_REST_Request $request ) {
+    public function send_message(WP_REST_Request $request)
+    {
         global $wpdb;
         // --- Current User ---
-        $user_id    = wpem_rest_get_current_user_id();
-        $partner_id = intval( $request->get_param( 'partner_id' ) );
-        $text_message = sanitize_textarea_field( $request->get_param( 'message' ) );
+        $user_id = wpem_rest_get_current_user_id();
+        $partner_id = intval($request->get_param('partner_id'));
+        $text_message = sanitize_textarea_field($request->get_param('message'));
 
         // --- Validate Users ---
-        $sender_user   = get_user_by( 'id', $user_id );
-        $receiver_user = get_user_by( 'id', $partner_id );
+        $sender_user = get_user_by('id', $user_id);
+        $receiver_user = get_user_by('id', $partner_id);
 
-        if ( ! $sender_user || ! $receiver_user ) {
-            return self::prepare_error_for_response( 400 );
+        if (!$sender_user || !$receiver_user) {
+            return self::prepare_error_for_response(400);
         }
 
-        $sender_name   = trim( get_user_meta( $user_id, 'first_name', true ) . ' ' . get_user_meta( $user_id, 'last_name', true ) );
-        $receiver_name = trim( get_user_meta( $partner_id, 'first_name', true ) . ' ' . get_user_meta( $partner_id, 'last_name', true ) );
+        $sender_name = trim(get_user_meta($user_id, 'first_name', true) . ' ' . get_user_meta($user_id, 'last_name', true));
+        $receiver_name = trim(get_user_meta($partner_id, 'first_name', true) . ' ' . get_user_meta($partner_id, 'last_name', true));
 
         // --- Notification Preferences ---
-        $sender_notify   = (int) get_user_meta( $user_id, '_message_notification', true );
-        $receiver_notify = (int) get_user_meta( $partner_id, '_message_notification', true );
+        $sender_notify = (int) get_user_meta($user_id, '_message_notification', true);
+        $receiver_notify = (int) get_user_meta($partner_id, '_message_notification', true);
 
-        if ( $sender_notify !== 1 || $receiver_notify !== 1 ) {
-            return self::prepare_error_for_response( 403 );
+        if ($sender_notify !== 1 || $receiver_notify !== 1) {
+            return self::prepare_error_for_response(403);
         }
 
         // --- File Upload (if provided) ---
         $image_url = '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-        if ( ! empty( $_FILES['file']['tmp_name'] ) ) {
+        if (!empty($_FILES['file']['tmp_name'])) {
             require_once ABSPATH . 'wp-admin/includes/file.php';     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-            $uploaded = wp_handle_upload( $_FILES['file'], [ 'test_form' => false ] );     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-            if ( isset( $uploaded['url'] ) ) {
-                $image_url = esc_url_raw( $uploaded['url'] );
+            $uploaded = wp_handle_upload($_FILES['file'], ['test_form' => false]);     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
+            if (isset($uploaded['url'])) {
+                $image_url = esc_url_raw($uploaded['url']);
             }
         }
 
         // --- Ensure at least one of message or image ---
-        if ( ! $text_message && ! $image_url ) {
-            return self::prepare_error_for_response( 400 );
+        if (!$text_message && !$image_url) {
+            return self::prepare_error_for_response(400);
         }
 
         // --- Build Final Message ---
         $final_message = $text_message;
-        if ( $image_url ) {
-            $final_message .= ( $final_message ? "\n\n" : '' ) . $image_url;
+        if ($image_url) {
+            $final_message .= ($final_message ? "\n\n" : '') . $image_url;
         }
 
         // --- Conversation Parent ID ---
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $parent_id = (int) $wpdb->get_var( $wpdb->prepare("SELECT id FROM $this->table WHERE (receiver_id = %d AND sender_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at ASC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id ) );
+        $parent_id = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM $this->table WHERE (receiver_id = %d AND sender_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at ASC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id));
 
         // --- Insert Message ---
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $wpdb->insert(
             $this->table,
             [
-                'parent_id'   => $parent_id ?: 0,
-                'sender_id'     => $user_id,
-                'receiver_id'  => $partner_id,
-                'message'     => $final_message,
-                'created_at'  => current_time( 'mysql' ),
+                'parent_id' => $parent_id ?: 0,
+                'sender_id' => $user_id,
+                'receiver_id' => $partner_id,
+                'message' => $final_message,
+                'created_at' => current_time('mysql'),
             ],
-            [ '%d', '%d', '%d', '%s', '%s' ]
+            ['%d', '%d', '%d', '%s', '%s']
         );
 
         $insert_id = $wpdb->insert_id;
 
         // --- Email Helper ---
-        $send_message_email = function ( $to, $subject, $from_name, $text_message, $image_url ) {
-            $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
-            $body  = "Hello, this is a message from {$from_name}<br><br>";
-            if ( $text_message ) {
-                $body .= "Message:<br>" . nl2br( esc_html( $text_message ) ) . "<br><br>";
+        $send_message_email = function ($to, $subject, $from_name, $text_message, $image_url) {
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
+            $body = "Hello, this is a message from {$from_name}<br><br>";
+            if ($text_message) {
+                $body .= "Message:<br>" . nl2br(esc_html($text_message)) . "<br><br>";
             }
-            if ( $image_url ) {
+            if ($image_url) {
                 $body .= "<p><img src='{$image_url}' alt='Attachment' style='max-width:400px;'></p>";
             }
             $body .= "Thank you.";
-            wp_mail( $to, $subject, $body, $headers );
+            wp_mail($to, $subject, $body, $headers);
         };
 
         // --- Send Emails ---
@@ -313,20 +320,20 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         );
 
         // --- Response ---
-        return new WP_REST_Response( [
-            'code'    => 200,
-            'status'  => 'OK',
+        return new WP_REST_Response([
+            'code' => 200,
+            'status' => 'OK',
             'message' => 'Message sent successfully.',
-            'data'    => [
-                'id'         => $insert_id,
-                'parent_id'  => $parent_id ?: 0,
-                'user_id'    => $user_id,
+            'data' => [
+                'id' => $insert_id,
+                'parent_id' => $parent_id ?: 0,
+                'user_id' => $user_id,
                 'partner_id' => $partner_id,
-                'message'    => $text_message ?: null,
-                'image'      => $image_url ?: null,
-                'created_at' => current_time( 'mysql' ),
+                'message' => $text_message ?: null,
+                'image' => $image_url ?: null,
+                'created_at' => current_time('mysql'),
             ],
-        ], 200 );
+        ], 200);
     }
 
     /**
@@ -335,61 +342,62 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_conversation($request) {
+    public function get_conversation($request)
+    {
         global $wpdb;
-        $user_id  = wpem_rest_get_current_user_id();
-        $paged    = max( 1, intval( $request->get_param( 'paged' ) ) );
-        $per_page = max( 1, intval( $request->get_param( 'per_page' ) ) );
+        $user_id = wpem_rest_get_current_user_id();
+        $paged = max(1, intval($request->get_param('paged')));
+        $per_page = max(1, intval($request->get_param('per_page')));
 
         /**
          * Step 1: Find unique conversation partners
          */
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $conversation_user_ids = $wpdb->get_col( $wpdb->prepare( " SELECT DISTINCT other_user FROM ( SELECT receiver_id AS other_user FROM $this->table WHERE sender_id = %d UNION SELECT sender_id AS other_user FROM $this->table WHERE receiver_id = %d ) AS temp WHERE other_user != %d ", $user_id, $user_id, $user_id ) );
+        $conversation_user_ids = $wpdb->get_col($wpdb->prepare(" SELECT DISTINCT other_user FROM ( SELECT receiver_id AS other_user FROM $this->table WHERE sender_id = %d UNION SELECT sender_id AS other_user FROM $this->table WHERE receiver_id = %d ) AS temp WHERE other_user != %d ", $user_id, $user_id, $user_id));
 
-        if ( empty( $conversation_user_ids ) ) {
+        if (empty($conversation_user_ids)) {
             return self::prepare_error_for_response(404);
         }
 
         /**
          * Step 2: Pagination
          */
-        $total_count   = count( $conversation_user_ids );
-        $last_page     = ceil( $total_count / $per_page );
-        $offset        = ( $paged - 1 ) * $per_page;
-        $paginated_ids = array_slice( $conversation_user_ids, $offset, $per_page );
+        $total_count = count($conversation_user_ids);
+        $last_page = ceil($total_count / $per_page);
+        $offset = ($paged - 1) * $per_page;
+        $paginated_ids = array_slice($conversation_user_ids, $offset, $per_page);
 
         /**
          * Step 3: Build conversation list with last message
          */
         $results = [];
-        foreach ( $paginated_ids as $partner_id ) {
+        foreach ($paginated_ids as $partner_id) {
             $table = esc_sql($this->table);
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            $last_message_row = $wpdb->get_row($wpdb->prepare("SELECT message, created_at FROM {$table} WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id ));
+            $last_message_row = $wpdb->get_row($wpdb->prepare("SELECT message, created_at FROM {$table} WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id));
 
             // Build display name
-            $display_name = get_user_meta( $partner_id, 'display_name', true );
-            if ( empty( $display_name ) ) {
-                $first_name   = get_user_meta( $partner_id, 'first_name', true );
-                $last_name    = get_user_meta( $partner_id, 'last_name', true );
-                $display_name = trim( "$first_name $last_name" );
+            $display_name = get_user_meta($partner_id, 'display_name', true);
+            if (empty($display_name)) {
+                $first_name = get_user_meta($partner_id, 'first_name', true);
+                $last_name = get_user_meta($partner_id, 'last_name', true);
+                $display_name = trim("$first_name $last_name");
             }
 
             // Detect if last message is an image
-            $is_image = ( $last_message_row && preg_match( '/\.(jpg|jpeg|png|gif|webp)$/i', $last_message_row->message ) ) ? 1 : 0;
+            $is_image = ($last_message_row && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $last_message_row->message)) ? 1 : 0;
 
             $results[] = [
-                'user_id'              => (int) $partner_id,
-                'first_name'           => get_user_meta( $partner_id, 'first_name', true ),
-                'last_name'            => get_user_meta( $partner_id, 'last_name', true ),
-                'display_name'         => $display_name,
-                'profile_photo'        => get_wpem_user_profile_photo( $partner_id ),
-                'profession'           => get_user_meta( $partner_id, '_profession', true ),
-                'company_name'         => get_user_meta( $partner_id, '_company_name', true ),
-                'last_message'         => $last_message_row ? $last_message_row->message : null,
-                'message_time'         => $last_message_row ? gmdate( 'Y-m-d H:i:s', strtotime( $last_message_row->created_at ) ) : null,
-                'last_message_is_image'=> $is_image,
+                'user_id' => (int) $partner_id,
+                'first_name' => get_user_meta($partner_id, 'first_name', true),
+                'last_name' => get_user_meta($partner_id, 'last_name', true),
+                'display_name' => $display_name,
+                'profile_photo' => get_wpem_user_profile_photo($partner_id),
+                'profession' => get_user_meta($partner_id, '_profession', true),
+                'company_name' => get_user_meta($partner_id, '_company_name', true),
+                'last_message' => $last_message_row ? $last_message_row->message : null,
+                'message_time' => $last_message_row ? gmdate('Y-m-d H:i:s', strtotime($last_message_row->created_at)) : null,
+                'last_message_is_image' => $is_image,
             ];
         }
 
@@ -400,9 +408,9 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $response_data['data'] = [
             'total_users_count' => intval($total_count),
             'current_page' => $paged,
-            'per_page'     => $per_page,
-            'last_page'    => $last_page,
-            'users'        => $results,
+            'per_page' => $per_page,
+            'last_page' => $last_page,
+            'users' => $results,
             'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
@@ -412,41 +420,42 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * This function handles the update of a message.
      * @since 1.3.0
      */
-    public function update_message( WP_REST_Request $request ) {
+    public function update_message(WP_REST_Request $request)
+    {
         global $wpdb;
 
-        $user_id    = wpem_rest_get_current_user_id();
-        $message_id = (int) $request->get_param( 'id' ); // pulled from route param
-        $text_message = sanitize_textarea_field( $request->get_param( 'message' ) );
+        $user_id = wpem_rest_get_current_user_id();
+        $message_id = (int) $request->get_param('id'); // pulled from route param
+        $text_message = sanitize_textarea_field($request->get_param('message'));
 
         // --- File Upload (if provided) ---
         $image_url = '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-        if ( ! empty( $_FILES['file']['tmp_name'] ) ) {
+        if (!empty($_FILES['file']['tmp_name'])) {
             require_once ABSPATH . 'wp-admin/includes/file.php';// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-            $uploaded = wp_handle_upload( $_FILES['file'], [ 'test_form' => false ] );     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-            if ( isset( $uploaded['url'] ) ) {
-                $image_url = esc_url_raw( $uploaded['url'] );
+            $uploaded = wp_handle_upload($_FILES['file'], ['test_form' => false]);     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
+            if (isset($uploaded['url'])) {
+                $image_url = esc_url_raw($uploaded['url']);
             }
         }
 
         // --- Ensure at least one of message or image ---
-        if ( ! $text_message && ! $image_url ) {
-            return self::prepare_error_for_response( 400 );
+        if (!$text_message && !$image_url) {
+            return self::prepare_error_for_response(400);
         }
         $table = esc_sql($this->table);
         // --- Validate Message Exists ---
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $message = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id) );
+        $message = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id));
 
-        if ( ! $message ) {
-            return self::prepare_error_for_response( 404 ); // message not found
-        }       
+        if (!$message) {
+            return self::prepare_error_for_response(404); // message not found
+        }
 
         // --- Build Final Message ---
         $final_message = $text_message;
-        if ( $image_url ) {
-            $final_message .= ( $final_message ? "\n\n" : '' ) . $image_url;
+        if ($image_url) {
+            $final_message .= ($final_message ? "\n\n" : '') . $image_url;
         }
 
         // --- Update Message ---
@@ -454,21 +463,21 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $wpdb->update(
             $this->table,
             [
-                'message'    => $final_message,
-                'created_at' => current_time( 'mysql' ),
+                'message' => $final_message,
+                'created_at' => current_time('mysql'),
             ],
-            [ 'id' => $message_id ],
-            [ '%s', '%s' ],
-            [ '%d' ]
+            ['id' => $message_id],
+            ['%s', '%s'],
+            ['%d']
         );
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = [
-            'id'         => $message_id,
-            'user_id'    => $user_id,
+            'id' => $message_id,
+            'user_id' => $user_id,
             'partner_id' => $message->receiver_id,
-            'message'    => $text_message ?: null,
-            'image'      => $image_url ?: null,
-            'created_at' => current_time( 'mysql' ),
+            'message' => $text_message ?: null,
+            'image' => $image_url ?: null,
+            'created_at' => current_time('mysql'),
             'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
@@ -478,35 +487,36 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * This function handles the deletion of a message.
      * @since 1.3.0
      */
-    public function delete_message( $request ) {
+    public function delete_message($request)
+    {
         global $wpdb;
 
-        $user_id    = wpem_rest_get_current_user_id();
-        $message_id = (int) $request->get_param( 'id' );
+        $user_id = wpem_rest_get_current_user_id();
+        $message_id = (int) $request->get_param('id');
         $table = esc_sql($this->table);
         // Validate Message
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $message = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id ) );
+        $message = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id));
 
-        if ( ! $message ) {
-            return self::prepare_error_for_response( 404 );
+        if (!$message) {
+            return self::prepare_error_for_response(404);
         }
 
         // Delete
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $deleted = $wpdb->delete(
             $this->table,
-            [ 'id' => $message_id ],
-            [ '%d' ]
+            ['id' => $message_id],
+            ['%d']
         );
 
-        if ( false === $deleted ) {
-            return self::prepare_error_for_response( 500 );
+        if (false === $deleted) {
+            return self::prepare_error_for_response(500);
         }
 
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = [
-            'id'      => $message_id,
+            'id' => $message_id,
             'user_id' => $user_id,
             'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
@@ -518,12 +528,13 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      *
      * @return array
      */
-    public function get_collection_params() {
+    public function get_collection_params()
+    {
         $params = parent::get_collection_params();
         $params['context']['default'] = 'view';
         $params['partner_id'] = array(
-            'description'       => __('Limit results to messages sent by a specific user.', 'wpem-rest-api'),
-            'type'              => 'integer',
+            'description' => __('Limit results to messages sent by a specific user.', 'wpem-rest-api'),
+            'type' => 'integer',
             'validate_callback' => 'rest_validate_request_arg',
         );
         return $params;

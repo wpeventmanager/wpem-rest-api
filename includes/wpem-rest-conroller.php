@@ -14,7 +14,7 @@
  * @class WPEM_REST_Controller
  * @see   https://developer.wordpress.org/rest-api/extending-the-rest-api/controller-classes/
  */
-if( !defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit;
 }
 
@@ -24,7 +24,8 @@ if( !defined( 'ABSPATH' ) ) {
  * @extends WP_REST_Controller
  * @version 1.0.0
  */
-abstract class WPEM_REST_Controller extends WP_REST_Controller {
+abstract class WPEM_REST_Controller extends WP_REST_Controller
+{
 
     /**
      * Endpoint namespace.
@@ -51,8 +52,9 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      *
      * @return array
      */
-    protected function add_additional_fields_schema( $schema ) {
-        if( empty( $schema['title']) ) {
+    protected function add_additional_fields_schema($schema)
+    {
+        if (empty($schema['title'])) {
             return $schema;
         }
 
@@ -60,14 +62,14 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
          * Can't use $this->get_object_type otherwise we cause an inf loop.
          */
         $object_type = $schema['title'];
-        $additional_fields = $this->get_additional_fields( $object_type );
-        foreach ( $additional_fields as $field_name => $field_options ) {
-            if (! $field_options['schema'] ) {
+        $additional_fields = $this->get_additional_fields($object_type);
+        foreach ($additional_fields as $field_name => $field_options) {
+            if (!$field_options['schema']) {
                 continue;
             }
-            $schema['properties'][ $field_name ] = $field_options['schema'];
+            $schema['properties'][$field_name] = $field_options['schema'];
         }
-        $schema['properties'] = apply_filters( 'wpem_rest_' . $object_type . '_schema', $schema['properties'] );
+        $schema['properties'] = apply_filters('wpem_rest_' . $object_type . '_schema', $schema['properties']);
         return $schema;
     }
 
@@ -77,7 +79,8 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @since  1.0.0
      * @return string
      */
-    protected function get_normalized_rest_base() {
+    protected function get_normalized_rest_base()
+    {
         return preg_replace('/\(.*\)\//i', '', $this->rest_base);
     }
 
@@ -88,23 +91,24 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array $items Request items.
      * @return bool|WP_Error
      */
-    protected function check_batch_limit( $items ) {
-        $limit = apply_filters( 'wpem_rest_batch_items_limit', 100, $this->get_normalized_rest_base() );
+    protected function check_batch_limit($items)
+    {
+        $limit = apply_filters('wpem_rest_batch_items_limit', 100, $this->get_normalized_rest_base());
         $total = 0;
 
-        if( !empty( $items['create'] ) ) {
-            $total += count( $items['create'] );
+        if (!empty($items['create'])) {
+            $total += count($items['create']);
         }
 
-        if( !empty($items['update'] ) ) {
-            $total += count( $items['update'] );
+        if (!empty($items['update'])) {
+            $total += count($items['update']);
         }
 
-        if( !empty( $items['delete']) ) {
-            $total += count( $items['delete'] );
+        if (!empty($items['delete'])) {
+            $total += count($items['delete']);
         }
 
-        if( $total > $limit ) {
+        if ($total > $limit) {
             return parent::prepare_error_for_response(413);
         }
         return true;
@@ -117,7 +121,8 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  WP_REST_Request $request Full details about the request.
      * @return array Of WP_Error or WP_REST_Response.
      */
-    public function batch_items( $request ) {
+    public function batch_items($request)
+    {
         /**
          * REST Server
          *
@@ -126,102 +131,102 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
         global $wp_rest_server;
 
         // Get the request params.
-        $items    = array_filter( $request->get_params() );
-        $query    = $request->get_query_params();
+        $items = array_filter($request->get_params());
+        $query = $request->get_query_params();
         $response = array();
 
         // Check batch limit.
-        $limit = $this->check_batch_limit( $items );
-        if( is_wp_error( $limit ) ) {
+        $limit = $this->check_batch_limit($items);
+        if (is_wp_error($limit)) {
             return $limit;
         }
 
-        if( !empty( $items['create'] ) ) {
-            foreach( $items['create'] as $item ) {
+        if (!empty($items['create'])) {
+            foreach ($items['create'] as $item) {
                 $_item = new WP_REST_Request('POST');
 
                 // Default parameters.
                 $defaults = array();
-                $schema   = $this->get_public_item_schema();
-                foreach( $schema['properties'] as $arg => $options ) {
-                    if( isset($options['default']) ) {
-                        $defaults[ $arg ] = $options['default'];
+                $schema = $this->get_public_item_schema();
+                foreach ($schema['properties'] as $arg => $options) {
+                    if (isset($options['default'])) {
+                        $defaults[$arg] = $options['default'];
                     }
                 }
-                $_item->set_default_params( $defaults );
+                $_item->set_default_params($defaults);
 
                 // Set request parameters.
-                $_item->set_body_params( $item );
+                $_item->set_body_params($item);
 
                 // Set query (GET) parameters.
-                $_item->set_query_params( $query );
+                $_item->set_query_params($query);
 
-                $_response = $this->create_item( $_item );
+                $_response = $this->create_item($_item);
 
-                if( is_wp_error( $_response ) ) {
+                if (is_wp_error($_response)) {
                     $response['create'][] = array(
-                    'id'    => 0,
-                    'error' => array(
-                    'code'    => $_response->get_error_code(),
-                    'message' => $_response->get_error_message(),
-                    'data'    => $_response->get_error_data(),
-                    ),
+                        'id' => 0,
+                        'error' => array(
+                            'code' => $_response->get_error_code(),
+                            'message' => $_response->get_error_message(),
+                            'data' => $_response->get_error_data(),
+                        ),
                     );
                 } else {
-                    $response['create'][] = $wp_rest_server->response_to_data( $_response, '' );
+                    $response['create'][] = $wp_rest_server->response_to_data($_response, '');
                 }
             }
         }
 
-        if( !empty( $items['update'] ) ) {
-            foreach( $items['update'] as $item ) {
+        if (!empty($items['update'])) {
+            foreach ($items['update'] as $item) {
                 $_item = new WP_REST_Request('PUT');
                 $_item->set_body_params($item);
                 $_response = $this->update_item($_item);
 
-                if( is_wp_error( $_response ) ) {
+                if (is_wp_error($_response)) {
                     $response['update'][] = array(
-                        'id'    => $item['id'],
+                        'id' => $item['id'],
                         'error' => array(
-                        'code'    => $_response->get_error_code(),
-                        'message' => $_response->get_error_message(),
-                        'data'    => $_response->get_error_data(),
+                            'code' => $_response->get_error_code(),
+                            'message' => $_response->get_error_message(),
+                            'data' => $_response->get_error_data(),
                         ),
                     );
                 } else {
-                    $response['update'][] = $wp_rest_server->response_to_data( $_response, '' );
+                    $response['update'][] = $wp_rest_server->response_to_data($_response, '');
                 }
             }
         }
 
-        if( !empty( $items['delete'] ) ) {
-            foreach( $items['delete'] as $id ) {
+        if (!empty($items['delete'])) {
+            foreach ($items['delete'] as $id) {
                 $id = (int) $id;
 
-                if( 0 === $id ) {
+                if (0 === $id) {
                     continue;
                 }
 
-                $_item = new WP_REST_Request( 'DELETE' );
+                $_item = new WP_REST_Request('DELETE');
                 $_item->set_query_params(
                     array(
-                        'id'    => $id,
+                        'id' => $id,
                         'force' => true,
                     )
                 );
-                $_response = $this->delete_item( $_item );
+                $_response = $this->delete_item($_item);
 
-                if( is_wp_error( $_response ) ) {
-                       $response['delete'][] = array(
-                            'id'    => $id,
-                            'error' => array(
-                                'code'    => $_response->get_error_code(),
-                                'message' => $_response->get_error_message(),
-                                'data'    => $_response->get_error_data(),
-                            ),
-                       );
+                if (is_wp_error($_response)) {
+                    $response['delete'][] = array(
+                        'id' => $id,
+                        'error' => array(
+                            'code' => $_response->get_error_code(),
+                            'message' => $_response->get_error_message(),
+                            'data' => $_response->get_error_data(),
+                        ),
+                    );
                 } else {
-                    $response['delete'][] = $wp_rest_server->response_to_data( $_response, '' );
+                    $response['delete'][] = $wp_rest_server->response_to_data($_response, '');
                 }
             }
         }
@@ -236,9 +241,10 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array  $setting Setting.
      * @return string
      */
-    public function validate_setting_text_field( $value, $setting ) {
-        $value = is_null( $value ) ? '' : $value;
-        return wp_kses_post( trim( stripslashes( $value ) ) );
+    public function validate_setting_text_field($value, $setting)
+    {
+        $value = is_null($value) ? '' : $value;
+        return wp_kses_post(trim(stripslashes($value)));
     }
 
     /**
@@ -249,8 +255,9 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array  $setting Setting.
      * @return string|WP_Error
      */
-    public function validate_setting_select_field( $value, $setting ) {
-        if( array_key_exists( $value, $setting['options'] ) ) {
+    public function validate_setting_select_field($value, $setting)
+    {
+        if (array_key_exists($value, $setting['options'])) {
             return $value;
         } else {
             return parent::prepare_error_for_response(400);
@@ -265,18 +272,19 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array $setting Setting.
      * @return array|WP_Error
      */
-    public function validate_setting_multiselect_field( $values, $setting ) {
-        if( empty( $values ) ) {
+    public function validate_setting_multiselect_field($values, $setting)
+    {
+        if (empty($values)) {
             return array();
         }
 
-        if( !is_array( $values ) ) {
+        if (!is_array($values)) {
             return parent::prepare_error_for_response(400);
         }
 
         $final_values = array();
-        foreach( $values as $value ) {
-            if( array_key_exists( $value, $setting['options'] ) ) {
+        foreach ($values as $value) {
+            if (array_key_exists($value, $setting['options'])) {
                 $final_values[] = $value;
             }
         }
@@ -291,19 +299,20 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array $setting Setting.
      * @return string|WP_Error
      */
-    public function validate_setting_image_width_field( $values, $setting ) {
-        if( !is_array( $values ) ) {
+    public function validate_setting_image_width_field($values, $setting)
+    {
+        if (!is_array($values)) {
             return parent::prepare_error_for_response(400);
         }
 
         $current = $setting['value'];
-        if (isset($values['width']) ) {
+        if (isset($values['width'])) {
             $current['width'] = intval($values['width']);
         }
-        if (isset($values['height']) ) {
+        if (isset($values['height'])) {
             $current['height'] = intval($values['height']);
         }
-        if (isset($values['crop']) ) {
+        if (isset($values['crop'])) {
             $current['crop'] = (bool) $values['crop'];
         }
         return $current;
@@ -317,8 +326,9 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array  $setting Setting.
      * @return string|WP_Error
      */
-    public function validate_setting_radio_field( $value, $setting ) {
-        return $this->validate_setting_select_field( $value, $setting );
+    public function validate_setting_radio_field($value, $setting)
+    {
+        return $this->validate_setting_select_field($value, $setting);
     }
 
     /**
@@ -329,11 +339,12 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array  $setting Setting.
      * @return string|WP_Error
      */
-    public function validate_setting_checkbox_field( $value, $setting ) {
-        if( in_array( $value, array( 'yes', 'no' ) ) ) {
+    public function validate_setting_checkbox_field($value, $setting)
+    {
+        if (in_array($value, array('yes', 'no'))) {
             return $value;
-        } elseif( empty( $value ) ) {
-            $value = isset( $setting['default'] ) ? $setting['default'] : 'no';
+        } elseif (empty($value)) {
+            $value = isset($setting['default']) ? $setting['default'] : 'no';
             return $value;
         } else {
             return parent::prepare_error_for_response(400);
@@ -348,20 +359,21 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array  $setting Setting.
      * @return string
      */
-    public function validate_setting_textarea_field( $value, $setting ) {
-        $value = is_null( $value ) ? '' : $value;
+    public function validate_setting_textarea_field($value, $setting)
+    {
+        $value = is_null($value) ? '' : $value;
         return wp_kses(
-            trim( stripslashes( $value ) ),
+            trim(stripslashes($value)),
             array_merge(
                 array(
                     'iframe' => array(
-                    'src'   => true,
-                    'style' => true,
-                    'id'    => true,
-                    'class' => true,
+                        'src' => true,
+                        'style' => true,
+                        'id' => true,
+                        'class' => true,
                     ),
                 ),
-                wp_kses_allowed_html( 'post' )
+                wp_kses_allowed_html('post')
             )
         );
     }
@@ -374,8 +386,9 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  array $meta_query Meta query.
      * @return array
      */
-    protected function add_meta_query( $args, $meta_query ) {
-        if( empty($args['meta_query'] ) ) {
+    protected function add_meta_query($args, $meta_query)
+    {
+        if (empty($args['meta_query'])) {
             $args['meta_query'] = array(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
         }
         $args['meta_query'][] = $meta_query;
@@ -389,34 +402,35 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @since  1.0.0
      * @return array
      */
-    public function get_public_batch_schema() {
+    public function get_public_batch_schema()
+    {
         $schema = array(
-            '$schema'    => 'http://json-schema.org/draft-04/schema#',
-            'title'      => 'batch',
-            'type'       => 'object',
+            '$schema' => 'http://json-schema.org/draft-04/schema#',
+            'title' => 'batch',
+            'type' => 'object',
             'properties' => array(
                 'create' => array(
-                    'description' => __( 'List of created resources.', 'wpem-rest-api' ),
-                    'type'        => 'array',
-                    'context'     => array( 'view', 'edit' ),
-                    'items'       => array(
-                        'type'    => 'object',
+                    'description' => __('List of created resources.', 'wpem-rest-api'),
+                    'type' => 'array',
+                    'context' => array('view', 'edit'),
+                    'items' => array(
+                        'type' => 'object',
                     ),
                 ),
                 'update' => array(
-                    'description' => __( 'List of updated resources.', 'wpem-rest-api' ),
-                    'type'        => 'array',
-                    'context'     => array( 'view', 'edit' ),
-                    'items'       => array(
-                        'type'    => 'object',
+                    'description' => __('List of updated resources.', 'wpem-rest-api'),
+                    'type' => 'array',
+                    'context' => array('view', 'edit'),
+                    'items' => array(
+                        'type' => 'object',
                     ),
                 ),
                 'delete' => array(
-                    'description' => __( 'List of delete resources.', 'wpem-rest-api' ),
-                    'type'        => 'array',
-                    'context'     => array( 'view', 'edit' ),
-                    'items'       => array(
-                        'type'    => 'integer',
+                    'description' => __('List of delete resources.', 'wpem-rest-api'),
+                    'type' => 'array',
+                    'context' => array('view', 'edit'),
+                    'items' => array(
+                        'type' => 'integer',
                     ),
                 ),
             ),
@@ -434,57 +448,58 @@ abstract class WPEM_REST_Controller extends WP_REST_Controller {
      * @param  WP_REST_Request $request Full details about the request.
      * @return array Fields to be included in the response.
      */
-    public function get_fields_for_response( $request ) {
-        $schema     = $this->get_item_schema();
-        $properties = isset( $schema['properties'] ) ? $schema['properties'] : array();
+    public function get_fields_for_response($request)
+    {
+        $schema = $this->get_item_schema();
+        $properties = isset($schema['properties']) ? $schema['properties'] : array();
 
         $additional_fields = $this->get_additional_fields();
-        foreach( $additional_fields as $field_name => $field_options ) {
+        foreach ($additional_fields as $field_name => $field_options) {
             // For back-compat, include any field with an empty schema
             // because it won't be present in $this->get_item_schema().
-            if( is_null( $field_options['schema'] ) ) {
-                $properties[ $field_name ] = $field_options;
+            if (is_null($field_options['schema'])) {
+                $properties[$field_name] = $field_options;
             }
         }
 
         // Exclude fields that specify a different context than the request context.
         $context = $request['context'];
-        if( $context ) {
-            foreach( $properties as $name => $options ) {
-                if( !empty( $options['context'] ) && !in_array( $context, $options['context'], true ) ) {
-                    unset( $properties[ $name ] );
+        if ($context) {
+            foreach ($properties as $name => $options) {
+                if (!empty($options['context']) && !in_array($context, $options['context'], true)) {
+                    unset($properties[$name]);
                 }
             }
         }
 
-        $fields = array_keys( $properties );
+        $fields = array_keys($properties);
 
-        if( !isset( $request['_fields'] ) ) {
+        if (!isset($request['_fields'])) {
             return $fields;
         }
-        $requested_fields = wp_parse_list( $request['_fields'] );
-        if( 0 === count( $requested_fields ) ) {
+        $requested_fields = wp_parse_list($request['_fields']);
+        if (0 === count($requested_fields)) {
             return $fields;
         }
         // Trim off outside whitespace from the comma delimited list.
         $requested_fields = array_map('trim', $requested_fields);
         // Always persist 'id', because it can be needed for add_additional_fields_to_object().
-        if( in_array( 'id', $fields, true ) ) {
+        if (in_array('id', $fields, true)) {
             $requested_fields[] = 'id';
         }
         // Return the list of all requested fields which appear in the schema.
         return array_reduce(
             $requested_fields,
-            function( $response_fields, $field ) use ( $fields ) {
-                if( in_array( $field, $fields, true ) ) {
+            function ($response_fields, $field) use ($fields) {
+                if (in_array($field, $fields, true)) {
                     $response_fields[] = $field;
                     return $response_fields;
                 }
                 // Check for nested fields if $field is not a direct match.
-                $nested_fields = explode( '.', $field );
+                $nested_fields = explode('.', $field);
                 // A nested field is included so long as its top-level property is
                 // present in the schema.
-                if( in_array( $nested_fields[0], $fields, true ) ) {
+                if (in_array($nested_fields[0], $fields, true)) {
                     $response_fields[] = $field;
                 }
                 return $response_fields;
