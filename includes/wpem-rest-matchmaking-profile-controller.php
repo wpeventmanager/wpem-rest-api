@@ -263,11 +263,26 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
         // Add profile photo separately
         $profile['profile_photo'] = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
-        if(!isset($profile['matchmaking_profile]']))
+
+        // profile photo status
+        if ( get_user_meta($user_id, '_profile_photo', true) ) {
+            $profile['profile_photo_status'] = true;
+        } else {
+            $profile['profile_photo_status'] = false;
+        }
+
+        // organization logo status
+        if(get_user_meta( $user_id, '_organization_logo', true )) {
+            $profile['organization_logo_status'] = true;
+        } else {
+            $profile['organization_logo_status'] = false;
+        }
+
+        if(!isset($profile['matchmaking_profile']))
             $profile['matchmaking_profile'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int)get_user_meta($user_id, '_matchmaking_profile', true) : 0;
-        if(!isset($profile['approve_profile_status]']))
+        if(!isset($profile['approve_profile_status']))
             $profile['approve_profile_status'] = get_user_meta($user_id, '_approve_profile_status', true) ? (int)get_user_meta($user_id, '_approve_profile_status', true) : 0;
-        if(!isset($profile['wpem_meeting_request_mode]']))
+        if(!isset($profile['wpem_meeting_request_mode']))
             $profile['wpem_meeting_request_mode'] = get_user_meta($user_id, '_wpem_meeting_request_mode', true) ? get_user_meta($user_id, '_wpem_meeting_request_mode', true) : 'approval';
 		$meta = get_user_meta($user_id, '_available_for_meeting', true);
 		$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
