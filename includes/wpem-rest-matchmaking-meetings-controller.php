@@ -411,10 +411,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $partner_id = (int) $request->get_param('partner_id');
         $event_id = (int) $request->get_param('event_id');
         $status = sanitize_text_field($request->get_param('status'));
+        $search = sanitize_text_field($request->get_param('search'));
         $page = max(1, (int) $request->get_param('page'));
         $per_page = max(1, min(100, (int) $request->get_param('per_page')));
         $offset = ($page - 1) * $per_page;
-
         $params = array();
 
         // Base WHERE clause
@@ -461,18 +461,30 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 $params[] = $status_map[$status];
             }
         }
+        
+        $search_filter = '';
+
+        if (!empty($search)) {
+        
+            $search_filter = ' AND (
+                event_title LIKE %s
+                OR event_description LIKE %s
+            )';
+        
+            $search_like = '%' . $wpdb->esc_like($search) . '%';
+        
+            $params[] = $search_like;
+            $params[] = $search_like;
+        }
 
         // SQL queries
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter}";
-
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$search_filter}";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_count = $wpdb->prepare($sql_count, ...$params);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total = (int) $wpdb->get_var($sql_count);
 
-        $sql_rows = "SELECT * FROM {$this->table} {$where_sql}{$filter_sql}{$status_filter} 
-                    ORDER BY meeting_date ASC, meeting_start_time ASC 
-                    LIMIT %d OFFSET %d";
+        $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$search_filter} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
