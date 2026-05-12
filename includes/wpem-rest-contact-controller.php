@@ -54,6 +54,19 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
                 )
             )
         );
+        
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base . '/(?P<id>[\d]+)',
+            array(
+                array(
+                    'methods' => WP_REST_Server::DELETABLE,
+                    'callback' => array($this, 'delete_contact'),
+                    'permission_callback' => array($this, 'permission_check'),
+                    'args' => array(),
+                )
+            )
+        );
 
         register_rest_route(
             $this->namespace,
@@ -187,6 +200,62 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             return self::prepare_error_for_response(400);
         }
     }
+    
+    /**
+     * Delete contact for current user.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function delete_contact($request){
+    $user_id    = wpem_rest_get_current_user_id();
+    $contact_id = absint($request['id']);
+
+    // Validate contact ID
+    if (empty($contact_id)) {
+        return self::prepare_error_for_response(400);
+    }
+
+    // Get contacts
+    $contacts = get_user_meta($user_id, 'user_contacts', true);
+
+    if (!is_array($contacts)) {
+        $contacts = array();
+    }
+
+    // Normalize all IDs to integers
+    $contacts = array_map('intval', $contacts);
+
+    // Check if contact exists
+    if (!in_array($contact_id, $contacts, true)) {
+        return self::prepare_error_for_response(404);
+    }
+
+    // Remove contact
+    $contacts = array_values(
+        array_filter(
+            $contacts,
+            function ($id) use ($contact_id) {
+                return $id !== $contact_id;
+            }
+        )
+    );
+
+    // Update user meta
+    update_user_meta($user_id, 'user_contacts', $contacts);
+
+    // Response
+    $response_data = self::prepare_error_for_response(200);
+
+    $response_data['data'] = array(
+        'contact_id' => $contact_id,
+        'message'    => 'Contact deleted successfully.',
+        'user_status' => wpem_get_user_login_status($user_id),
+    );
+
+    return rest_ensure_response($response_data);
+}
 }
 
 new WPEM_REST_Contact_Controller();

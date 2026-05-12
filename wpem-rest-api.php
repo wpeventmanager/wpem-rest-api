@@ -63,7 +63,6 @@ class WPEM_Rest_API
         include 'includes/wpem-rest-api-dashboard.php';
         include 'includes/wpem-rest-conroller.php';
         include 'includes/wpem-rest-posts-conroller.php';
-        include 'includes/wpem-rest-organizers-controller.php';
         include 'includes/wpem-rest-crud-controller.php';
         include 'includes/wpem-rest-authentication.php';
         include 'includes/wpem-rest-events-controller.php';
@@ -72,6 +71,7 @@ class WPEM_Rest_API
         include 'includes/wpem-rest-settings-controller.php';
         include 'includes/wpem-rest-contact-controller.php';
         include 'includes/wpem-rest-ticket-controller.php';
+        include 'includes/wpem-rest-organizers-controller.php';
 
         // match making api
         include 'includes/wpem-rest-matchmaking-meetings-controller.php';
