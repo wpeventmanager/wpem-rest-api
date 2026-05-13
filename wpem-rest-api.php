@@ -48,6 +48,7 @@ class WPEM_Rest_API
         define('WPEM_REST_API_PLUGIN_URL', untrailingslashit(plugins_url(basename(plugin_dir_path(__FILE__)), basename(__FILE__))));
         define('WPEM_PLUGIN_ACTIVATION_API_URL', 'https://wp-eventmanager.com/?wc-api=wpemstore_licensing_expire_license');
         define('EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL', plugin_dir_url(WP_PLUGIN_DIR . '/wp-event-manager-registrations/wp-event-manager-registrations.php'));
+        define('EVENT_MANAGER_REGISTRATIONS_PLUGIN_DIR', plugin_dir_path(WP_PLUGIN_DIR . '/wp-event-manager-registrations/'));
         if (!defined('WPEM_JWT_SECRET_KEY')) {
             define('WPEM_JWT_SECRET_KEY', '9s59d4s9d49ed94sf46dsf74d96');
         }

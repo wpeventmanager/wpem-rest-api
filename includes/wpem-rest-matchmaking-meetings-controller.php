@@ -370,10 +370,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $m_status_str = 'pending';
         endif;
         if ($m_status == 1):
-            $m_status_str = 'accept';
+            $m_status_str = 'accepted';
         endif;
         if ($m_status == -1):
-            $m_status_str = 'cancel';
+            $m_status_str = 'rejected';
         endif;
         if ($m_status == -2):
             $m_status_str = 'expire';
@@ -482,7 +482,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $sql_count = $wpdb->prepare($sql_count, ...$params);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total = (int) $wpdb->get_var($sql_count);
-        error_log($sql_count);
         
         $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$search_filter} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -855,12 +854,22 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $table = esc_sql($this->table);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $meeting = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $meeting_id));
-        //send mail to all participants
-        $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
-        $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $meeting);
+        //send mail to all participants        
+        if ( class_exists( 'WP_Event_Manager_Registrations_MatchMaking' ) ) {
+            $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
+        
+            $registration_instance->wpem_send_cancel_meeting_email(
+                $user_id,
+                $participant_ids,
+                $meeting
+            );
+        }
+        // $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
+        // $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $meeting);
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
         $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        error_log('Meeting cancelled: ' . print_r($this->format_meeting_row($row), true));
         return wp_send_json($response_data);
     }
 
