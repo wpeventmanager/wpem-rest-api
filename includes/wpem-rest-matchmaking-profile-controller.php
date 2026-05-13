@@ -352,6 +352,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if ($request->get_param('last_name')) {
             update_user_meta($user_id, 'last_name', sanitize_text_field($request->get_param('last_name')));
         }
+        if ( $request->get_param( 'display_name' ) ) {
+            wp_update_user(
+                array(
+                    'ID' => $user_id,
+                    'display_name' => sanitize_text_field($request->get_param('display_name')),
+                )
+            );
+        }
 
         // Upload profile image
         if (!empty($_FILES['profile_photo'])) {
@@ -386,7 +394,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 update_user_meta($user_id, '_organization_logo', '');
             }
         }
-
+        echo $user_id;
+        echo get_user_meta($user_id, 'first_name', true);
         return self::prepare_error_for_response(200);
     }
 

@@ -535,33 +535,3 @@ if (!function_exists('wpem_addon_get_event_banner')) {
         }
     }
 }
-
-/**
- * This function will return the user profile photo URL.
- * It checks for a custom profile photo stored in user meta and returns it if available.
- * If no custom photo is found, it falls back to the default WordPress avatar.
- */
-function get_wpem_user_profile_photo($user_id, $size = 96) {
-    // Get custom profile photo (stored as URL or serialized array)
-    $profile_photo_url = esc_url(EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png');
-    $user_photo_meta = get_user_meta($user_id, '_profile_photo', true);
-    if(is_array($user_photo_meta)){
-       $profile_photo_url = !empty($user_photo_meta[0]) ? $user_photo_meta[0] : $profile_photo_url;
-    } elseif (is_serialized($user_photo_meta)) {
-        $photo_data = maybe_unserialize($user_photo_meta);
-        $profile_photo_url = is_array($photo_data) && !empty($photo_data) ? $photo_data[0] : '';
-    } elseif (is_string($user_photo_meta) && filter_var($user_photo_meta, FILTER_VALIDATE_URL)) {
-        $profile_photo_url = $user_photo_meta;
-    } else if (!empty($profile_photo_url)) {
-        $profile_photo_url = esc_url($profile_photo_url);
-    } else {
-        // Fallback to WordPress default avatar
-        $avatar_html = get_avatar($user_id, $size);
-        
-        // Extract the src from the HTML
-        if (preg_match('/src=["\']([^"\']+)["\']/', $avatar_html, $matches)) {
-            $profile_photo_url = esc_url($matches[1]);
-        }
-    }
-    return apply_filters('wpem_user_profile_photo_fallback', $profile_photo_url, $user_id, $size);
-}
