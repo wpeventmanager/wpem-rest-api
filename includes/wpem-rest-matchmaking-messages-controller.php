@@ -140,6 +140,70 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             )
         );
     }
+    
+    /**
+     * Check if user can access the message.
+     */
+    public function get_item_permissions_check( $request ) {
+    
+        if ( ! is_user_logged_in() ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'You must be logged in.', 'wpem-rest-api' ),
+                array( 'status' => rest_authorization_required_code() )
+            );
+        }
+    
+        global $wpdb;
+    
+        $message_id = absint( $request['id'] );
+        $user_id    = get_current_user_id();
+    
+        $table = $wpdb->prefix . 'wpem_matchmaking_messages';
+    
+        $message = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$table} WHERE id = %d",
+                $message_id
+            )
+        );
+    
+        if ( ! $message ) {
+            return new WP_Error(
+                'rest_message_invalid',
+                __( 'Message not found.', 'wpem-rest-api' ),
+                array( 'status' => 404 )
+            );
+        }
+    
+        // Allow only sender or receiver.
+        if (
+            (int) $message->sender_id !== $user_id &&
+            (int) $message->receiver_id !== $user_id
+        ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'You are not allowed to access this message.', 'wpem-rest-api' ),
+                array( 'status' => rest_authorization_required_code() )
+            );
+        }
+    
+        return true;
+    }
+    
+    /**
+     * Check if user can update the message.
+     */
+    public function update_item_permissions_check( $request ) {
+        return $this->get_item_permissions_check( $request );
+    }
+    
+    /**
+     * Check if user can delete the message.
+     */
+    public function delete_item_permissions_check( $request ) {
+        return $this->get_item_permissions_check( $request );
+    }
 
     /**
      * Get a collection of messages.

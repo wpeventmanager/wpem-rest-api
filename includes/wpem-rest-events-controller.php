@@ -152,6 +152,21 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
+     * Check if a given request has access to read an item.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|boolean
+     */
+    public function get_item_permissions_check($request)
+    {
+        $post = get_post((int) $request['id']);
+        if ($post && !wpem_rest_api_check_post_permissions($this->post_type, 'read', $post->ID)) {
+            return new WP_Error('wpem_rest_cannot_view', __('Sorry, you cannot view this resource.', 'wpem-rest-api'), array('status' => rest_authorization_required_code()));
+        }
+        return true;
+    }
+    
+    /**
      * Get object.
      *
      * @param int $id Object ID.
