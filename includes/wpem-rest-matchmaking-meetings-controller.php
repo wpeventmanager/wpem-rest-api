@@ -406,6 +406,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function get_items($request)
     {
         global $wpdb;
+
+        // Posts table
+        $posts_table = $wpdb->posts;
         // Get current user ID
         $user_id = wpem_rest_get_current_user_id();
         $partner_id = (int) $request->get_param('partner_id');
@@ -427,22 +430,22 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // --- Filters ---
         if ($partner_id) {
-            // Show all meetings where this user is either: host or participant
-            $filter_sql = ' AND (
-                user_id = %d
-                OR participant_ids LIKE %s
-            )';
-            $params[] = $partner_id;
-            $params[] = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
-        } else {
-            // Default current logged-in user meetings
-            $filter_sql = ' AND (
-                user_id = %d
-                OR participant_ids LIKE %s
-            )';
-            $params[] = $user_id;
-            $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
-        }
+    // Show all meetings where this user is either: host or participant
+    $filter_sql = ' AND (
+        user_id = %d
+        OR participant_ids LIKE %s
+    )';
+    $params[] = $partner_id;
+    $params[] = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
+} else {
+    // Default current logged-in user meetings
+    $filter_sql = ' AND (
+        user_id = %d
+        OR participant_ids LIKE %s
+    )';
+    $params[] = $user_id;
+    $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+}
 
         // Status filter
         $status_filter = '';
@@ -1074,7 +1077,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function get_meeting_list_for_organizer($request)
     {
         global $wpdb;
-
         // Get current user ID
         $user_id = wpem_rest_get_current_user_id();
         $event_id = (int) $request->get_param('event_id');
@@ -1093,7 +1095,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'fields' => 'ids',
             'posts_per_page' => -1,
         ]);
-
+        
         // If API request specifies event_id, check if it belongs to this organizer
         if ($event_id && in_array($event_id, $organizer_events)) {
             $where_sql = "WHERE event_id = %d";
