@@ -370,10 +370,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $m_status_str = 'pending';
         endif;
         if ($m_status == 1):
-            $m_status_str = 'accepted';
+            $m_status_str = 'accept';
         endif;
         if ($m_status == -1):
-            $m_status_str = 'rejected';
+            $m_status_str = 'cancel';
         endif;
         if ($m_status == -2):
             $m_status_str = 'expire';
@@ -833,7 +833,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         // Update all participants to -1 (cancelled)
         foreach ($participant_ids as $participant_id => $status) {
-            $participants[$participant_id] = -1;
+            $participants[$participant_id] = 0;
         }
 
         // Re-serialize
@@ -869,7 +869,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $response_data = self::prepare_error_for_response(200);
         $response_data['data'] = $this->format_meeting_row($row);
         $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
-        error_log('Meeting cancelled: ' . print_r($this->format_meeting_row($row), true));
         return wp_send_json($response_data);
     }
 
