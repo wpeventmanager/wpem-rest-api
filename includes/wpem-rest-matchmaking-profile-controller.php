@@ -362,10 +362,11 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Upload profile image
-        if (!empty($_FILES['profile_photo'])) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- REST API request is authenticated.
+        if (!empty($_FILES['profile_photo'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- REST API request is authenticated.
             require_once ABSPATH . 'wp-admin/includes/file.php';
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            $file = $_FILES['profile_photo'];
+	        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- File upload array handled by wp_handle_upload().
+            $file =  wp_unslash( $_FILES['profile_photo'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- REST API authenticated upload.
             $upload_overrides = array(
                 'test_form' => false,
             );
@@ -379,10 +380,10 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Upload oraganization logo
-        if (!empty($_FILES['organization_logo'])) {
+        if (!empty($_FILES['organization_logo'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- REST API request is authenticated.
             require_once ABSPATH . 'wp-admin/includes/file.php';
             // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            $file = $_FILES['organization_logo'];
+            $file = $_FILES['organization_logo']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- REST API authenticated upload.
             $upload_overrides = array(
                 'test_form' => false,
             );
