@@ -864,7 +864,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         // Update all participants to -1 (cancelled)
         foreach ($participant_ids as $participant_id => $status) {
-            $participants[$participant_id] = 0;
+            $participants[$participant_id] = -1;
         }
 
         // Re-serialize
