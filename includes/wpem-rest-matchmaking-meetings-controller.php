@@ -406,9 +406,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function get_items($request)
     {
         global $wpdb;
-
-        // Posts table
-        $posts_table = $wpdb->posts;
         // Get current user ID
         $user_id = wpem_rest_get_current_user_id();
         $partner_id = (int) $request->get_param('partner_id');
@@ -429,23 +426,36 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // --- Filters ---
-        if ($partner_id) {
-    // Show all meetings where this user is either: host or participant
-    $filter_sql = ' AND (
-        user_id = %d
-        OR participant_ids LIKE %s
-    )';
-    $params[] = $partner_id;
-    $params[] = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
-} else {
-    // Default current logged-in user meetings
-    $filter_sql = ' AND (
-        user_id = %d
-        OR participant_ids LIKE %s
-    )';
-    $params[] = $user_id;
-    $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
-}
+        if ( current_user_can( 'manage_options' ) ) {
+
+            // Admin can view all meetings.
+            $filter_sql = '';
+        
+        } else {
+        
+            if ( $partner_id ) {
+        
+                // Show meetings where this user is host or participant.
+                $filter_sql = ' AND (
+                    user_id = %d
+                    OR participant_ids LIKE %s
+                )';
+        
+                $params[] = $partner_id;
+                $params[] = '%' . $wpdb->esc_like( 'i:' . $partner_id ) . '%';
+        
+            } else {
+        
+                // Logged-in user meetings only.
+                $filter_sql = ' AND (
+                    user_id = %d
+                    OR participant_ids LIKE %s
+                )';
+        
+                $params[] = $user_id;
+                $params[] = '%' . $wpdb->esc_like( 'i:' . $user_id ) . '%';
+            }
+        }
 
         // Status filter
         $status_filter = '';
