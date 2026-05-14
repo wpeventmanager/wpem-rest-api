@@ -394,8 +394,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 update_user_meta($user_id, '_organization_logo', '');
             }
         }
-        echo $user_id;
-        echo get_user_meta($user_id, 'first_name', true);
+        
         return self::prepare_error_for_response(200);
     }
 
