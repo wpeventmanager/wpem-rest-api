@@ -218,6 +218,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      */
     protected function format_meeting_row($row)
     {
+        
+        global $wpdb;
         // Participants map: [user_id => status]
         $host_id = (int) $row['user_id'];
 
@@ -381,7 +383,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         );
 
         $event_title = get_the_title($row['event_id']);
-
+        $table_room_name = $wpdb->prefix . 'wpem_matchmaking_rooms';
+        $table_name = $wpdb->prefix . 'wpem_matchmaking_tables';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $rooms = $wpdb->get_results($wpdb->prepare( "SELECT * FROM {$table_room_name} WHERE event_id = %d ORDER BY id DESC", $row['event_id'] ), ARRAY_A );
+        $table = $wpdb->get_results($wpdb->prepare( "SELECT * FROM {$table_name} WHERE room_id = %d ORDER BY id DESC", $rooms[0]['id'] ), ARRAY_A );
         // meeting status convert int to str
         $m_status = (int) $row['meeting_status'];
         if ($m_status == 0):
@@ -409,6 +415,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'host_info' => $host_info,
             'participants' => $participants_info,
             'meeting_status' => $m_status_str,
+            'table_number'  => isset($table[0]['id']) ? $table[0]['id'] : '',
+            'room_name'  => isset($rooms[0]['room_name']) ? $rooms[0]['room_name'] : '',
+            'room_number'  => isset($rooms[0]['id']) ? $rooms[0]['id'] : '',
+            'floor'  => isset($rooms[0]['floor']) ? $rooms[0]['floor'] : '',
         );
 
     }
