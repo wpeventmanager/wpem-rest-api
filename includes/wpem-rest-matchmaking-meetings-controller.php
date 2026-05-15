@@ -856,23 +856,23 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if (!$row) {
             return self::prepare_error_for_response(404);
         }
-        // Unserialize participant_ids safely
-        $participant_ids = maybe_unserialize($row['participant_ids']);
+        // // Unserialize participant_ids safely
+        // $participant_ids = maybe_unserialize($row['participant_ids']);
 
-        if (!is_array($participant_ids)) {
-            $participant_ids = [];
-        }
-        // Update all participants to -1 (cancelled)
-        foreach ($participant_ids as $participant_id => $status) {
-            $participants[$participant_id] = -1;
-        }
+        // if (!is_array($participant_ids)) {
+        //     $participant_ids = [];
+        // }
+        // // Update all participants to -1 (cancelled)
+        // foreach ($participant_ids as $participant_id => $status) {
+        //     $participants[$participant_id] = -1;
+        // }
 
-        // Re-serialize
-        $participant_serialized = maybe_serialize($participants);
+        // // Re-serialize
+        // $participant_serialized = maybe_serialize($participants);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $updated = $wpdb->update(
             $this->table,
-            array('meeting_status' => -1, 'participant_ids' => $participant_serialized),
+            array('meeting_status' => -1),
             array('id' => $meeting_id),
             array('%d', '%s'),
             array('%d')
