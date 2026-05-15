@@ -268,7 +268,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
         }
 
         // Get the API keys.
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search} ORDER BY key_id DESC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $count = (int) $wpdb->get_var("SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1 AND 1 = 0");

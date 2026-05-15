@@ -857,11 +857,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return self::prepare_error_for_response(404);
         }
         // // Unserialize participant_ids safely
-        // $participant_ids = maybe_unserialize($row['participant_ids']);
+        $participant_ids = maybe_unserialize($row['participant_ids']);
 
-        // if (!is_array($participant_ids)) {
-        //     $participant_ids = [];
-        // }
+        if (!is_array($participant_ids)) {
+            $participant_ids = [];
+        }
         // // Update all participants to -1 (cancelled)
         // foreach ($participant_ids as $participant_id => $status) {
         //     $participants[$participant_id] = -1;
