@@ -173,7 +173,7 @@ if (!function_exists('wpem_response_default_status')) {
             array(
                 'code' => 400,
                 'status' => 'Bad request',
-                'message' => __('Invalid syntax, incorrectly formatted JSON, or data violating a database constraint.', 'wpem-rest-api')
+                'message' => __('You can not scan your own QR code.', 'wpem-rest-api')
             ),
             array(
                 'code' => 401,
