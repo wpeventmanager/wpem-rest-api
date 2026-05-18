@@ -1059,17 +1059,28 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             );
             return wp_send_json($response_data);
         } else {
-            // Fetch slots for other users (if needed)
-            $date = $request->get_param('date') ? sanitize_text_field($request->get_param('date')) : '';
 
-            if (!$date && !is_array($user_id)) {
+            $date = $request->get_param('date') ? sanitize_text_field($request->get_param('date')) : '';
+            $user_ids = $request->get_param('user_ids');
+            if ( empty($date) || empty($user_ids) ) {
                 return self::prepare_error_for_response(404);
             }
-            $combined_slots = wpem_get_participants_available_meeting_slots($user_id, $date);
+
+            if ( is_array($user_ids) && isset($user_ids[0]) ) {
+                $user_ids = trim($user_ids[0], '[]');
+                $user_ids = array_map('intval', explode(',', $user_ids));
+            }
+
+            // Get slots
+            $combined_slots = wpem_get_participants_available_meeting_slots($user_ids, $date);
+            $slots = array();
             foreach ($combined_slots as $slot) {
+                // Skip booked slots
+                if ( ! empty($slot['is_booked']) ) {
+                    continue;
+                }
                 $time = $slot['time'];
-                // You can decide: set "1" if slot exists OR based on is_booked
-                $slots[$time] = $slot['is_booked'] ? "0" : "1"; // available=1, booked=0
+                $slots[$time] = "1";
             }
             $response_data = self::prepare_error_for_response(200);
             $response_data['data'] = array(
