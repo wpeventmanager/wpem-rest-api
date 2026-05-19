@@ -927,6 +927,17 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 }
             }
 
+            // location logic
+            $geo_location   = get_post_meta($event_id, 'geolocation_formatted_address', true);
+            $event_location = get_post_meta($event_id, '_event_location', true);
+
+            // if geolocation_formatted_address not found or empty,
+            // then add _event_location value inside metadata only
+            if ( !metadata_exists('post', $event_id, 'geolocation_formatted_address') || empty($geo_location)) {
+                $meta_data['geolocation_formatted_address'] = array($event_location);
+                $geo_location = $event_location;
+            }
+
             $event_data = array(
                 'event_id' => $event_id,
                 'title' => $event_post->post_title,
