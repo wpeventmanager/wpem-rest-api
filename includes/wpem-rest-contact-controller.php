@@ -170,7 +170,14 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
                 return self::prepare_error_for_response(400);
             }
             if ($user_id === $contact_id) {
-                return self::prepare_error_for_response(400);
+                return new WP_REST_Response(
+                    array(
+                        'code'    => 400,
+                        'status'  => 'Bad request',
+                        'message' => __('You can not scan your own QR code.', 'wpem-rest-api'),
+                    ),
+                    400
+                );
             }
 
             // Get existing contacts
@@ -182,7 +189,14 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
 
             // Prevent duplicates
             if (in_array($contact_id, $contacts, true)) {
-                return self::prepare_error_for_response(411);
+                return new WP_REST_Response(
+                    array(
+                        'code'    => 411,
+                        'status'  => 'error',
+                        'message' => __('Your QRcode already scanned.', 'wpem-rest-api'),
+                    ),
+                    400
+                );
             }
 
             // Add contact
@@ -197,7 +211,14 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             return wp_send_json($response_data);
 
         } else {
-            return self::prepare_error_for_response(400);
+            return new WP_REST_Response(
+                array(
+                    'code'    => 400,
+                    'status'  => 'Bad request',
+                    'message' => __('You can not scan your own QR code.', 'wpem-rest-api'),
+                ),
+                400
+            );
         }
     }
     
