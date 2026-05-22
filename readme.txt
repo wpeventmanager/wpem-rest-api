@@ -120,9 +120,20 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
-= 1.4.1 [ 19th March 2026 ] =
+= 1.4.1 [ 22nd May 2026 ] =
 
-Fixed : Securities Issues fixed.
+Fixed : WordPress.org security problems.
+Fixed : Meeting list API status not corractly worked.
+Fixed : Update matchmaking profile photo & organization logo.
+Fixed : WordPress org problem
+Fixed : Access to API always open to everyone everytime
+Fixed : Event Overview API venue data missing.
+Fixed : Token Addition Issue in Local Only in ecosystem.
+Fixed : Crash Issue on Attendee Selection in Event.
+Fixed : Ecosystem Issue After Version Update.
+Fixed : REST API Access Users Not Displaying.
+Fixed : All event not show in app.
+Fixed : Various Code Improvements and Bug Fixes.
 
 = 1.4.0 [ 2nd March 2026 ] =
 
