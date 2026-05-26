@@ -383,11 +383,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         );
 
         $event_title = get_the_title($row['event_id']);
-        $table_room_name = $wpdb->prefix . 'wpem_matchmaking_rooms';
-        $table_name = $wpdb->prefix . 'wpem_matchmaking_tables';
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $rooms = $wpdb->get_results($wpdb->prepare( "SELECT * FROM {$table_room_name} WHERE event_id = %d ORDER BY id DESC", $row['event_id'] ), ARRAY_A );
-        $table = $wpdb->get_results($wpdb->prepare( "SELECT * FROM {$table_name} WHERE room_id = %d ORDER BY id DESC", $rooms[0]['id'] ), ARRAY_A );
         // meeting status convert int to str
         $m_status = (int) $row['meeting_status'];
         if ($m_status == 0):
@@ -403,6 +398,29 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $m_status_str = 'expire';
         endif;
 
+        // room & table info
+        $table_booking_table_name = $wpdb->prefix . 'wpem_matchmaking_table_bookings';
+        $table_room_name = $wpdb->prefix . 'wpem_matchmaking_rooms';
+        $table_name = $wpdb->prefix . 'wpem_matchmaking_tables';
+        // default values
+        $room  = '';
+        $floor = '';
+        $table = '';
+        
+        $table_booked_datas = $wpdb->get_results($wpdb->prepare( "SELECT * FROM {$table_booking_table_name} WHERE meeting_id = %d ORDER BY id DESC", $row['id'] ), ARRAY_A );
+
+        foreach($table_booked_datas as $table_booked_data) {
+            $table_id = $table_booked_data['table_id'];
+
+            $table_info = $wpdb->get_row($wpdb->prepare( "SELECT * FROM {$table_name} WHERE id = %d", $table_id ), ARRAY_A );
+            $table = !empty($table_info['table_name']) ? $table_info['table_name'] : '';
+
+            $room_id = $table_info['room_id'];
+            $room_info = $wpdb->get_row($wpdb->prepare( "SELECT * FROM {$table_room_name} WHERE id = %d", $room_id ), ARRAY_A );
+            $room = !empty($room_info['room_name']) ? $room_info['room_name'] : '';
+            $floor = !empty($room_info['floor']) ? $room_info['floor'] : '';
+        }
+
         // Build final payload
         return array(
             'meeting_id' => (int) $row['id'],
@@ -415,10 +433,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'host_info' => $host_info,
             'participants' => $participants_info,
             'meeting_status' => $m_status_str,
-            'table_number'  => isset($table[0]['id']) ? $table[0]['id'] : '',
-            'room_name'  => isset($rooms[0]['room_name']) ? $rooms[0]['room_name'] : '',
-            'room_number'  => isset($rooms[0]['id']) ? $rooms[0]['id'] : '',
-            'floor'  => isset($rooms[0]['floor']) ? $rooms[0]['floor'] : '',
+            'room' => $room,
+            'floor' => $floor,
+            'table' => $table,
         );
 
     }
@@ -666,116 +683,182 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function create_meeting($request)
     {
         global $wpdb;
-        $user_id = wpem_rest_get_current_user_id();
-        $event_id = sanitize_text_field($request->get_param('event_id'));
-        $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
-        $slot = sanitize_text_field($request->get_param('slot'));
-        $participants = (array) $request->get_param('meeting_participants');
-        $message = $request->get_param('message');
+        $user_id       = wpem_rest_get_current_user_id();
+        $event_id      = intval($request->get_param('event_id'));
+        $meeting_date  = sanitize_text_field($request->get_param('meeting_date'));
+        $slot          = sanitize_text_field($request->get_param('slot'));
+        $participants  = (array) $request->get_param('meeting_participants');
+        $message       = sanitize_textarea_field($request->get_param('message'));
 
-        if (!$user_id || empty($event_id) || empty($meeting_date) || empty($slot) || empty($participants) || !is_array($participants)) {
-            return self::prepare_error_for_response(400);
+        if ( !$user_id || !$event_id || empty($meeting_date) || empty($slot) || empty($participants) ) {
+            return new WP_REST_Response([
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Missing required fields.',
+            ], 400);
         }
 
-        $participants_raw = array_filter(array_map('intval', $participants), function ($pid) use ($user_id) {
-            return $pid && $pid !== $user_id; });
-        $participants_map = array_fill_keys($participants_raw, -1);
+        // Remove host from participants if passed accidentally
+        $participants = array_filter(array_map('intval', $participants), function ($pid) use ($user_id) {
+            return $pid && $pid !== $user_id;
+        });
 
-        $start_time = gmdate('H:i', strtotime($slot));
-        $end_time = gmdate('H:i', strtotime($slot . ' +1 hour'));
+        if (empty($participants)) {
+            return new WP_REST_Response([
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Invalid participants.',
+            ], 400);
+        }
 
-        // Availability check: host and all selected participants must be free (no accepted meetings) in this slot
-        $check_ids = array_unique(array_merge(array($user_id), $participants_raw));
-        if (!empty($check_ids)) {
-            $in_placeholders = implode(',', array_fill(0, count($check_ids), '%d'));
+        /**
+         * Time
+         */
+        $start_time = date('H:i:s', strtotime($slot));
+        $end_time   = date('H:i:s', strtotime($slot . ' +1 hour'));
 
-            $like_clauses = array();
-            $like_params = array();
-            foreach ($check_ids as $cid) {
-                $like_clauses[] = 'participant_ids LIKE %s';
-                $like_params[] = '%' . $wpdb->esc_like('i:' . (int) $cid) . '%';
+        /*
+         * check table capacity
+         */
+        $total_persons_requested = 1 + count($participants);
+        $tables_table = esc_sql(WPEM_MATCHMAKING_TABLES_TABLE);
+        $rooms_table  = esc_sql(WPEM_MATCHMAKING_ROOMS_TABLE);
+
+        $max_table_capacity = (int) $wpdb->get_var($wpdb->prepare("SELECT MAX(t.table_capacity) FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d", $event_id));
+
+        if ($max_table_capacity > 0 && $total_persons_requested > $max_table_capacity) {
+            return new WP_REST_Response([
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => sprintf(
+                    __(
+                        'Cannot create meeting for %1$d persons. The largest available table for this event holds %2$d persons. Please reduce the number of participants.',
+                        'wp-event-manager-registrations'
+                    ),
+                    $total_persons_requested,
+                    $max_table_capacity
+                ),
+            ], 400);
+        }
+
+        /**
+         * check participant availability
+         */
+        $check_user_ids = array_unique(array_merge([$user_id], $participants));
+        foreach ($check_user_ids as $check_user_id) {
+
+            // Host meetings
+            $host_conflict = $wpdb->get_var($wpdb->prepare( "SELECT id FROM {$this->table} WHERE meeting_date = %s AND user_id = %d AND ( (meeting_start_time < %s AND meeting_end_time > %s) ) LIMIT 1", $meeting_date, $check_user_id, $end_time, $start_time));
+
+            if ($host_conflict) {
+                return new WP_REST_Response([
+                    'code'    => 409,
+                    'status'  => 'ERROR',
+                    'message' => __('participant not available on this time', 'wp-event-manager-registrations'),
+                ], 409);
             }
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-            $availability_sql = "SELECT * FROM {$this->table} WHERE meeting_date = %s AND NOT (meeting_end_time <= %s OR meeting_start_time >= %s) AND (user_id IN ($in_placeholders) OR " . implode(' OR ', $like_clauses) . ")";
-            $availability_params = array_merge(array($meeting_date, $start_time, $end_time), $check_ids, $like_params);
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $overlapping_rows = $wpdb->get_results($wpdb->prepare($availability_sql, $availability_params), ARRAY_A);
 
-            $conflicts = array();
-            if (!empty($overlapping_rows)) {
-                foreach ($overlapping_rows as $row) {
+            // Participant meetings
+            $participant_conflicts = $wpdb->get_results($wpdb->prepare("SELECT id, participant_ids FROM {$this->table} WHERE meeting_date = %s AND ((meeting_start_time < %s AND meeting_end_time > %s))", $meeting_date, $end_time, $start_time), ARRAY_A);
+
+            if (!empty($participant_conflicts)) {
+                foreach ($participant_conflicts as $row) {
                     $participant_ids = maybe_unserialize($row['participant_ids']);
-                    if (!is_array($participant_ids)) {
-                        $participant_ids = array();
-                    }
-                    $overall_status = isset($row['meeting_status']) ? (int) $row['meeting_status'] : 0;
-
-                    foreach ($check_ids as $cid) {
-                        $blocks = false;
-                        if ((int) $row['user_id'] === (int) $cid) {
-                            // Host blocks if meeting is accepted/confirmed (overall status) or any participant accepted
-                            if ($overall_status === 1) {
-                                $blocks = true;
-                            } else {
-                                foreach ($participant_ids as $participant_slot) {
-                                    if ((int) $participant_slot === 1) {
-                                        $blocks = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        } elseif (isset($participant_ids[$cid]) && (int) $participant_ids[$cid] === 1) {
-                            // Participant blocks only if they accepted
-                            $blocks = true;
-                        }
-
-                        if ($blocks) {
-                            if (!isset($conflicts[$cid])) {
-                                $conflicts[$cid] = array();
-                            }
-                            $conflicts[$cid][] = (int) $row['id'];
-                        }
+                    if (is_array($participant_ids) && array_key_exists($check_user_id, $participant_ids)) {
+                        return new WP_REST_Response([
+                            'code'    => 409,
+                            'status'  => 'ERROR',
+                            'message' => __('participant not available on this time', 'wp-event-manager-registrations'),
+                        ], 409);
                     }
                 }
             }
-
-            if (!empty($conflicts)) {
-                return new WP_REST_Response(array(
-                    'code' => 409,
-                    'status' => 'Conflict',
-                    'message' => 'One or more attendees are busy in the selected time slot.',
-                    'data' => array('conflicts' => $conflicts),
-                ), 409);
-            }
         }
-        $table = esc_sql($this->table);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+
+        /**
+         * check table availability
+         */
+        $table_bookings_table = esc_sql(WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE);
+
+        $available_table_id = $wpdb->get_var($wpdb->prepare( "SELECT t.id FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d AND t.table_capacity >= %d AND t.id NOT IN ( SELECT b.table_id FROM {$table_bookings_table} b WHERE b.booked_date = %s AND b.start_time < %s AND b.end_time > %s ) ORDER BY t.id ASC LIMIT 1", $event_id, $total_persons_requested, $meeting_date, $end_time, $start_time));
+
+        if (!$available_table_id) {
+            return new WP_REST_Response([
+                'code'    => 409,
+                'status'  => 'ERROR',
+                'message' => __('table not available on this time', 'wp-event-manager-registrations'),
+            ], 409);
+        }
+
+        /**
+         * participant status
+         */
+        $participant_status_array = [];
+        foreach ($participants as $pid) {
+            $meeting_request_mode = get_user_meta($pid, '_wpem_meeting_request_mode', true);
+            $is_auto_mode = strtolower($meeting_request_mode) === 'automatic';
+            $participant_status_array[$pid] = $is_auto_mode ? 1 : -1;
+        }
+
+        /**
+         * insert meeting
+         */
+        $insert_data = [
+            'user_id'             => $user_id,
+            'event_id'            => $event_id,
+            'participant_ids'     => maybe_serialize($participant_status_array),
+            'meeting_date'        => $meeting_date,
+            'meeting_start_time'  => date('H:i', strtotime($start_time)),
+            'meeting_end_time'    => date('H:i', strtotime($end_time)),
+            'message'             => $message,
+            'meeting_status'      => 0,
+            'created_at'          => current_time('mysql'),
+        ];
         $inserted = $wpdb->insert(
-            $table,
-            array(
-                'user_id' => $user_id,
-                'participant_ids' => serialize($participants_map),
-                'meeting_date' => $meeting_date,
-                'meeting_start_time' => $start_time,
-                'meeting_end_time' => $end_time,
-                'event_id' => $event_id,
-                'message' => $message,
-                'meeting_status' => 0,
-            ),
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d')
+            $this->table,
+            $insert_data,
+            ['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s']
         );
         if (!$inserted) {
-            return self::prepare_error_for_response(500);
+            return new WP_REST_Response([
+                'code'    => 500,
+                'status'  => 'ERROR',
+                'message' => 'Failed to create meeting.',
+            ], 500);
         }
         $meeting_id = $wpdb->insert_id;
-        WP_Event_Manager_Registrations_MatchMaking::send_matchmaking_meeting_emails($meeting_id, $user_id, $event_id, $participants_raw, $meeting_date, $start_time, $end_time, $message);
-        $table = esc_sql($this->table);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
-        $response_data = self::prepare_error_for_response(200);
-        $response_data['data'] = $this->format_meeting_row($row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
-        return wp_send_json($response_data);
+
+        /**
+         * send mail
+         */
+        WP_Event_Manager_Registrations_MatchMaking::send_matchmaking_meeting_emails(
+            $meeting_id,
+            $user_id,
+            $event_id,
+            $participants,
+            $meeting_date,
+            date('H:i', strtotime($start_time)),
+            date('H:i', strtotime($end_time)),
+            $message
+        );
+
+        /**
+         * response
+         */
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table} WHERE id = %d",
+                $meeting_id
+            ),
+            ARRAY_A
+        );
+
+        return new WP_REST_Response([
+            'code'    => 200,
+            'status'  => 'OK',
+            'message' => 'Meeting created successfully.',
+            'data'    => $this->format_meeting_row($row),
+        ], 200);
     }
 
     /**
