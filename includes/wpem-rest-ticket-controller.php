@@ -134,9 +134,8 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                     $email = $user ? $user->user_email : '';
                 }
 
-                $user_photo = get_post_meta($registration_id, 'user_photo', true)
-                    ?: get_user_meta($user_id, 'user_photo', true)
-                    ?: get_avatar_url($user_id);
+                $user_photo = maybe_unserialize(get_post_meta($registration_id, '_profile_photo', true));
+                $user_photo = !empty($user_photo[0]) ? $user_photo[0] : (get_user_meta($user_id, '_profile_photo', true) ?: get_avatar_url($user_id));
 
                 // Append ticket
                 $event_data[$event_id]['ticket_detail'][] = [
