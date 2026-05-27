@@ -788,6 +788,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
          * check table availability
          */
         $table_bookings_table = esc_sql(WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $event_room_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$rooms_table} WHERE event_id = %d", $event_id));
         $available_table_id = null;
         if ($event_room_count > 0) {
