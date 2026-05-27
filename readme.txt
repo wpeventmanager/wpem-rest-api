@@ -1,10 +1,10 @@
-=== WP Event Manager - REST API ===
+=== WPEM - REST API ===
 
-Contributors: wpeventmanager,ashokdudhat
+Contributors: WPEM Team
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.7
-Tested up to: 6.9
+Tested up to: 7.0
 Stable tag: 1.4.1
 
 Requires PHP: 8.0.0

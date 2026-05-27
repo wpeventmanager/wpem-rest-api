@@ -386,7 +386,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // meeting status convert int to str
         $current_date = current_time('Y-m-d');
-        $meeting_date = date('Y-m-d', strtotime($row['meeting_date']));
+        $meeting_date = gmdate('Y-m-d', strtotime($row['meeting_date']));
         $m_status = (int) $row['meeting_status'];
         if ($m_status == -1) {
             $m_status_str = 'cancel';
@@ -720,8 +720,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         /**
          * Time
          */
-        $start_time = date('H:i:s', strtotime($slot));
-        $end_time   = date('H:i:s', strtotime($slot . ' +1 hour'));
+        $start_time = gmdate('H:i:s', strtotime($slot));
+        $end_time   = gmdate('H:i:s', strtotime($slot . ' +1 hour'));
 
         /*
          * check table capacity
@@ -817,8 +817,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'event_id'            => $event_id,
             'participant_ids'     => maybe_serialize($participant_status_array),
             'meeting_date'        => $meeting_date,
-            'meeting_start_time'  => date('H:i', strtotime($start_time)),
-            'meeting_end_time'    => date('H:i', strtotime($end_time)),
+            'meeting_start_time'  => gmdate('H:i', strtotime($start_time)),
+            'meeting_end_time'    => gmdate('H:i', strtotime($end_time)),
             'message'             => $message,
             'meeting_status'      => 0,
             'created_at'          => current_time('mysql'),
@@ -847,8 +847,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $event_id,
             $participants,
             $meeting_date,
-            date('H:i', strtotime($start_time)),
-            date('H:i', strtotime($end_time)),
+            gmdate('H:i', strtotime($start_time)),
+            gmdate('H:i', strtotime($end_time)),
             $message
         );
 
