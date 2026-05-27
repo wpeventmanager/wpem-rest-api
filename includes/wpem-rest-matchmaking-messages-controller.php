@@ -159,15 +159,16 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $message_id = absint( $request['id'] );
         $user_id    = get_current_user_id();
     
-        $table = $wpdb->prefix . 'wpem_matchmaking_messages';
-    
+        $table = esc_sql( $wpdb->prefix . 'wpem_matchmaking_messages' );
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table name is safely generated using the WordPress table prefix.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $message = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM {$table} WHERE id = %d",
                 $message_id
             )
         );
-    
+        // phpcs:enable
         if ( ! $message ) {
             return new WP_Error(
                 'rest_message_invalid',

@@ -399,28 +399,32 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         endif;
 
         // room & table info
-        $table_booking_table_name = $wpdb->prefix . 'wpem_matchmaking_table_bookings';
-        $table_room_name = $wpdb->prefix . 'wpem_matchmaking_rooms';
-        $table_name = $wpdb->prefix . 'wpem_matchmaking_tables';
+        $table_booking_table_name = esc_sql( $wpdb->prefix . 'wpem_matchmaking_table_bookings' );
+        $table_room_name          = esc_sql( $wpdb->prefix . 'wpem_matchmaking_rooms' );
+        $table_name               = esc_sql( $wpdb->prefix . 'wpem_matchmaking_tables' );
+
         // default values
         $room  = '';
         $floor = '';
         $table = '';
         
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table names are safely generated using the WordPress table prefix.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $table_booked_datas = $wpdb->get_results($wpdb->prepare( "SELECT * FROM {$table_booking_table_name} WHERE meeting_id = %d ORDER BY id DESC", $row['id'] ), ARRAY_A );
 
         foreach($table_booked_datas as $table_booked_data) {
             $table_id = $table_booked_data['table_id'];
-
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $table_info = $wpdb->get_row($wpdb->prepare( "SELECT * FROM {$table_name} WHERE id = %d", $table_id ), ARRAY_A );
             $table = !empty($table_info['table_name']) ? $table_info['table_name'] : '';
 
             $room_id = $table_info['room_id'];
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $room_info = $wpdb->get_row($wpdb->prepare( "SELECT * FROM {$table_room_name} WHERE id = %d", $room_id ), ARRAY_A );
             $room = !empty($room_info['room_name']) ? $room_info['room_name'] : '';
             $floor = !empty($room_info['floor']) ? $room_info['floor'] : '';
         }
-
+        // phpcs:enable
         // Build final payload
         return array(
             'meeting_id' => (int) $row['id'],
@@ -723,17 +727,18 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $total_persons_requested = 1 + count($participants);
         $tables_table = esc_sql(WPEM_MATCHMAKING_TABLES_TABLE);
         $rooms_table  = esc_sql(WPEM_MATCHMAKING_ROOMS_TABLE);
-
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table names are safely generated using the WordPress table prefix.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $max_table_capacity = (int) $wpdb->get_var($wpdb->prepare("SELECT MAX(t.table_capacity) FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d", $event_id));
-
         if ($max_table_capacity > 0 && $total_persons_requested > $max_table_capacity) {
             return new WP_REST_Response([
                 'code'    => 400,
                 'status'  => 'ERROR',
                 'message' => sprintf(
+                    /* translators: 1: Total requested persons, 2: Maximum available table capacity. */
                     __(
                         'Cannot create meeting for %1$d persons. The largest available table for this event holds %2$d persons. Please reduce the number of participants.',
-                        'wp-event-manager-registrations'
+                        'wpem-rest-api'
                     ),
                     $total_persons_requested,
                     $max_table_capacity
@@ -748,17 +753,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         foreach ($check_user_ids as $check_user_id) {
 
             // Host meetings
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $host_conflict = $wpdb->get_var($wpdb->prepare( "SELECT id FROM {$this->table} WHERE meeting_date = %s AND user_id = %d AND ( (meeting_start_time < %s AND meeting_end_time > %s) ) LIMIT 1", $meeting_date, $check_user_id, $end_time, $start_time));
 
             if ($host_conflict) {
                 return new WP_REST_Response([
                     'code'    => 409,
                     'status'  => 'ERROR',
-                    'message' => __('participant not available on this time', 'wp-event-manager-registrations'),
+                    'message' => __('participant not available on this time', 'wpem-rest-api'),
                 ], 409);
             }
 
             // Participant meetings
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $participant_conflicts = $wpdb->get_results($wpdb->prepare("SELECT id, participant_ids FROM {$this->table} WHERE meeting_date = %s AND ((meeting_start_time < %s AND meeting_end_time > %s))", $meeting_date, $end_time, $start_time), ARRAY_A);
 
             if (!empty($participant_conflicts)) {
@@ -768,7 +775,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                         return new WP_REST_Response([
                             'code'    => 409,
                             'status'  => 'ERROR',
-                            'message' => __('participant not available on this time', 'wp-event-manager-registrations'),
+                            'message' => __('participant not available on this time', 'wpem-rest-api'),
                         ], 409);
                     }
                 }
@@ -779,14 +786,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
          * check table availability
          */
         $table_bookings_table = esc_sql(WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE);
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $available_table_id = $wpdb->get_var($wpdb->prepare( "SELECT t.id FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d AND t.table_capacity >= %d AND t.id NOT IN ( SELECT b.table_id FROM {$table_bookings_table} b WHERE b.booked_date = %s AND b.start_time < %s AND b.end_time > %s ) ORDER BY t.id ASC LIMIT 1", $event_id, $total_persons_requested, $meeting_date, $end_time, $start_time));
 
         if (!$available_table_id) {
             return new WP_REST_Response([
                 'code'    => 409,
                 'status'  => 'ERROR',
-                'message' => __('table not available on this time', 'wp-event-manager-registrations'),
+                'message' => __('table not available on this time', 'wpem-rest-api'),
             ], 409);
         }
 
@@ -814,6 +821,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'meeting_status'      => 0,
             'created_at'          => current_time('mysql'),
         ];
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $inserted = $wpdb->insert(
             $this->table,
             $insert_data,
@@ -845,6 +853,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         /**
          * response
          */
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $row = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM {$this->table} WHERE id = %d",
@@ -852,7 +861,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             ),
             ARRAY_A
         );
-
+        // phpcs:enable
         return new WP_REST_Response([
             'code'    => 200,
             'status'  => 'OK',
