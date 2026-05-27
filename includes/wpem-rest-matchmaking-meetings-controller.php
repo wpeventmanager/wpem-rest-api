@@ -383,20 +383,18 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         );
 
         $event_title = get_the_title($row['event_id']);
+
         // meeting status convert int to str
+        $current_date = current_time('Y-m-d');
+        $meeting_date = date('Y-m-d', strtotime($row['meeting_date']));
         $m_status = (int) $row['meeting_status'];
-        if ($m_status == 0):
-            $m_status_str = 'pending';
-        endif;
-        if ($m_status == 1):
-            $m_status_str = 'accept';
-        endif;
-        if ($m_status == -1):
+        if ($m_status == -1) {
             $m_status_str = 'cancel';
-        endif;
-        if ($m_status == -2):
-            $m_status_str = 'expire';
-        endif;
+        } elseif ($meeting_date >= $current_date) {
+            $m_status_str = 'upcoming';
+        } elseif ($meeting_date < $current_date) {
+            $m_status_str = 'past';
+        }
 
         // room & table info
         $table_booking_table_name = $wpdb->prefix . 'wpem_matchmaking_table_bookings';
@@ -587,21 +585,25 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // Status filter
+        $current_date = current_time('Y-m-d');
         $status_filter = '';
-        if (!empty($status)) {
-            // Map status string to meeting_status integer
-            // -2 = pending accept, 1 = accepted, 0 = rejected, -1 = cancelled
-            $status_map = array(
-                'pending' => -2,
-                'cancelled' => -1,
-                'accepted' => 1,
-                'rejected' => 0,
-            );
-
-            if (isset($status_map[$status])) {
-                $status_filter = ' AND meeting_status = %d';
-                $params[] = $status_map[$status];
-            }
+        if ($status === 'cancelled') {
+            $status_filter = ' AND meeting_status = -1';
+        }
+        if ($status === 'pending') {
+            $status_filter = ' AND meeting_status = -2';
+        }
+        if ($status === 'accepted') {
+            $status_filter = ' AND meeting_status = 1';
+        }
+        if ($status === 'rejected') {
+            $status_filter = ' AND meeting_status = 0';
+        }
+        if ($status === 'upcoming') {
+            $status_filter = $wpdb->prepare(' AND meeting_date >= %s AND meeting_status != -1', $current_date);
+        }
+        if ($status === 'past') {
+            $status_filter = $wpdb->prepare(' AND meeting_date < %s AND meeting_status != -1', $current_date);
         }
         
         $search_filter = '';
@@ -1369,20 +1371,25 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // Status filter
+        $current_date = current_time('Y-m-d');
         $status_filter = '';
-        if (!empty($status)) {
-            // Map status string to meeting_status integer
-            // -2 = pending accept, 1 = accepted, 0 = rejected, -1 = cancelled
-            $status_map = array(
-                'pending' => -2,
-                'accepted' => 1,
-                'rejected' => 0,
-            );
-
-            if (isset($status_map[$status])) {
-                $status_filter = ' AND meeting_status = %d';
-                $params[] = $status_map[$status];
-            }
+        if ($status === 'cancelled') {
+            $status_filter = ' AND meeting_status = -1';
+        }
+        if ($status === 'pending') {
+            $status_filter = ' AND meeting_status = -2';
+        }
+        if ($status === 'accepted') {
+            $status_filter = ' AND meeting_status = 1';
+        }
+        if ($status === 'rejected') {
+            $status_filter = ' AND meeting_status = 0';
+        }
+        if ($status === 'upcoming') {
+            $status_filter = $wpdb->prepare(' AND meeting_date >= %s AND meeting_status != -1', $current_date);
+        }
+        if ($status === 'past') {
+            $status_filter = $wpdb->prepare(' AND meeting_date < %s AND meeting_status != -1', $current_date);
         }
 
         // --- SQL queries ---
