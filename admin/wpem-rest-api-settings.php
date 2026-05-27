@@ -125,12 +125,31 @@ class WPEM_Rest_API_Settings
 							if (isset($option['name']) && isset($option['std']))
 								add_option($option['name'], $option['std']);
 
-							// register_setting( map_deep($this->settings_group, 'wp_kses_post'), map_deep($option['name'], 'wp_kses_post') );
-
-							register_setting($this->settings_group, $option['name'], ['sanitize_callback' => 'sanitize_text_field']);
+							// Use array-safe sanitizer for multi-select-checkbox fields;
+							// sanitize_text_field() on an array returns "" and silently wipes the value.
+							if (isset($option['type']) && $option['type'] === 'multi-select-checkbox') {
+								register_setting($this->settings_group, $option['name'], ['sanitize_callback' => array($this, 'sanitize_multiselect')]);
+							} else {
+								register_setting($this->settings_group, $option['name'], ['sanitize_callback' => 'sanitize_text_field']);
+							}
 						}
 				}
 		}
+	}
+
+	/**
+	 * Sanitize callback for multi-select checkbox options (array values).
+	 * sanitize_text_field() is not safe for arrays — it returns "" and wipes the saved value.
+	 *
+	 * @param mixed $value Raw POST value (array of strings, or null when nothing checked).
+	 * @return array Sanitized array of role slugs.
+	 */
+	public function sanitize_multiselect($value)
+	{
+		if (empty($value) || !is_array($value)) {
+			return array();
+		}
+		return array_values(array_map('sanitize_text_field', $value));
 	}
 
 	/**
