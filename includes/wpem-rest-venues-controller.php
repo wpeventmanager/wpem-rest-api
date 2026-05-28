@@ -158,13 +158,22 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     public function prepare_object_for_response($object, $request)
     {
-        $context = !empty($request['context']) ? $request['context'] : 'view';
+        $context = 'view';
+        if (
+            is_user_logged_in() &&
+            current_user_can('edit_posts') &&
+            !empty($request['context'])
+        ) {
+            $context = sanitize_text_field($request['context']);
+        }
         $data = $this->get_event_data($object, $context);
 
         $data = $this->add_additional_fields_to_object($data, $request);
         $data = $this->filter_response_by_context($data, $context);
         $response = rest_ensure_response($data);
-        $response->add_links($this->prepare_links($object, $request));
+        if (is_user_logged_in()) {
+            $response->add_links($this->prepare_links($object, $request));
+        }
 
         /**
          * Filter the data for a response.
@@ -315,7 +324,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         $event = get_post($post);
         $data = $this->get_event_data($event);
 
-        $context = !empty($request['context']) ? $request['context'] : 'view';
+        $context = 'view';
+        if (
+            is_user_logged_in() &&
+            current_user_can('edit_posts') &&
+            !empty($request['context'])
+        ) {
+            $context = sanitize_text_field($request['context']);
+        }
         $data = $this->add_additional_fields_to_object($data, $request);
         $data = $this->filter_response_by_context($data, $context);
 

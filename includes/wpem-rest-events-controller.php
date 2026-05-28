@@ -139,8 +139,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
         register_rest_route(
             $this->namespace,
-            '/' . $this->rest_base . '/fields',
+            '/' . $this->rest_base . '/fields/(?P<id>[\d]+)',
             array(
+                'args' => array(
+                    'id' => array(
+                        'description' => __('Unique identifier for the resource.', 'wpem-rest-api'),
+                        'type' => 'integer',
+                    ),
+                ),
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_event_fields'),
@@ -194,13 +200,23 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     public function prepare_object_for_response($object, $request)
     {
-        $context = !empty($request['context']) ? $request['context'] : 'view';
+        $context = 'view';
+        if (
+            is_user_logged_in() &&
+            current_user_can('edit_posts') &&
+            !empty($request['context'])
+        ) {
+            $context = sanitize_text_field($request['context']);
+        }
+
         $data = $this->get_event_data($object, $context);
 
         $data = $this->add_additional_fields_to_object($data, $request);
         $data = $this->filter_response_by_context($data, $context);
         $response = rest_ensure_response($data);
-        $response->add_links($this->prepare_links($object, $request));
+        if (is_user_logged_in()) {
+            $response->add_links($this->prepare_links($object, $request));
+        }
 
         /**
          * Filter the data for a response.
@@ -413,7 +429,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         $event = get_post($post);
         $data = $this->get_event_data($event);
 
-        $context = !empty($request['context']) ? $request['context'] : 'view';
+        $context = 'view';
+        if (
+            is_user_logged_in() &&
+            current_user_can('edit_posts') &&
+            !empty($request['context'])
+        ) {
+            $context = sanitize_text_field($request['context']);
+        }
         $data = $this->add_additional_fields_to_object($data, $request);
         $data = $this->filter_response_by_context($data, $context);
 
@@ -936,13 +959,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     public function get_event_fields($request)
     {
+        if (!class_exists('WPEM_Event_Manager_Form_Submit_Event')) {
 
-        if (!class_exists('WP_Event_Manager_Form_Submit_Event')) {
             include_once EVENT_MANAGER_PLUGIN_DIR . '/forms/wp-event-manager-form-abstract.php';
             include_once EVENT_MANAGER_PLUGIN_DIR . '/forms/wp-event-manager-form-submit-event.php';
         }
-        $form_submit_event_instance = call_user_func(array('WP_Event_Manager_Form_Submit_Event', 'instance'));
-        $fields = $form_submit_event_instance->merge_with_custom_fields('frontend');
+        $form_submit_event_instance = call_user_func(array('WPEM_Event_Manager_Form_Submit_Event', 'instance'));
+        $fields = $form_submit_event_instance->wpem_merge_with_custom_fields('frontend');
 
         $event_fields = [];
 
@@ -1009,7 +1032,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
                     continue;
                 }
-
                 $data = $this->prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
             }
