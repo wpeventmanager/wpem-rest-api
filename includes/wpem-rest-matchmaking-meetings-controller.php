@@ -1008,16 +1008,50 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // Compute overall meeting status: accepted if any participant accepted
         $meeting_status = in_array(1, $participant_data, true) ? 1 : 0;
+
+        // --- Table auto-allocation on first acceptance (mirrors web-side logic) ---
+        $table_id = (int) $row['table_id'];
+
+        if ( (int) $status === 1 && empty( $table_id ) ) {
+            // host + all participants
+            $total_persons = 1 + count( $participant_data );
+
+            if ( class_exists( 'WP_Event_Manager_Registrations_MatchMaking' ) ) {
+                $matchmaking = new WP_Event_Manager_Registrations_MatchMaking();
+                $allocated_table_id = $matchmaking->wpem_allocate_meeting_table(
+                    (int) $row['event_id'],
+                    $total_persons,
+                    $meeting_id,
+                    $row['meeting_date'],
+                    $row['meeting_start_time'],
+                    $row['meeting_end_time']
+                );
+
+                if ( $allocated_table_id ) {
+                    $table_id = $allocated_table_id;
+                }
+            }
+        }
+
+        // Build update payload
+        $update_data    = array(
+            'participant_ids' => maybe_serialize( $participant_data ),
+            'meeting_status'  => $meeting_status,
+        );
+        $update_formats = array( '%s', '%d' );
+
+        if ( ! empty( $table_id ) ) {
+            $update_data['table_id'] = $table_id;
+            $update_formats[]        = '%d';
+        }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $updated = $wpdb->update(
             $this->table,
-            array(
-                'participant_ids' => maybe_serialize($participant_data),
-                'meeting_status' => $meeting_status,
-            ),
-            array('id' => $meeting_id),
-            array('%s', '%d'),
-            array('%d')
+            $update_data,
+            array( 'id' => $meeting_id ),
+            $update_formats,
+            array( '%d' )
         );
 
         if ($updated === false) {
