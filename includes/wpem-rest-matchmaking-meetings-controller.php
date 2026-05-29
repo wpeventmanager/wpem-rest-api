@@ -881,6 +881,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
      * Update an existing matchmaking meeting.
      * PUT/PATCH /matchmaking-meetings/{id}
      *
+     * Performs the same table-capacity, participant-availability, and
+     * table-availability checks that create_meeting() does.  When the
+     * date/time or participants change the old table booking is released
+     * and a fresh one is created.
+     *
      * @param WP_REST_Request $request
      * @return WP_REST_Response
      * @since 1.2.0
@@ -888,86 +893,331 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function update_item($request)
     {
         global $wpdb;
-        $user_id = wpem_rest_get_current_user_id();
+
+        $user_id    = wpem_rest_get_current_user_id();
         $meeting_id = (int) $request['id'];
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id), ARRAY_A);
-        if (!$row) {
-            return self::prepare_error_for_response(404);
+        $row = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id ),
+            ARRAY_A
+        );
+        if ( ! $row ) {
+            return self::prepare_error_for_response( 404 );
         }
 
-        $fields = array();
-        $formats = array();
+        // ----------------------------------------------------------------
+        // 1. Collect incoming values (fall back to existing row values).
+        // ----------------------------------------------------------------
+        $new_date  = null !== $request->get_param( 'meeting_date' )
+            ? sanitize_text_field( $request->get_param( 'meeting_date' ) )
+            : $row['meeting_date'];
 
-        if (null !== ($val = $request->get_param('meeting_date'))) {
-            $fields['meeting_date'] = sanitize_text_field($val);
-            $formats[] = '%s';
+        $new_slot  = $request->get_param( 'slot' );  // optional convenience param (same as create)
+        if ( null !== $new_slot ) {
+            $new_start = gmdate( 'H:i:s', strtotime( sanitize_text_field( $new_slot ) ) );
+            $new_end   = gmdate( 'H:i:s', strtotime( sanitize_text_field( $new_slot ) . ' +1 hour' ) );
+        } else {
+            $new_start = null !== $request->get_param( 'meeting_start' )
+                ? gmdate( 'H:i:s', strtotime( $request->get_param( 'meeting_start' ) ) )
+                : $row['meeting_start_time'];
+            $new_end   = null !== $request->get_param( 'meeting_end' )
+                ? gmdate( 'H:i:s', strtotime( $request->get_param( 'meeting_end' ) ) )
+                : $row['meeting_end_time'];
         }
-        if (null !== ($val = $request->get_param('meeting_start'))) {
-            $fields['meeting_start_time'] = gmdate('H:i', strtotime($val));
-            $formats[] = '%s';
-        }
-        if (null !== ($val = $request->get_param('meeting_end'))) {
-            $fields['meeting_end_time'] = gmdate('H:i', strtotime($val));
-            $formats[] = '%s';
-        }
-        if (null !== ($val = $request->get_param('message'))) {
-            $fields['message'] = sanitize_textarea_field($val);
-            $formats[] = '%s';
-        }
-        if (null !== ($val = $request->get_param('meeting_status'))) {
-            $fields['meeting_status'] = (int) $val;
-            $formats[] = '%d';
-        }
-        if (null !== ($val = $request->get_param('participants'))) {
-            if (is_array($val)) {
-                // Accept both a list of user IDs or a map of user_id => status
-                $participants_map = array();
-                $host_id = isset($row['user_id']) ? (int) $row['user_id'] : 0;
 
-                $is_assoc = array_keys($val) !== range(0, count($val) - 1);
-                if ($is_assoc) {
-                    foreach ($val as $pid => $status) {
-                        $pid = (int) $pid;
-                        if ($pid <= 0 || ($host_id && $pid === $host_id)) {
-                            continue;
-                        }
-                        $status = (int) $status;
-                        if (!in_array($status, array(-1, 0, 1), true)) {
-                            $status = -1;
-                        }
-                        $participants_map[$pid] = $status;
+        // Resolve new participants list.
+        $host_id          = (int) $row['user_id'];
+        $existing_pmap    = maybe_unserialize( $row['participant_ids'] );
+        if ( ! is_array( $existing_pmap ) ) {
+            $existing_pmap = array();
+        }
+
+        $participants_map = $existing_pmap; // default: keep existing
+        $participants_changed = false;
+
+        if ( null !== ( $val = $request->get_param( 'participants' ) ) && is_array( $val ) ) {
+            $participants_map     = array();
+            $participants_changed = true;
+
+            $is_assoc = array_keys( $val ) !== range( 0, count( $val ) - 1 );
+            if ( $is_assoc ) {
+                foreach ( $val as $pid => $status ) {
+                    $pid = (int) $pid;
+                    if ( $pid <= 0 || $pid === $host_id ) {
+                        continue;
                     }
-                } else {
-                    $ids = array_filter(array_map('intval', $val));
-                    $ids = array_values(array_unique($ids));
-                    foreach ($ids as $pid) {
-                        if ($pid <= 0 || ($host_id && $pid === $host_id)) {
-                            continue;
-                        }
-                        $participants_map[$pid] = -1; // default pending
+                    $status = (int) $status;
+                    if ( ! in_array( $status, array( -1, 0, 1 ), true ) ) {
+                        $status = -1;
                     }
+                    $participants_map[ $pid ] = $status;
                 }
-
-                $fields['participant_ids'] = maybe_serialize($participants_map);
-                $formats[] = '%s';
+            } else {
+                $ids = array_values( array_unique( array_filter( array_map( 'intval', $val ) ) ) );
+                foreach ( $ids as $pid ) {
+                    if ( $pid <= 0 || $pid === $host_id ) {
+                        continue;
+                    }
+                    // Preserve existing status when participant already exists.
+                    $participants_map[ $pid ] = isset( $existing_pmap[ $pid ] )
+                        ? $existing_pmap[ $pid ]
+                        : -1;
+                }
             }
         }
 
-        if (empty($fields)) {
-            return self::prepare_error_for_response(400);
+        // Determine whether time-sensitive checks are needed.
+        $schedule_changed = (
+            $new_date  !== $row['meeting_date']
+            || $new_start !== $row['meeting_start_time']
+            || $new_end   !== $row['meeting_end_time']
+            || $participants_changed
+        );
+
+        // ----------------------------------------------------------------
+        // 2. Only run availability/capacity checks when schedule changes.
+        // ----------------------------------------------------------------
+        if ( $schedule_changed ) {
+
+            $event_id            = (int) $row['event_id'];
+            $participant_ids     = array_keys( $participants_map );
+            $total_persons       = 1 + count( $participant_ids ); // host + participants
+
+            $tables_table        = esc_sql( WPEM_MATCHMAKING_TABLES_TABLE );
+            $rooms_table         = esc_sql( WPEM_MATCHMAKING_ROOMS_TABLE );
+            $table_bookings_table = esc_sql( WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE );
+
+            // -- 2a. Table capacity check ----------------------------------
+            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $max_table_capacity = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT MAX(t.table_capacity)
+                     FROM {$tables_table} t
+                     INNER JOIN {$rooms_table} r ON r.id = t.room_id
+                     WHERE r.event_id = %d",
+                    $event_id
+                )
+            );
+
+            if ( $max_table_capacity > 0 && $total_persons > $max_table_capacity ) {
+                return new WP_REST_Response( array(
+                    'code'    => 400,
+                    'status'  => 'ERROR',
+                    'message' => sprintf(
+                        /* translators: 1: Total requested persons, 2: Maximum available table capacity. */
+                        __( 'Cannot update meeting for %1$d persons. The largest available table for this event holds %2$d persons. Please reduce the number of participants.', 'wpem-rest-api' ),
+                        $total_persons,
+                        $max_table_capacity
+                    ),
+                ), 400 );
+            }
+
+            // -- 2b. Participant availability check ------------------------
+            $check_user_ids = array_unique( array_merge( array( $host_id ), $participant_ids ) );
+
+            foreach ( $check_user_ids as $check_user_id ) {
+
+                // Host-as-meeting-owner conflict (exclude the meeting being updated).
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                $host_conflict = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT id FROM {$this->table}
+                         WHERE id != %d
+                           AND meeting_date = %s
+                           AND user_id = %d
+                           AND meeting_start_time < %s
+                           AND meeting_end_time > %s
+                         LIMIT 1",
+                        $meeting_id,
+                        $new_date,
+                        $check_user_id,
+                        $new_end,
+                        $new_start
+                    )
+                );
+
+                if ( $host_conflict ) {
+                    return new WP_REST_Response( array(
+                        'code'    => 409,
+                        'status'  => 'ERROR',
+                        'message' => __( 'participant not available on this time', 'wpem-rest-api' ),
+                    ), 409 );
+                }
+
+                // Participant-in-other-meeting conflict (exclude the meeting being updated).
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                $participant_conflicts = $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT id, participant_ids FROM {$this->table}
+                         WHERE id != %d
+                           AND meeting_date = %s
+                           AND meeting_start_time < %s
+                           AND meeting_end_time > %s",
+                        $meeting_id,
+                        $new_date,
+                        $new_end,
+                        $new_start
+                    ),
+                    ARRAY_A
+                );
+
+                if ( ! empty( $participant_conflicts ) ) {
+                    foreach ( $participant_conflicts as $conflict_row ) {
+                        $conflict_pids = maybe_unserialize( $conflict_row['participant_ids'] );
+                        if ( is_array( $conflict_pids ) && array_key_exists( $check_user_id, $conflict_pids ) ) {
+                            return new WP_REST_Response( array(
+                                'code'    => 409,
+                                'status'  => 'ERROR',
+                                'message' => __( 'participant not available on this time', 'wpem-rest-api' ),
+                            ), 409 );
+                        }
+                    }
+                }
+            }
+            // phpcs:enable
+
+            // -- 2c. Table availability check -----------------------------
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $event_room_count = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$rooms_table} WHERE event_id = %d",
+                    $event_id
+                )
+            );
+
+            $new_table_id = null;
+            if ( $event_room_count > 0 ) {
+                // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                $new_table_id = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT t.id
+                         FROM {$tables_table} t
+                         INNER JOIN {$rooms_table} r ON r.id = t.room_id
+                         WHERE r.event_id = %d
+                           AND t.table_capacity >= %d
+                           AND t.id NOT IN (
+                               SELECT b.table_id
+                               FROM {$table_bookings_table} b
+                               WHERE b.booked_date = %s
+                                 AND b.start_time  < %s
+                                 AND b.end_time    > %s
+                                 AND b.meeting_id != %d
+                           )
+                         ORDER BY t.id ASC
+                         LIMIT 1",
+                        $event_id,
+                        $total_persons,
+                        $new_date,
+                        $new_end,
+                        $new_start,
+                        $meeting_id   // exclude the current meeting's own booking
+                    )
+                );
+                // phpcs:enable
+
+                if ( ! $new_table_id ) {
+                    return new WP_REST_Response( array(
+                        'code'    => 409,
+                        'status'  => 'ERROR',
+                        'message' => __( 'table not available on this time', 'wpem-rest-api' ),
+                    ), 409 );
+                }
+            }
+
+            // -- 2d. Release old table booking and create a new one -------
+            if ( ! is_null( $new_table_id ) ) {
+                // Remove previous booking(s) for this meeting.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+                $wpdb->delete(
+                    $table_bookings_table,
+                    array( 'meeting_id' => $meeting_id ),
+                    array( '%d' )
+                );
+
+                // Insert new booking.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+                $wpdb->insert(
+                    $table_bookings_table,
+                    array(
+                        'meeting_id'  => $meeting_id,
+                        'table_id'    => $new_table_id,
+                        'booked_date' => $new_date,
+                        'start_time'  => gmdate( 'H:i', strtotime( $new_start ) ),
+                        'end_time'    => gmdate( 'H:i', strtotime( $new_end ) ),
+                    ),
+                    array( '%d', '%d', '%s', '%s', '%s' )
+                );
+            }
+
+        } // end if $schedule_changed
+
+        // ----------------------------------------------------------------
+        // 3. Build the UPDATE fields array.
+        // ----------------------------------------------------------------
+        $fields  = array();
+        $formats = array();
+
+        // Date / time.
+        if ( $new_date !== $row['meeting_date'] ) {
+            $fields['meeting_date'] = $new_date;
+            $formats[]              = '%s';
         }
+        $new_start_hm = gmdate( 'H:i', strtotime( $new_start ) );
+        $new_end_hm   = gmdate( 'H:i', strtotime( $new_end ) );
+        if ( $new_start_hm !== gmdate( 'H:i', strtotime( $row['meeting_start_time'] ) ) ) {
+            $fields['meeting_start_time'] = $new_start_hm;
+            $formats[]                    = '%s';
+        }
+        if ( $new_end_hm !== gmdate( 'H:i', strtotime( $row['meeting_end_time'] ) ) ) {
+            $fields['meeting_end_time'] = $new_end_hm;
+            $formats[]                  = '%s';
+        }
+
+        // Participants.
+        if ( $participants_changed ) {
+            $fields['participant_ids'] = maybe_serialize( $participants_map );
+            $formats[]                 = '%s';
+        }
+
+        // Message.
+        if ( null !== ( $val = $request->get_param( 'message' ) ) ) {
+            $fields['message'] = sanitize_textarea_field( $val );
+            $formats[]         = '%s';
+        }
+
+        // Meeting status (only allow explicit override).
+        if ( null !== ( $val = $request->get_param( 'meeting_status' ) ) ) {
+            $fields['meeting_status'] = (int) $val;
+            $formats[]                = '%d';
+        }
+
+        if ( empty( $fields ) ) {
+            // Nothing actually changed — return current data.
+            $response_data         = self::prepare_error_for_response( 200 );
+            $response_data['data'] = $this->format_meeting_row( $row );
+            $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
+            return wp_send_json( $response_data );
+        }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $updated = $wpdb->update($this->table, $fields, array('id' => $meeting_id), $formats, array('%d'));
-        if ($updated === false) {
-            return self::prepare_error_for_response(500);
+        $updated = $wpdb->update( $this->table, $fields, array( 'id' => $meeting_id ), $formats, array( '%d' ) );
+        if ( $updated === false ) {
+            return self::prepare_error_for_response( 500 );
         }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
-        $response_data = self::prepare_error_for_response(200);
-        $response_data['data'] = $this->format_meeting_row($row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
-        return wp_send_json($response_data);
+        $row = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $meeting_id ),
+            ARRAY_A
+        );
+
+        $response_data         = self::prepare_error_for_response( 200 );
+        $response_data['data'] = $this->format_meeting_row( $row );
+        $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
+        return wp_send_json( $response_data );
     }
 
     /**
