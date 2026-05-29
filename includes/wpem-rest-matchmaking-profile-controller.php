@@ -60,7 +60,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
                     'callback' => array($this, 'update_matchmaking_profile'),
-                    'permission_callback' => '__return_true',
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => array(),
                 )
             )
