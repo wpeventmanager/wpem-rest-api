@@ -727,6 +727,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                             $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
                             break;
                     }
+                    if ($field_key === 'profession' && ($value === '0' || $value === 0)) {
+                        $value = '';
+                    }
                     $profile[$field_key] = $value;
                 }
 
