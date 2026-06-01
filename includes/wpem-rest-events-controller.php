@@ -499,52 +499,101 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
         if (isset($request['id'])) {
 
-            $_POST = $request;
-            $GLOBALS['event_manager']->forms->get_form('edit-event', array());
-            $form_edit_event_instance = call_user_func(array('WP_Event_Manager_Form_Edit_Event', 'instance'));
-            $event_fields = $form_edit_event_instance->merge_with_custom_fields('frontend');
+            // Build the post update array directly — avoids loading frontend form classes
+            // which are not available in REST API context and cause fatal 500 errors.
+            $post_args = array( 'ID' => $id );
 
-            $values = $form_edit_event_instance->get_posted_fields();
+            if ( isset( $request['event_title'] ) ) {
+                $post_args['post_title'] = sanitize_text_field( $request['event_title'] );
+            }
+            if ( isset( $request['event_description'] ) ) {
+                $post_args['post_content'] = wp_kses_post( $request['event_description'] );
+            }
+            if ( isset( $request['status'] ) ) {
+                $post_args['post_status'] = sanitize_text_field( $request['status'] );
+            }
 
-            // Update the event
-            $form_edit_event_instance->save_event($request['event_title'], $request['event_description'], '', $values, false);
-            $form_edit_event_instance->update_event_data($values);
+            $updated = wp_update_post( $post_args, true );
+            if ( is_wp_error( $updated ) ) {
+                return $updated;
+            }
+
+            // Update event meta fields if provided
+            $meta_map = array(
+                'event_start_date'   => '_event_start_date',
+                'event_end_date'     => '_event_end_date',
+                'event_start_time'   => '_event_start_time',
+                'event_end_time'     => '_event_end_time',
+                'event_location'     => '_event_location',
+                'event_online'       => '_event_online',
+                'featured'           => '_featured',
+                'event_banner'       => '_event_banner',
+                'event_thumbnail'    => '_thumbnail_id',
+            );
+            foreach ( $meta_map as $request_key => $meta_key ) {
+                if ( isset( $request[ $request_key ] ) ) {
+                    update_post_meta( $id, $meta_key, $request[ $request_key ] );
+                }
+            }
+
+            // Support arbitrary meta via meta_data array: [{"key":"_my_meta","value":"foo"}]
+            if ( ! empty( $request['meta_data'] ) && is_array( $request['meta_data'] ) ) {
+                foreach ( $request['meta_data'] as $meta_item ) {
+                    if ( ! empty( $meta_item['key'] ) ) {
+                        update_post_meta( $id, sanitize_text_field( $meta_item['key'] ), $meta_item['value'] );
+                    }
+                }
+            }
 
             //final response after update
             $event = get_post($id);
         } else {
-            if (!empty($request['event_title']) && isset($request['event_id']) && $request['event_id'] == 0) {
-                $_POST = $request;
+            if (!empty($request['event_title']) && (isset($request['event_id']) || $request['event_id'] == 0)) {
 
-                //we are inserting new event means if there is any already created event cookies we need to remvoe it
-                if (isset($_COOKIE['wp-event-manager-submitting-event-id'])) {
-                    unset($_COOKIE['wp-event-manager-submitting-event-id']);
+                // Insert the post directly — avoids frontend form classes unavailable in REST context.
+                $post_args = array(
+                    'post_type'    => $this->post_type,
+                    'post_title'   => sanitize_text_field( $request['event_title'] ),
+                    'post_content' => isset( $request['event_description'] ) ? wp_kses_post( $request['event_description'] ) : '',
+                    'post_status'  => isset( $request['status'] ) ? sanitize_text_field( $request['status'] ) : 'publish',
+                    'post_author'  => get_current_user_id(),
+                );
+
+                $new_id = wp_insert_post( $post_args, true );
+
+                if ( is_wp_error( $new_id ) ) {
+                    return $new_id;
                 }
-                if (isset($_COOKIE['wp-event-manager-submitting-event-key'])) {
-                    unset($_COOKIE['wp-event-manager-submitting-event-key']);
-                }
 
-                $GLOBALS['event_manager']->forms->get_form('submit-event', array());
-                $form_submit_event_instance = call_user_func(array('WP_Event_Manager_Form_Submit_Event', 'instance'));
-                $event_fields = $form_submit_event_instance->merge_with_custom_fields('frontend');
-
-                //submit current event with $_POST values
-                $form_submit_event_instance->submit_handler();
-                /**
-                 * Preview step will move event status if approval required then  pending otherwise publish
-                 */
-                $form_submit_event_instance->preview_handler();
-
-                //we don't need done status it will be managed by response of the current request
-                if (!$form_submit_event_instance->get_event_id()) {
-
-                    $validation_errors = $form_submit_event_instance->get_errors();
-                    foreach ($validation_errors as $error) {
-                        echo esc_html($error);
+                // Save event meta fields
+                $meta_map = array(
+                    'event_start_date'  => '_event_start_date',
+                    'event_end_date'    => '_event_end_date',
+                    'event_start_time'  => '_event_start_time',
+                    'event_end_time'    => '_event_end_time',
+                    'event_location'    => '_event_location',
+                    'event_online'      => '_event_online',
+                    'featured'          => '_featured',
+                    'event_banner'      => '_event_banner',
+                    'event_thumbnail'   => '_thumbnail_id',
+                );
+                foreach ( $meta_map as $request_key => $meta_key ) {
+                    if ( isset( $request[ $request_key ] ) ) {
+                        update_post_meta( $new_id, $meta_key, $request[ $request_key ] );
                     }
-                    return;
                 }
-                $event = get_post($form_submit_event_instance->get_event_id());
+
+                // Support arbitrary meta via meta_data array: [{"key":"_my_meta","value":"foo"}]
+                if ( ! empty( $request['meta_data'] ) && is_array( $request['meta_data'] ) ) {
+                    foreach ( $request['meta_data'] as $meta_item ) {
+                        if ( ! empty( $meta_item['key'] ) ) {
+                            update_post_meta( $new_id, sanitize_text_field( $meta_item['key'] ), $meta_item['value'] );
+                        }
+                    }
+                }
+
+                $event = get_post( $new_id );
+
             } else {
                 return;
             }
