@@ -36,51 +36,60 @@ if (!function_exists('wpem_rest_api_check_post_permissions')) {
      */
     function wpem_rest_api_check_post_permissions($post_type, $context = 'read', $object_id = 0)
     {
-
         $allowed = false;
+        $user_id = wpem_rest_get_current_user_id();
+
+        // If authentication failed, treat as guest.
+        if (!is_numeric($user_id)) {
+            $user_id = 0;
+        }
 
         if ('read' === $context) {
 
             if (!$object_id) {
                 $allowed = true;
             } else {
-
                 $post = get_post($object_id);
+                if (!$post) {
+                    return false;
+                }
 
-                if ($post && 'publish' === $post->post_status) {
-                    $allowed = true;
-                }elseif ($post && 'expired' === $post->post_status) {
+                // Publicly readable statuses.
+                if (in_array($post->post_status, array('publish', 'expired'), true)) {
                     $allowed = true;
                 } else {
-                    $allowed = current_user_can('read_post', $object_id);
+                    $allowed = $user_id
+                        ? user_can($user_id, 'read_post', $object_id)
+                        : false;
                 }
             }
+
         } else {
 
-            if (!is_user_logged_in()) {
+            // All non-read actions require an authenticated user.
+            if (!$user_id) {
                 return false;
             }
 
             switch ($context) {
-
                 case 'create':
-                    $allowed = current_user_can('publish_posts');
+                    $allowed = user_can($user_id, 'publish_posts');
                     break;
-
                 case 'edit':
                     $allowed = $object_id
-                        ? current_user_can('edit_post', $object_id)
-                        : current_user_can('edit_posts');
+                        ? user_can($user_id, 'edit_post', $object_id)
+                        : user_can($user_id, 'edit_posts');
                     break;
-
                 case 'delete':
                     $allowed = $object_id
-                        ? current_user_can('delete_post', $object_id)
-                        : current_user_can('delete_posts');
+                        ? user_can($user_id, 'delete_post', $object_id)
+                        : user_can($user_id, 'delete_posts');
                     break;
-
                 case 'batch':
-                    $allowed = current_user_can('edit_others_posts');
+                    $allowed = user_can($user_id, 'edit_others_posts');
+                    break;
+                default:
+                    $allowed = false;
                     break;
             }
         }

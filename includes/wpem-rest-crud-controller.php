@@ -531,7 +531,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
          * @param WP_REST_Request  $request  The request sent to the API.
          */
         do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
-        return parent::prepare_error_for_response(200);
+        return self::prepare_error_for_response(200);
     }
 
     /**
