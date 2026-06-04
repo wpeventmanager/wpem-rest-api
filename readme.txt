@@ -120,7 +120,7 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
-= 1.4.1 [ 22nd May 2026 ] =
+= 1.4.1 [ 5th June 2026 ] =
 
 Fixed : WordPress.org security problems.
 Fixed : Meeting list API status not corractly worked.
