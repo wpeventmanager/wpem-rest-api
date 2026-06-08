@@ -381,5 +381,28 @@ function wpem_rest_api_pre_check_before_installing_event_rest_api()
         }
         return false;
     }
+
+    // Updater installed nothing to do
+	if (!class_exists('WPEM_Updater')) {
+
+		// Runtime global lock (one notice across all addons)
+		if (!empty($GLOBALS['wpem_updater_notice_rendered'])) {
+			return;
+		}
+
+		$GLOBALS['wpem_updater_notice_rendered'] = true;
+
+		echo '<div class="notice notice-warning is-dismissible">';
+		echo '<p><strong>WP Event Manager Premium Plugins:</strong> ';
+		echo esc_html__(
+			'Install the WPEM Updater plugin to enable automatic updates for your WP Event Manager premium add-ons.',
+			'wp-event-manager'
+		);
+		echo '</p>';
+		echo '<p><a class="button button-primary" target="_blank" href="https://wp-eventmanager.com/wp-content/uploads/wpem-autoupdater.zip">';
+		echo esc_html__('Download Add-ons Updater', 'wp-event-manager');
+		echo '</a></p>';
+		echo '</div>';
+	}
 }
 add_action('admin_notices', 'wpem_rest_api_pre_check_before_installing_event_rest_api');
