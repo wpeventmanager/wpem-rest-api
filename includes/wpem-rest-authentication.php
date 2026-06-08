@@ -1,10 +1,11 @@
 <?php
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /**
  * REST API authentication class.
  */
-class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
+class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
+{
 
 	/**
 	 * Authentication error.
@@ -31,16 +32,17 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	/**
 	 * Initialize authentication actions.
 	 */
-	public function __construct() {
-		add_filter( 'determine_current_user', array( $this, 'wpem_rest_authenticate' ), 15 );
-		add_filter( 'rest_authentication_errors', array( $this, 'wpem_rest_check_authentication_error' ), 15 );
+	public function __construct()
+	{
+		add_filter('determine_current_user', array($this, 'wpem_rest_authenticate'), 15);
+		add_filter('rest_authentication_errors', array($this, 'wpem_rest_check_authentication_error'), 15);
 
 		//rest pre and post allows to authorize the user request
-		add_filter( 'rest_post_dispatch', array( $this, 'wpem_rest_send_unauthorized_headers' ), 50 );
-		add_filter( 'rest_pre_dispatch', array( $this, 'wpem_rest_check_user_permissions' ), 10, 3 );
+		add_filter('rest_post_dispatch', array($this, 'wpem_rest_send_unauthorized_headers'), 50);
+		add_filter('rest_pre_dispatch', array($this, 'wpem_rest_check_user_permissions'), 10, 3);
 
 		//register rout here for app key and login
-		add_action( 'rest_api_init', array( $this, 'register_routes' ), 10 );
+		add_action('rest_api_init', array($this, 'register_routes'), 10);
 	}
 
 	/**
@@ -49,21 +51,22 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @since    1.0.0
 	 * @return bool
 	 */
-	protected function is_request_to_rest_api() {
-		if ( empty( $_SERVER['REQUEST_URI'] ) ) {
+	protected function is_request_to_rest_api()
+	{
+		if (empty($_SERVER['REQUEST_URI'])) {
 			return false;
 		}
 
-		$rest_prefix = trailingslashit( rest_get_url_prefix() );
-		$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+		$rest_prefix = trailingslashit(rest_get_url_prefix());
+		$request_uri = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI']));
 
 		// Check if the request is to the WPEM API endpoints.
-		$wpem_endpoint = ( false !== strpos( $request_uri, $rest_prefix . 'wpem/' ) );
+		$wpem_endpoint = (false !== strpos($request_uri, $rest_prefix . 'wpem/'));
 
 		// Allow third party plugins use our authentication methods.
-		$third_party = ( false !== strpos( $request_uri, $rest_prefix . 'wpem' ) );
+		$third_party = (false !== strpos($request_uri, $rest_prefix . 'wpem'));
 
-		return apply_filters( 'wpem_rest_is_request_to_rest_api', $wpem_endpoint || $third_party );
+		return apply_filters('wpem_rest_is_request_to_rest_api', $wpem_endpoint || $third_party);
 	}
 
 	/**
@@ -73,15 +76,16 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param int|false $user_id User ID if one has been determined, false otherwise.
 	 * @return int|false
 	 */
-	public function wpem_rest_authenticate( $user_id ) {
+	public function wpem_rest_authenticate($user_id)
+	{
 		// Do not authenticate twice and check if is a request to our endpoint in the WP REST API.
-		if ( !empty( $user_id ) || !$this->is_request_to_rest_api() ) {
+		if (!empty($user_id) || !$this->is_request_to_rest_api()) {
 			return $user_id;
 		}
-		if ( is_ssl() ) {
+		if (is_ssl()) {
 			$user_id = $this->perform_basic_authentication();
 		}
-		if ( $user_id ) {
+		if ($user_id) {
 			return $user_id;
 		}
 
@@ -95,9 +99,10 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param WP_Error|null|bool $error Error data.
 	 * @return WP_Error|null|bool
 	 */
-	public function wpem_rest_check_authentication_error( $error ) {
+	public function wpem_rest_check_authentication_error($error)
+	{
 		// Pass through other errors.
-		if ( !empty( $error ) ) {
+		if (!empty($error)) {
 			return $error;
 		}
 
@@ -109,7 +114,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @since    1.0.0
 	 * @param WP_Error $error Authentication error data.
 	 */
-	protected function set_error( $error ) {
+	protected function set_error($error)
+	{
 		// Reset user.
 		$this->user = null;
 		$this->error = $error;
@@ -120,7 +126,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @since    1.0.0
 	 * @return WP_Error|null.
 	 */
-	protected function get_error() {
+	protected function get_error()
+	{
 		return $this->error;
 	}
 
@@ -135,42 +142,43 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @since    1.0.0
 	 * @return int|bool
 	 */
-	private function perform_basic_authentication() {
+	private function perform_basic_authentication()
+	{
 		$this->auth_method = 'basic_auth';
-		$consumer_key      = '';
-		$consumer_secret   = '';
+		$consumer_key = '';
+		$consumer_secret = '';
 
 		// If the $_GET parameters are present, use those first.
-		if ( !empty( $_GET['consumer_key'] ) && !empty( $_GET['consumer_secret'] ) ) { // WPCS: CSRF ok.
-			$consumer_key    = sanitize_text_field(wp_unslash($_GET['consumer_key'])); // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = sanitize_text_field(wp_unslash($_GET['consumer_secret'])); // WPCS: CSRF ok, sanitization ok.
+		if (!empty($_GET['consumer_key']) && !empty($_GET['consumer_secret'])) { 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- values used for read-only purpose (no data modification).
+			$consumer_key = sanitize_text_field(wp_unslash($_GET['consumer_key'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query params.
+			$consumer_secret = sanitize_text_field(wp_unslash($_GET['consumer_secret'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query params.
 		}
 
 		// If the above is not present, we will do full basic auth.
-		if ( !$consumer_key && !empty( $_SERVER['PHP_AUTH_USER'] ) && !empty( $_SERVER['PHP_AUTH_PW'] ) ) {
-			$consumer_key    = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_USER'])); // WPCS: CSRF ok, sanitization ok.
-			$consumer_secret = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_PW'])); // WPCS: CSRF ok, sanitization ok.
+		if (!$consumer_key && !empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW'])) {
+			$consumer_key = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_USER'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only server variable.
+			$consumer_secret = sanitize_text_field(wp_unslash($_SERVER['PHP_AUTH_PW'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only server variable.
 		}
 
 		// Stop if don't have any key.
-		if ( !$consumer_key || ! $consumer_secret ) {
+		if (!$consumer_key || !$consumer_secret) {
 			return false;
 		}
 
 		// Get user data.
-		$this->user = $this->get_user_data_by_consumer_key( $consumer_key );
-		if ( empty( $this->user ) ) {
+		$this->user = $this->get_user_data_by_consumer_key($consumer_key);
+		if (empty($this->user)) {
 			return false;
 		}
 
 		// Validate user secret.
-		if ( !hash_equals( $this->user->consumer_secret, $consumer_secret ) ) { // @codingStandardsIgnoreLine
+		if (!hash_equals($this->user->consumer_secret, $consumer_secret)) { // @codingStandardsIgnoreLine
 			return parent::prepare_error_for_response(401);
 		}
 		$current_date = gmdate('Y-m-d H:i:s');
 
 		//Check for key expiry
-		if ( isset($this->user->date_expires) && $current_date>$this->user->date_expires) {
+		if (isset($this->user->date_expires) && $current_date > $this->user->date_expires) {
 			return parent::prepare_error_for_response(503);
 
 			return false;
@@ -186,18 +194,19 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @return array Map of parameter values.
 	 */
-	public function parse_header( $header ) {
-		if ( 'OAuth ' !== substr( $header, 0, 6 ) ) {
+	public function parse_header($header)
+	{
+		if ('OAuth ' !== substr($header, 0, 6)) {
 			return array();
 		}
 		// From OAuth PHP library, used under MIT license.
 		$params = array();
-		if ( preg_match_all( '/(oauth_[a-z_-]*)=(:?"([^"]*)"|([^,]*))/', $header, $matches ) ) {
-			foreach ( $matches[1] as $i => $h ) {
-				$params[ $h ] = urldecode( empty( $matches[3][ $i ] ) ? $matches[4][ $i ] : $matches[3][ $i ] );
+		if (preg_match_all('/(oauth_[a-z_-]*)=(:?"([^"]*)"|([^,]*))/', $header, $matches)) {
+			foreach ($matches[1] as $i => $h) {
+				$params[$h] = urldecode(empty($matches[3][$i]) ? $matches[4][$i] : $matches[3][$i]);
 			}
-			if ( isset( $params['realm'] ) ) {
-				unset( $params['realm'] );
+			if (isset($params['realm'])) {
+				unset($params['realm']);
 			}
 		}
 
@@ -216,15 +225,16 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @return string Authorization header if set.
 	 */
-	public function get_authorization_header() {
-		if ( !empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
-			return wp_kses_post(wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] )); // WPCS: sanitization ok.
+	public function get_authorization_header()
+	{
+		if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+			return wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION'])); // WPCS: sanitization ok.
 		}
-		if ( function_exists( 'getallheaders' ) ) {
+		if (function_exists('getallheaders')) {
 			$headers = getallheaders();
 			// Check for the authoization header case-insensitively.
-			foreach ( $headers as $key => $value ) {
-				if ( 'authorization' === strtolower( $key ) ) {
+			foreach ($headers as $key => $value) {
+				if ('authorization' === strtolower($key)) {
 					return $value;
 				}
 			}
@@ -239,19 +249,9 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @return array|WP_Error
 	 */
-	public function get_oauth_parameters() {
-		$params = array_merge( $_GET, $_POST ); // WPCS: CSRF ok.
-		$params = wp_unslash( $params );
-		$header = $this->get_authorization_header();
+	public function get_oauth_parameters()
+	{
 
-		if ( !empty( $header ) ) {
-			// Trim leading spaces.
-			$header        = trim( $header );
-			$header_params = $this->parse_header( $header );
-			if ( !empty( $header_params ) ) {
-				$params = array_merge( $params, $header_params );
-			}
-		}
 		$param_names = array(
 			'oauth_consumer_key',
 			'oauth_timestamp',
@@ -260,33 +260,52 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 			'oauth_signature_method',
 		);
 
-		$errors   = array();
+		$params = array();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth request parameters (read-only, validated via signature).
+		foreach ($param_names as $key) {
+			if (isset($_GET[$key])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$params[$key] = sanitize_text_field(wp_unslash($_GET[$key])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			} elseif (isset($_POST[$key])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- OAuth parameters, validated via signature.
+				$params[$key] = sanitize_text_field(wp_unslash($_POST[$key])); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- OAuth parameters, validated via signature.
+			}
+		}
+
+		// Authorization header
+		$header = $this->get_authorization_header();
+
+		if (!empty($header)) {
+			$header = trim($header);
+			$header_params = $this->parse_header($header);
+
+			if (!empty($header_params)) {
+				$params = array_merge($params, $header_params);
+			}
+		}
+
+		$errors = array();
 		$have_one = false;
 
-		// Check for required OAuth parameters.
-		foreach ( $param_names as $param_name ) {
-			if ( empty( $params[ $param_name ] ) ) {
+		foreach ($param_names as $param_name) {
+			if (empty($params[$param_name])) {
 				$errors[] = $param_name;
 			} else {
 				$have_one = true;
 			}
 		}
 
-		// All keys are missing, so we're probably not even trying to use OAuth.
-		if ( !$have_one ) {
+		if (!$have_one) {
 			return array();
 		}
 
-		// If we have at least one supplied piece of data, and we have an error,
-		// then it's a failed authentication.
-		if ( !empty( $errors ) ) {
-			$message = sprintf(
-				/* translators: %s: amount of errors */
-				_n( 'Missing OAuth parameter %s', 'Missing OAuth parameters %s', count( $errors ), 'wpem-rest-api' ),
-				implode( ', ', $errors )
+		if (!empty($errors)) {
+			$message = sprintf( /* translators: %s: amount of errors */
+				_n('Missing OAuth parameter %s', 'Missing OAuth parameters %s', count($errors), 'wpem-rest-api'),
+				implode(', ', $errors)
 			);
 			return parent::prepare_error_for_response(401);
 		}
+
 		return $params;
 	}
 
@@ -306,31 +325,32 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @since    1.0.0
 	 * @return int|bool
 	 */
-	private function perform_oauth_authentication() {
+	private function perform_oauth_authentication()
+	{
 		$this->auth_method = 'oauth1';
 
 		$params = $this->get_oauth_parameters();
-		if ( empty( $params ) ) {
+		if (empty($params)) {
 			return false;
 		}
 
 		// Fetch WP user by consumer key.
-		$this->user = $this->get_user_data_by_consumer_key( $params['oauth_consumer_key'] );
+		$this->user = $this->get_user_data_by_consumer_key($params['oauth_consumer_key']);
 
-		if ( empty( $this->user ) ) {
+		if (empty($this->user)) {
 			return parent::prepare_error_for_response(401);
 		}
 
 		// Perform OAuth validation.
-		$signature = $this->check_oauth_signature( $this->user, $params );
-		if ( is_wp_error( $signature ) ) {
-			$this->set_error( $signature );
+		$signature = $this->check_oauth_signature($this->user, $params);
+		if (is_wp_error($signature)) {
+			$this->set_error($signature);
 			return false;
 		}
 
-		$timestamp_and_nonce = $this->check_oauth_timestamp_and_nonce( $this->user, $params['oauth_timestamp'], $params['oauth_nonce'] );
-		if ( is_wp_error( $timestamp_and_nonce ) ) {
-			$this->set_error( $timestamp_and_nonce );
+		$timestamp_and_nonce = $this->check_oauth_timestamp_and_nonce($this->user, $params['oauth_timestamp'], $params['oauth_nonce']);
+		if (is_wp_error($timestamp_and_nonce)) {
+			$this->set_error($timestamp_and_nonce);
 			return false;
 		}
 
@@ -346,38 +366,39 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param array    $params The request parameters.
 	 * @return true|WP_Error
 	 */
-	private function check_oauth_signature( $user, $params ) {
-		$http_method  = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( wp_kses_post ( wp_unslash ( $_SERVER['REQUEST_METHOD'])) ) : ''; // WPCS: sanitization ok.
-		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH ) : ''; // WPCS: sanitization ok.
-		$wp_base      = get_home_url( null, '/', 'relative' );
-		if ( substr( $request_path, 0, strlen( $wp_base ) ) === $wp_base ) {
-			$request_path = substr( $request_path, strlen( $wp_base ) );
+	private function check_oauth_signature($user, $params)
+	{
+		$http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(wp_kses_post(wp_unslash($_SERVER['REQUEST_METHOD']))) : ''; // WPCS: sanitization ok.
+		$request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : ''; // WPCS: sanitization ok.
+		$wp_base = get_home_url(null, '/', 'relative');
+		if (substr($request_path, 0, strlen($wp_base)) === $wp_base) {
+			$request_path = substr($request_path, strlen($wp_base));
 		}
-		$base_request_uri = rawurlencode( get_home_url( null, $request_path, is_ssl() ? 'https' : 'http' ) );
+		$base_request_uri = rawurlencode(get_home_url(null, $request_path, is_ssl() ? 'https' : 'http'));
 
 		// Get the signature provided by the consumer and remove it from the parameters prior to checking the signature.
-		$consumer_signature = rawurldecode( str_replace( ' ', '+', $params['oauth_signature'] ) );
-		unset( $params['oauth_signature'] );
+		$consumer_signature = rawurldecode(str_replace(' ', '+', $params['oauth_signature']));
+		unset($params['oauth_signature']);
 
 		// Sort parameters.
-		if ( !uksort( $params, 'strcmp' ) ) {
+		if (!uksort($params, 'strcmp')) {
 			return parent::prepare_error_for_response(401);
 		}
 
 		// Normalize parameter key/values.
-		$params         = $this->normalize_parameters( $params );
-		$query_string   = implode( '%26', $this->join_with_equals_sign( $params ) ); // Join with ampersand.
+		$params = $this->normalize_parameters($params);
+		$query_string = implode('%26', $this->join_with_equals_sign($params)); // Join with ampersand.
 		$string_to_sign = $http_method . '&' . $base_request_uri . '&' . $query_string;
 
-		if ( 'HMAC-SHA1' !== $params['oauth_signature_method'] && 'HMAC-SHA256' !== $params['oauth_signature_method'] ) {
+		if ('HMAC-SHA1' !== $params['oauth_signature_method'] && 'HMAC-SHA256' !== $params['oauth_signature_method']) {
 			return parent::prepare_error_for_response(401);
 		}
 
-		$hash_algorithm = strtolower( str_replace( 'HMAC-', '', $params['oauth_signature_method'] ) );
-		$secret         = $user->consumer_secret . '&';
-		$signature      = base64_encode( hash_hmac( $hash_algorithm, $string_to_sign, $secret, true ) );
+		$hash_algorithm = strtolower(str_replace('HMAC-', '', $params['oauth_signature_method']));
+		$secret = $user->consumer_secret . '&';
+		$signature = base64_encode(hash_hmac($hash_algorithm, $string_to_sign, $secret, true));
 
-		if ( !hash_equals( $signature, $consumer_signature ) ) { // @codingStandardsIgnoreLine
+		if (!hash_equals($signature, $consumer_signature)) { // @codingStandardsIgnoreLine
 			return parent::prepare_error_for_response(401);
 		}
 
@@ -393,16 +414,17 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param  string $key          Optional Array key to append.
 	 * @return string               Array of urlencoded strings.
 	 */
-	private function join_with_equals_sign( $params, $query_params = array(), $key = '' ) {
-		foreach ( $params as $param_key => $param_value ) {
-			if ( $key ) {
+	private function join_with_equals_sign($params, $query_params = array(), $key = '')
+	{
+		foreach ($params as $param_key => $param_value) {
+			if ($key) {
 				$param_key = $key . '%5B' . $param_key . '%5D'; // Handle multi-dimensional array.
 			}
-			if ( is_array( $param_value ) ) {
-				$query_params = $this->join_with_equals_sign( $param_value, $query_params, $param_key );
+			if (is_array($param_value)) {
+				$query_params = $this->join_with_equals_sign($param_value, $query_params, $param_key);
 			} else {
-				$string         = $param_key . '=' . $param_value; // Join with equals sign.
-				$query_params[] = wpem_rest_api_urlencode_rfc3986( $string );
+				$string = $param_key . '=' . $param_value; // Join with equals sign.
+				$query_params[] = wpem_rest_api_urlencode_rfc3986($string);
 			}
 		}
 		return $query_params;
@@ -427,10 +449,11 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param array $parameters Un-normalized parameters.
 	 * @return array Normalized parameters.
 	 */
-	private function normalize_parameters( $parameters ) {
-		$keys       = wpem_rest_api_urlencode_rfc3986( array_keys( $parameters ) );
-		$values     = wpem_rest_api_urlencode_rfc3986( array_values( $parameters ) );
-		$parameters = array_combine( $keys, $values );
+	private function normalize_parameters($parameters)
+	{
+		$keys = wpem_rest_api_urlencode_rfc3986(array_keys($parameters));
+		$values = wpem_rest_api_urlencode_rfc3986(array_values($parameters));
+		$parameters = array_combine($keys, $values);
 		return $parameters;
 	}
 
@@ -446,41 +469,36 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param string   $nonce     A unique (for the given user) 32 alphanumeric string, consumer-generated.
 	 * @return bool|WP_Error
 	 */
-	private function check_oauth_timestamp_and_nonce( $user, $timestamp, $nonce ) {
+	private function check_oauth_timestamp_and_nonce($user, $timestamp, $nonce)
+	{
 		global $wpdb;
 
 		$valid_window = 15 * 60; // 15 minute window.
 
-		if ( ( $timestamp < time() - $valid_window ) || ( $timestamp > time() + $valid_window ) ) {
+		if (($timestamp < time() - $valid_window) || ($timestamp > time() + $valid_window)) {
 			return parent::prepare_error_for_response(401);
 		}
-		$used_nonces = maybe_unserialize( $user->nonces );
+		$used_nonces = maybe_unserialize($user->nonces);
 
-		if ( empty( $used_nonces ) ) {
+		if (empty($used_nonces)) {
 			$used_nonces = array();
 		}
 
-		if ( in_array( $nonce, $used_nonces, true ) ) {
+		if (in_array($nonce, $used_nonces, true)) {
 			return parent::prepare_error_for_response(401);
 		}
 
-		$used_nonces[ $timestamp ] = $nonce;
+		$used_nonces[$timestamp] = $nonce;
 
 		// Remove expired nonces.
-		foreach ( $used_nonces as $nonce_timestamp => $nonce ) {
-			if ( $nonce_timestamp < ( time() - $valid_window ) ) {
-				unset( $used_nonces[ $nonce_timestamp ] );
+		foreach ($used_nonces as $nonce_timestamp => $nonce) {
+			if ($nonce_timestamp < (time() - $valid_window)) {
+				unset($used_nonces[$nonce_timestamp]);
 			}
 		}
-		$used_nonces = maybe_serialize( $used_nonces );
+		$used_nonces = maybe_serialize($used_nonces);
 
-		$wpdb->update(
-			$wpdb->prefix . 'wpem_organizer_api_keys',
-			array( 'nonces' => $used_nonces ),
-			array( 'key_id' => $user->key_id ),
-			array( '%s' ),
-			array( '%d' )
-		);
+		$wpdb->update($wpdb->prefix . 'wpem_organizer_api_keys', array('nonces' => $used_nonces), array('key_id' => $user->key_id), array('%s'), array('%d')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return true;
 	}
 
@@ -490,21 +508,13 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param string $consumer_key Consumer key.
 	 * @return array
 	 */
-	private function get_user_data_by_consumer_key( $consumer_key ) {
+	private function get_user_data_by_consumer_key($consumer_key)
+	{
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-		$consumer_key = sanitize_text_field( $consumer_key ); //NEED TO IMPROVE LATER WITH GLOBAL API
-
-		$user         = $wpdb->get_row(
-			$wpdb->prepare(
-				"
-					SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created`
-					FROM {$table_name}
-					WHERE consumer_key = %s
-				",
-				$consumer_key
-			)
-		);
+		$consumer_key = sanitize_text_field($consumer_key); //NEED TO IMPROVE LATER WITH GLOBAL API
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
+		$user = $wpdb->get_row($wpdb->prepare("SELECT `key_id`, `user_id`, `permissions`, `consumer_key`, `consumer_secret`, `nonces`,`date_expires`,`date_created` FROM {$table_name} WHERE consumer_key = %s", $consumer_key)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $user;
 	}
 
@@ -514,12 +524,13 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param string $method Request method.
 	 * @return bool|WP_Error
 	 */
-	private function check_permissions( $method ) {
+	private function check_permissions($method)
+	{
 		$permissions = $this->user->permissions;
-		switch ( $method ) {
+		switch ($method) {
 			case 'HEAD':
 			case 'GET':
-				if ( 'read' !== $permissions && 'read_write' !== $permissions ) {
+				if ('read' !== $permissions && 'read_write' !== $permissions) {
 					return parent::prepare_error_for_response(401);
 				}
 				break;
@@ -527,7 +538,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 			case 'PUT':
 			case 'PATCH':
 			case 'DELETE':
-				if ( 'write' !== $permissions && 'read_write' !== $permissions ) {
+				if ('write' !== $permissions && 'read_write' !== $permissions) {
 					return parent::prepare_error_for_response(401);
 				}
 				break;
@@ -543,16 +554,11 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	/**
 	 * Updated API Key last access datetime.
 	 */
-	private function update_last_access() {
+	private function update_last_access()
+	{
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-		$wpdb->update(
-			$table_name,
-			array( 'last_access' => current_time( 'mysql' ) ),
-			array( 'key_id' => $this->user->key_id ),
-			array( '%s' ),
-			array( '%d' )
-		);
+		$wpdb->update($table_name, array('last_access' => current_time('mysql')), array('key_id' => $this->user->key_id), array('%s'), array('%d')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/**
@@ -563,10 +569,11 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param WP_REST_Response $response Current response being served.
 	 * @return WP_REST_Response
 	 */
-	public function wpem_rest_send_unauthorized_headers( $response ) {
-		if ( is_wp_error( $this->get_error() ) && 'basic_auth' === $this->auth_method ) {
-			$auth_message = __( 'WPEM API. Use a consumer key in the username field and a consumer secret in the password field.', 'wpem-rest-api' );
-			$response->header( 'WWW-Authenticate', 'Basic realm="' . $auth_message . '"', true );
+	public function wpem_rest_send_unauthorized_headers($response)
+	{
+		if (is_wp_error($this->get_error()) && 'basic_auth' === $this->auth_method) {
+			$auth_message = __('WPEM API. Use a consumer key in the username field and a consumer secret in the password field.', 'wpem-rest-api');
+			$response->header('WWW-Authenticate', 'Basic realm="' . $auth_message . '"', true);
 		}
 		return $response;
 	}
@@ -579,11 +586,12 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * @param WP_REST_Request $request Request used to generate the response.
 	 * @return mixed
 	 */
-	public function wpem_rest_check_user_permissions( $result, $server, $request ) {
-		if ( $this->user ) {
+	public function wpem_rest_check_user_permissions($result, $server, $request)
+	{
+		if ($this->user) {
 			// Check API Key permissions.
-			$allowed = $this->check_permissions( $request->get_method() );
-			if ( is_wp_error( $allowed ) ) {
+			$allowed = $this->check_permissions($request->get_method());
+			if (is_wp_error($allowed)) {
 				return $allowed;
 			}
 			// Register last access.
@@ -595,25 +603,26 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	/**
 	 * Register the routes for auth login and appkey auth.
 	 */
-	public function register_routes() {
+	public function register_routes()
+	{
 		register_rest_route(
 			'wpem',
-			'/applogin' ,
+			'/applogin',
 			array(
 				array(
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => array( $this, 'perform_user_authentication' ),
+					'methods' => WP_REST_Server::CREATABLE,
+					'callback' => array($this, 'perform_user_authentication'),
 					'permission_callback' => '__return_true'
 				),
 			)
 		);
 		register_rest_route(
 			'wpem',
-			'/login' ,
+			'/login',
 			array(
 				array(
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => array( $this, 'perform_login_authentication' ),
+					'methods' => WP_REST_Server::CREATABLE,
+					'callback' => array($this, 'perform_login_authentication'),
 					'permission_callback' => '__return_true'
 				),
 			)
@@ -625,12 +634,13 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @since 1.0.1
 	 */
-	public function perform_login_authentication($request){
+	public function perform_login_authentication($request)
+	{
 		$params = $request->get_json_params();
 		$username = isset($params['username']) ? trim($params['username']) : '';
 		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
-		if( !empty( $username ) && !empty($password)){
+		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
 			if (is_wp_error($user)) {
 				return parent::prepare_error_for_response(401);
@@ -638,31 +648,22 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				global $wpdb;
 				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 				$user_id = $user->ID;
-				$key_data = $wpdb->get_row(
-					$wpdb->prepare(
-						"
-							SELECT *
-							FROM {$table_name}
-							WHERE user_id = %s
-						",
-						$user_id
-					)
-				);
-		
-				if( !empty($key_data->date_expires ) && strtotime( $key_data->date_expires ) >= strtotime( gmdate('Y-m-d H:i:s') ) ){
-					$key_data->expiry  = false;
+				$key_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %s ", $user_id));// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+				if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {
+					$key_data->expiry = false;
 				} else {
 					return parent::prepare_error_for_response(503);
-				} 
-				if( empty( $key_data ) )
+				}
+				if (empty($key_data))
 					return parent::prepare_error_for_response(401);
-				$response_data = self::prepare_error_for_response( 200 );
+				$response_data = self::prepare_error_for_response(200);
 				$response_data['data'] = array(
 					'user_info' => $key_data,
 				);
 				return $response_data;
 			}
-		} else{
+		} else {
 			return parent::prepare_error_for_response(400);
 		}
 	}
@@ -672,12 +673,13 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 *
 	 * @since 1.0.0
 	 */
-	public function perform_user_authentication($request) {
+	public function perform_user_authentication($request)
+	{
 		$params = $request->get_json_params();
 		$username = isset($params['username']) ? trim($params['username']) : '';
 		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
-		
+
 		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
 			if (is_wp_error($user)) {
@@ -690,7 +692,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 				$token = $this->wpem_generate_jwt_token($user->ID, $password);
 				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true);
 				$enable_matchmaking = get_option('enable_matchmaking', false) ? 1 : 0;
-				
+
 				$all_mobile_pages = array('dashboard', 'attendees', 'guest_list', 'orders', 'arrivals');
 				$user_mobile_menu = get_user_meta($user_id, '_mobile_menu', true);
 				$user_mobile_menu = is_array($user_mobile_menu) ? $user_mobile_menu : [];
@@ -709,32 +711,31 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 				$data = array(
 					'token' => $token,
-					'user'  => array(
+					'user' => array(
 						'user_id' => $user_id,
 						'user_email' => $user_email,
 						'first_name' => $first_name,
 						'last_name' => $last_name,
 						'username' => $user_login,
-						'wpem_print_badge_mode' => (int)$print_badge_mode,
+						'wpem_print_badge_mode' => (int) $print_badge_mode,
 						'matchmaking_profile' => $is_matchmaking,
 						'enable_matchmaking' => $enable_matchmaking,
 						'mobile_menu' => $mobile_menu_status,
-					)                    
+					)
 				);
 
 				if ($is_matchmaking && $enable_matchmaking) {
 					$user_meta = get_user_meta($user_id);
-					$organization_logo = get_user_meta( $user_id, '_organization_logo', true );
-					$organization_logo = maybe_unserialize( $organization_logo );
+					$organization_logo = get_user_meta($user_id, '_organization_logo', true);
+					$organization_logo = maybe_unserialize($organization_logo);
 					if (is_array($organization_logo)) {
 						$organization_logo = reset($organization_logo); // get first value in the array
 					}
 					$organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 					$meta = get_user_meta($user_id, '_available_for_meeting', true);
-					$meeting_available = ($meta !== '' && $meta !== null) ? ((int)$meta === 0 ? 0 : 1) : 1;
+					$meeting_available = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
 
-					$photo = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
-
+					$photo = function_exists('get_wpem_user_profile_photo') ? get_wpem_user_profile_photo($user_id) : EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 					// --- Skills ---
 					$skills_slugs = [];
 					$skills_arr = maybe_unserialize(isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : []);
@@ -788,44 +789,39 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 					// Get matchmaking data from user meta instead of custom table
 					$matchmaking_details = array(
-						'attendeeId'              	=> $user_id,
-						'first_name'               	=> $first_name, 
-						'last_name'                	=> $last_name,
-						'email'                  	=> $user->user_email,
-						'display_name'           	=> $user->display_name,
-						'profile_photo'           	=> $photo,
-						'profession'              	=> $profession_slug,
-						'experience'              	=> get_user_meta($user_id, '_experience', true) ?: '',
-						'company_name'             	=> get_user_meta($user_id, '_company_name', true) ?: '',
-						'country'                 	=> get_user_meta($user_id, '_country', true) ?: '',
-						'city'                    	=> get_user_meta($user_id, '_city', true) ?: '',
-						'about'                   	=> get_user_meta($user_id, '_about', true) ?: '',
-						'skills' 					=> isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
-						'interests' 				=> isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
-						'organization_name'        => get_user_meta($user_id, '_organization_name', true) ?: '',
-						'organization_logo'        => $organization_logo,
-						'organization_city'        => get_user_meta($user_id, '_organization_city', true) ?: '',
-						'organization_country'     => get_user_meta($user_id, '_organization_country', true) ?: '',
+						'attendeeId' => $user_id,
+						'first_name' => $first_name,
+						'last_name' => $last_name,
+						'email' => $user->user_email,
+						'display_name' => $user->display_name,
+						'profile_photo' => $photo,
+						'profession' => $profession_slug,
+						'experience' => get_user_meta($user_id, '_experience', true) ?: '',
+						'company_name' => get_user_meta($user_id, '_company_name', true) ?: '',
+						'country' => get_user_meta($user_id, '_country', true) ?: '',
+						'city' => get_user_meta($user_id, '_city', true) ?: '',
+						'about' => get_user_meta($user_id, '_about', true) ?: '',
+						'skills' => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
+						'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
+						'organization_name' => get_user_meta($user_id, '_organization_name', true) ?: '',
+						'organization_logo' => $organization_logo,
+						'organization_city' => get_user_meta($user_id, '_organization_city', true) ?: '',
+						'organization_country' => get_user_meta($user_id, '_organization_country', true) ?: '',
 						'organization_description' => get_user_meta($user_id, '_organization_description', true) ?: '',
-						'message_notification'     => get_user_meta($user_id, '_message_notification', true) ?: '',
-						'approve_profile_status'   => get_user_meta($user_id, '_approve_profile_status', true) ?: '',
-						'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int)$user_meta['_matchmaking_profile'][0] : 0,
-						'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int)$user_meta['_approve_profile_status'][0] : 0,
+						'message_notification' => get_user_meta($user_id, '_message_notification', true) ?: '',
+						'approve_profile_status' => get_user_meta($user_id, '_approve_profile_status', true) ?: '',
+						'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int) $user_meta['_matchmaking_profile'][0] : 0,
+						'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int) $user_meta['_approve_profile_status'][0] : 0,
 						'wpem_meeting_request_mode' => isset($user_meta['_wpem_meeting_request_mode'][0]) ? $user_meta['_wpem_meeting_request_mode'][0] : 'approval',
-						'available_for_meeting' => (int)$meeting_available,
+						'available_for_meeting' => (int) $meeting_available,
 					);
 
 					$data['user']['matchmaking_details'] = $matchmaking_details;
 				}
 
 				// Keep the API key check logic unchanged
-				$key_data = $wpdb->get_row(
-					$wpdb->prepare(
-						"SELECT * FROM {$table_name} WHERE user_id = %s",
-						$user_id
-					)
-				);
-				
+				$key_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %s", $user_id)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
 				if (!empty($key_data)) {
 					if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {
 						$key_data->expiry = false;
@@ -833,8 +829,8 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 						$key_data->expiry = true;
 					}
 					$data['organizer_info'] = $key_data;
-				} 
-				
+				}
+
 				if (empty($key_data) && !get_user_meta($user_id, '_matchmaking_profile', true)) {
 					return parent::prepare_error_for_response(405);
 				}
@@ -852,13 +848,15 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * This function will used to generate jwt token for individual user
 	 * @since 1.0.9
 	 */
-	public function wpem_generate_jwt_token($user_id, $password) {
+	public function wpem_generate_jwt_token($user_id, $password)
+	{
 		$user = get_userdata($user_id);
-		if (!$user) return false;
+		if (!$user)
+			return false;
 
 		// Header and payload
 		$header = wpem_base64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
-		
+
 		$payload = wpem_base64url_encode(json_encode([
 			'iss' => get_bloginfo('url'),
 			'user' => [
@@ -879,25 +877,27 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 	 * This function will used to check authentication while use the match making apis
 	 * @since 1.1.0
 	 */
-	public function check_authentication( $request ) {
+	public function check_authentication($request)
+	{
 		$auth_header = $this->get_authorization_header();
 
-		if ( preg_match( '/Bearer\s(\S+)/', $auth_header, $matches ) ) {
+		if (preg_match('/Bearer\s(\S+)/', $auth_header, $matches)) {
 			$token = $matches[1];
 
 			return $this->validate_jwt_token($token);
 		}
 
-		return new WP_Error( 'rest_forbidden', __( 'Missing or invalid authorization token.', 'wpem-rest-api' ), array( 'status' => 401 ) );
+		return new WP_Error('rest_forbidden', __('Missing or invalid authorization token.', 'wpem-rest-api'), array('status' => 401));
 	}
 	/**
 	 * This function will used to check validation of jwt token 
 	 * @since 1.1.0
 	 */
-	private function validate_jwt_token($token) {
+	private function validate_jwt_token($token)
+	{
 		$parts = explode('.', $token);
 		if (count($parts) !== 3) {
-			return new WP_Error( 'rest_forbidden', __( 'Malformed token.', 'wpem-rest-api' ), array( 'status' => 401 ) );
+			return new WP_Error('rest_forbidden', __('Malformed token.', 'wpem-rest-api'), array('status' => 401));
 		}
 
 		list($header_b64, $payload_b64, $signature_b64) = $parts;
@@ -909,7 +909,7 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 
 		// Timing-attack-safe comparison
 		if (!hash_equals($expected_signature, $signature_b64)) {
-			return new WP_Error( 'rest_forbidden', __( 'Invalid token signature.', 'wpem-rest-api' ), [ 'status' => 401 ] );
+			return new WP_Error('rest_forbidden', __('Invalid token signature.', 'wpem-rest-api'), ['status' => 401]);
 		}
 
 		// Decode payload
@@ -917,16 +917,16 @@ class WPEM_REST_Authentication  extends WPEM_REST_CRUD_Controller {
 		$payload = json_decode($payload_json, true);
 
 		if (json_last_error() !== JSON_ERROR_NONE || !isset($payload['user']['id'])) {
-			return new WP_Error( 'rest_forbidden', __( 'Invalid token payload.', 'wpem-rest-api' ), [ 'status' => 401 ] );
+			return new WP_Error('rest_forbidden', __('Invalid token payload.', 'wpem-rest-api'), ['status' => 401]);
 		}
 
 		// Optionally: check expiration
 		if (isset($payload['exp']) && time() > $payload['exp']) {
-			return new WP_Error( 'rest_forbidden', __( 'Token has expired.', 'wpem-rest-api' ), [ 'status' => 401 ] );
+			return new WP_Error('rest_forbidden', __('Token has expired.', 'wpem-rest-api'), ['status' => 401]);
 		}
 		// Return decoded payload if needed
 		return true;
 	}
-	
+
 }
 new WPEM_REST_Authentication();

@@ -1,10 +1,10 @@
-=== WP Event Manager - REST API ===
+=== WPEM - REST API ===
 
-Contributors: wpeventmanager,ashokdudhat
+Contributors: WPEM Team
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=55FRYATTFLA5N
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.7
-Tested up to: 6.9
+Tested up to: 7.0
 Stable tag: 1.4.1
 
 Requires PHP: 8.0.0
@@ -120,9 +120,20 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
-= 1.4.1 [ 19th March 2026 ] =
+= 1.4.1 [ 5th June 2026 ] =
 
-Fixed : Securities Issues fixed.
+Fixed : WordPress.org security problems.
+Fixed : Meeting list API status not corractly worked.
+Fixed : Update matchmaking profile photo & organization logo.
+Fixed : WordPress org problem
+Fixed : Access to API always open to everyone everytime
+Fixed : Event Overview API venue data missing.
+Fixed : Token Addition Issue in Local Only in ecosystem.
+Fixed : Crash Issue on Attendee Selection in Event.
+Fixed : Ecosystem Issue After Version Update.
+Fixed : REST API Access Users Not Displaying.
+Fixed : All event not show in app.
+Fixed : Various Code Improvements and Bug Fixes.
 
 = 1.4.0 [ 2nd March 2026 ] =
 

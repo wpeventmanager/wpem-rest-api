@@ -1,56 +1,59 @@
 <?php
 /**
-* Plugin Name: WP Event Manager - REST API
-* Plugin URI: http://www.wp-eventmanager.com/plugins/
-* 
-* Description: Lets users connect the Mobile application with their WordPress events website.
-* Author: WP Event Manager
-* Author URI: http://www.wp-eventmanager.com
-* 
-* Text Domain: wpem-rest-api
-* Domain Path: /languages
-* Version: 1.4.1
-* Since: 1.0.0
-* 
-* Requires WordPress Version at least: 6.7
-* Copyright: 2019 WP Event Manager
-* License: GNU General Public License v3.0
-* License URI: http://www.gnu.org/licenses/gpl-3.0.html
-* 
-*/
+ * Plugin Name: WPEM - REST API
+ * Plugin URI: http://www.wp-eventmanager.com/plugins/
+ * 
+ * Description: Lets users connect the Mobile application with their WordPress events website.
+ * Author: WP Event Manager
+ * Author URI: http://www.wp-eventmanager.com
+ * 
+ * Text Domain: wpem-rest-api
+ * Domain Path: /languages
+ * Version: 1.4.1
+ * Since: 1.0.0
+ * 
+ * Requires WordPress Version at least: 6.7
+ * Copyright: 2019 WP Event Manager
+ * License: GNU General Public License v3.0
+ * License URI: http://www.gnu.org/licenses/gpl-3.0.html
+ * 
+ */
 
 // Exit if accessed directly
-if( !defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once ABSPATH.'wp-admin/includes/plugin.php';
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
 /**
  * WP_Event_Manager_Rest_API class.
  */
-class WPEM_Rest_API{
+class WPEM_Rest_API
+{
 
     /**
      * __construct function.
      */
-    public function __construct() {
+    public function __construct()
+    {
         //if wp event manager not active return from the plugin
-        if( !in_array( 'wp-event-manager/wp-event-manager.php', apply_filters( 'wpem_active_plugins', get_option( 'active_plugins' ) ) ) ) {
+        if (!in_array('wp-event-manager/wp-event-manager.php', apply_filters('wpem_active_plugins', get_option('active_plugins')))) {
             return;
         }
 
         // Define constants
-        define( 'WPEM_REST_API_VERSION', '1.4.1' );
-        define( 'WPEM_REST_API_FILE', __FILE__ );
-        define( 'WPEM_REST_API_PLUGIN_DIR', untrailingslashit( plugin_dir_path(__FILE__ ) ) );
-        define( 'WPEM_REST_API_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path(__FILE__) ), basename(__FILE__) ) ) );
+        define('WPEM_REST_API_VERSION', '1.4.1');
+        define('WPEM_REST_API_FILE', __FILE__);
+        define('WPEM_REST_API_PLUGIN_DIR', untrailingslashit(plugin_dir_path(__FILE__)));
+        define('WPEM_REST_API_PLUGIN_URL', untrailingslashit(plugins_url(basename(plugin_dir_path(__FILE__)), basename(__FILE__))));
+        define('WPEM_PLUGIN_ACTIVATION_API_URL', 'https://wp-eventmanager.com/?wc-api=wpemstore_licensing_expire_license');
         if (!defined('WPEM_JWT_SECRET_KEY')) {
             define('WPEM_JWT_SECRET_KEY', '9s59d4s9d49ed94sf46dsf74d96');
         }
         if (!defined('WPEM_JWT_ALGO')) {
             define('WPEM_JWT_ALGO', 'HS256');
         }
-        if( is_admin() ) {
+        if (is_admin()) {
             include 'admin/wpem-rest-api-admin.php';
         }
         //include
@@ -60,13 +63,15 @@ class WPEM_Rest_API{
         include 'includes/wpem-rest-conroller.php';
         include 'includes/wpem-rest-posts-conroller.php';
         include 'includes/wpem-rest-crud-controller.php';
-        include 'includes/wpem-rest-authentication.php';        
+        include 'includes/wpem-rest-authentication.php';
         include 'includes/wpem-rest-events-controller.php';
         include 'includes/wpem-rest-app-branding.php';
         include 'includes/wpem-rest-ecosystem-controller.php';
         include 'includes/wpem-rest-settings-controller.php';
         include 'includes/wpem-rest-contact-controller.php';
         include 'includes/wpem-rest-ticket-controller.php';
+        include 'includes/wpem-rest-organizers-controller.php';
+        include 'includes/wpem-rest-venues-controller.php';
 
         // match making api
         include 'includes/wpem-rest-matchmaking-meetings-controller.php';
@@ -75,10 +80,10 @@ class WPEM_Rest_API{
         include 'includes/wpem-rest-matchmaking-settings-controller.php';
 
         // Activate
-        register_activation_hook( __FILE__, array( $this, 'install' ) );
+        register_activation_hook(__FILE__, array($this, 'install'));
 
         // Add actions
-        add_action( 'init', array( $this, 'load_plugin_textdomain' ), 12 );
+        add_action('init', array($this, 'load_plugin_textdomain'), 12);
 
         // Call when update plugin
         add_action('admin_init', array($this, 'updater'));
@@ -91,27 +96,30 @@ class WPEM_Rest_API{
     /**
      * Localisation
      **/
-    public function load_plugin_textdomain(){
+    public function load_plugin_textdomain()
+    {
         $domain = 'wpem-rest-api';
-        $locale = apply_filters( 'wpem_plugin_locale', get_locale(), $domain );
-        load_textdomain( $domain, WP_LANG_DIR . "/wpem-rest-api/".$domain."-" .$locale. ".mo" );
-        load_plugin_textdomain( $domain, false, dirname( plugin_basename(__FILE__) ) . '/languages/' );
+        $locale = apply_filters('wpem_plugin_locale', get_locale(), $domain);
+        load_textdomain($domain, WP_LANG_DIR . "/wpem-rest-api/" . $domain . "-" . $locale . ".mo");
+        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- needed for non-dotorg plugin.
+        load_plugin_textdomain($domain, false, dirname(plugin_basename(__FILE__)) . '/languages/');
     }
 
     /**
-	 * Handle Updates.
-	 * @since 1.1.2
-	 */
-	public function updater() {
-        if ( version_compare( get_option( 'wpem_rest_api_version', WPEM_REST_API_VERSION ), '1.0.9', '<' ) ) {
+     * Handle Updates.
+     * @since 1.1.2
+     */
+    public function updater()
+    {
+        if (version_compare(get_option('wpem_rest_api_version', WPEM_REST_API_VERSION), '1.0.9', '<')) {
             $this->check_rest_api_table();
             flush_rewrite_rules();
         }
-        if(version_compare(WPEM_REST_API_VERSION, get_option('wpem_rest_api_version'), '>')) {
-			 // Ensure roles/capabilities exist on admin init (covers updates)
+        if (version_compare(WPEM_REST_API_VERSION, get_option('wpem_rest_api_version'), '>')) {
+            // Ensure roles/capabilities exist on admin init (covers updates)
             $this->init_user_roles();
-			flush_rewrite_rules();
-		}
+            flush_rewrite_rules();
+        }
     }
 
     /**
@@ -119,17 +127,18 @@ class WPEM_Rest_API{
      * @since 1.1.2
      * @return void
      */
-    public function check_rest_api_table() {
-         global $wpdb;
+    public function check_rest_api_table()
+    {
+        global $wpdb;
 
         $wpdb->hide_errors();
         $collate = '';
 
-        if( $wpdb->has_cap( 'collation' ) ) {
-            if( !empty( $wpdb->charset ) ) {
+        if ($wpdb->has_cap('collation')) {
+            if (!empty($wpdb->charset)) {
                 $collate .= "DEFAULT CHARACTER SET $wpdb->charset";
             }
-            if( !empty( $wpdb->collate ) ) {
+            if (!empty($wpdb->collate)) {
                 $collate .= " COLLATE $wpdb->collate";
             }
         }
@@ -160,67 +169,74 @@ class WPEM_Rest_API{
             KEY consumer_secret (consumer_secret)
             ) $collate;";
 
-        dbDelta( $sql );
-        
-        // Check if we need to alter existing table
-		$columns = $wpdb->get_col("DESC {$table_name}", 0);
-		
-		// Add event_show_by column if it doesn't exist
-		if (!in_array('event_show_by', $columns)) {
-			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN event_show_by varchar(20) NULL DEFAULT 'loggedin'");
-		}
-		
-		// Add selected_events column if it doesn't exist
-		if (!in_array('selected_events', $columns)) {
-			$wpdb->query("ALTER TABLE {$table_name} ADD COLUMN selected_events longtext NULL");
-		}
+        dbDelta($sql);
 
-        update_option( 'wpem_rest_api_version', WPEM_REST_API_VERSION );
-        
+        // Check if we need to alter existing table
+        $table = esc_sql($table_name);
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $columns = $wpdb->get_col("DESC {$table}", 0);
+
+        // Add event_show_by column if it doesn't exist
+        if (!in_array('event_show_by', $columns)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN event_show_by varchar(20) NULL DEFAULT 'loggedin'");
+        }
+
+        // Add selected_events column if it doesn't exist
+        if (!in_array('selected_events', $columns)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN selected_events longtext NULL");
+        }
+
+        update_option('wpem_rest_api_version', WPEM_REST_API_VERSION);
+
         //check for Application Name is already defined
-        if( empty( get_option( 'wpem_rest_api_app_name' ) ) ) {
-            update_option( 'wpem_rest_api_app_name', 'WP Event Manager' );
-        };
+        if (empty(get_option('wpem_rest_api_app_name'))) {
+            update_option('wpem_rest_api_app_name', 'WP Event Manager');
+        }
+        ;
     }
 
     /**
      * Init user roles.
      * Creates/updates roles and capabilities used by this plugin.
      */
-    private function init_user_roles() {
+    private function init_user_roles()
+    {
         global $wp_roles;
-        if ( class_exists( 'WP_Roles' ) && ! isset( $wp_roles ) ) {
+        if (class_exists('WP_Roles') && !isset($wp_roles)) {
             $wp_roles = new WP_Roles();
         }
 
-        if ( is_object( $wp_roles ) ) {
+        if (is_object($wp_roles)) {
             // Create Scanner role if not exists with minimal base caps.
             add_role(
                 'wpem-scanner',
-                __( 'Ticket Scanner', 'wpem-rest-api' ),
+                __('Ticket Scanner', 'wpem-rest-api'),
                 array(
-                    'read'         => true,
-                    'edit_posts'   => false,
+                    'read' => true,
+                    'edit_posts' => false,
                     'delete_posts' => false,
                 )
             );
 
             // Ensure administrator has full capabilities.
             $capabilities = $this->get_core_capabilities();
-            foreach ( $capabilities as $cap_group ) {
-                foreach ( $cap_group as $cap ) {
-                    $wp_roles->add_cap( 'administrator', $cap );
+            foreach ($capabilities as $cap_group) {
+                foreach ($cap_group as $cap) {
+                    $wp_roles->add_cap('administrator', $cap);
                 }
             }
 
             // Grant Scanner role same capabilities as WooCommerce 'customer' and add registration caps.
-            if ( $role = get_role( 'wpem-scanner' ) ) {
+            if ($role = get_role('wpem-scanner')) {
                 // Mirror WooCommerce customer capabilities if role exists.
-                if ( $customer = get_role( 'customer' ) ) {
-                    if ( is_array( $customer->capabilities ) ) {
-                        foreach ( $customer->capabilities as $cap => $grant ) {
-                            if ( $grant ) {
-                                $role->add_cap( $cap );
+                if ($customer = get_role('customer')) {
+                    if (is_array($customer->capabilities)) {
+                        foreach ($customer->capabilities as $cap => $grant) {
+                            if ($grant) {
+                                $role->add_cap($cap);
                             }
                         }
                     }
@@ -249,7 +265,8 @@ class WPEM_Rest_API{
      * Get capabilities required by the plugin.
      * @return array
      */
-    private function get_core_capabilities() {
+    private function get_core_capabilities()
+    {
         return array(
             'core' => array(
                 'manage_event_registrations',
@@ -275,16 +292,17 @@ class WPEM_Rest_API{
     /**
      * Restrict Scanner role from accessing wp-admin (except AJAX).
      */
-    public function restrict_scanner_admin() {
-        if ( ! is_admin() ) {
+    public function restrict_scanner_admin()
+    {
+        if (!is_admin()) {
             return;
         }
-        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        if (defined('DOING_AJAX') && DOING_AJAX) {
             return;
         }
         $user = wp_get_current_user();
-        if ( $user && is_array( $user->roles ) && in_array( 'wpem-scanner', $user->roles, true ) ) {
-            wp_safe_redirect( home_url() );
+        if ($user && is_array($user->roles) && in_array('wpem-scanner', $user->roles, true)) {
+            wp_safe_redirect(home_url());
             exit;
         }
     }
@@ -293,37 +311,38 @@ class WPEM_Rest_API{
      * Enforce that Scanner users can only manage their own event_registration posts.
      * Denies edit/read/delete on registrations not authored by the current Scanner user.
      */
-    public function limit_scanner_own_registration( $caps, $cap, $user_id, $args ) {
+    public function limit_scanner_own_registration($caps, $cap, $user_id, $args)
+    {
         // Only act on singular registration caps where a post ID is present
-        $target_caps = array( 'edit_event_registration', 'delete_event_registration', 'read_event_registration' );
-        if ( ! in_array( $cap, $target_caps, true ) ) {
+        $target_caps = array('edit_event_registration', 'delete_event_registration', 'read_event_registration');
+        if (!in_array($cap, $target_caps, true)) {
             return $caps;
         }
 
-        $post_id = isset( $args[0] ) ? (int) $args[0] : 0;
-        if ( ! $post_id ) {
+        $post_id = isset($args[0]) ? (int) $args[0] : 0;
+        if (!$post_id) {
             return $caps;
         }
 
-        $post = get_post( $post_id );
-        if ( ! $post || 'event_registration' !== $post->post_type ) {
+        $post = get_post($post_id);
+        if (!$post || 'event_registration' !== $post->post_type) {
             return $caps;
         }
 
         // If user has a higher capability (e.g., admin), don't restrict.
-        if ( user_can( $user_id, 'manage_event_registrations' ) || user_can( $user_id, 'administrator' ) ) {
+        if (user_can($user_id, 'manage_event_registrations') || user_can($user_id, 'administrator')) {
             return $caps;
         }
 
         // Get user roles
-        $user = get_userdata( $user_id );
-        if ( ! $user || empty( $user->roles ) ) {
+        $user = get_userdata($user_id);
+        if (!$user || empty($user->roles)) {
             return $caps;
         }
 
         // If the user is a Scanner and is trying to manage someone else's registration, deny.
-        if ( in_array( 'wpem-scanner', (array) $user->roles, true ) && (int) $post->post_author !== (int) $user_id ) {
-            return array( 'do_not_allow' );
+        if (in_array('wpem-scanner', (array) $user->roles, true) && (int) $post->post_author !== (int) $user_id) {
+            return array('do_not_allow');
         }
 
         return $caps;
@@ -332,14 +351,15 @@ class WPEM_Rest_API{
     /**
      * Install
      */
-    public function install(){
-       $this->check_rest_api_table();
-       $this->init_user_roles();
+    public function install()
+    {
+        $this->check_rest_api_table();
+        $this->init_user_roles();
     }
 }
 
 // check for WP Event Manager is active
-if( is_plugin_active( 'wp-event-manager/wp-event-manager.php' ) ) {
+if (is_plugin_active('wp-event-manager/wp-event-manager.php')) {
     $GLOBALS['wpem_rest_api'] = new WPEM_Rest_API();
 }
 
@@ -347,18 +367,42 @@ if( is_plugin_active( 'wp-event-manager/wp-event-manager.php' ) ) {
  * Check if WP Event Manager is not active then show notice at admin
  * @since 1.0.0
  */
-function wpem_rest_api_pre_check_before_installing_event_rest_api() {
+function wpem_rest_api_pre_check_before_installing_event_rest_api()
+{
     /*
-    * Check weather WP Event Manager is installed or not
-    */
-    if( !in_array( 'wp-event-manager/wp-event-manager.php', apply_filters( 'wpem_active_plugins', get_option( 'active_plugins' ) ) ) ) {
-            global $pagenow;
-        if($pagenow == 'plugins.php' ) {
+     * Check weather WP Event Manager is installed or not
+     */
+    if (!in_array('wp-event-manager/wp-event-manager.php', apply_filters('wpem_active_plugins', get_option('active_plugins')))) {
+        global $pagenow;
+        if ($pagenow == 'plugins.php') {
             echo '<div id="error" class="error notice is-dismissible"><p>';
-            echo esc_html__( 'WP Event Manager is require to use WP Event Manager Rest API ', 'wpem-rest-api' );
+            echo esc_html__('WP Event Manager is require to use WP Event Manager Rest API ', 'wpem-rest-api');
             echo '</p></div>';
         }
         return false;
     }
+
+    // Updater installed nothing to do
+	if (!class_exists('WPEM_Updater')) {
+
+		// Runtime global lock (one notice across all addons)
+		if (!empty($GLOBALS['wpem_updater_notice_rendered'])) {
+			return;
+		}
+
+		$GLOBALS['wpem_updater_notice_rendered'] = true;
+
+		echo '<div class="notice notice-warning is-dismissible">';
+		echo '<p><strong>WP Event Manager Premium Plugins:</strong> ';
+		echo esc_html__(
+			'Install the WPEM Updater plugin to enable automatic updates for your WP Event Manager premium add-ons.',
+			'wp-event-manager'
+		);
+		echo '</p>';
+		echo '<p><a class="button button-primary" target="_blank" href="https://wp-eventmanager.com/wp-content/uploads/wpem-autoupdater.zip">';
+		echo esc_html__('Download Add-ons Updater', 'wp-event-manager');
+		echo '</a></p>';
+		echo '</div>';
+	}
 }
-add_action( 'admin_notices', 'wpem_rest_api_pre_check_before_installing_event_rest_api' );
+add_action('admin_notices', 'wpem_rest_api_pre_check_before_installing_event_rest_api');

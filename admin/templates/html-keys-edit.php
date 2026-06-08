@@ -1,22 +1,26 @@
 <?php
-defined( 'ABSPATH' ) || exit; ?>
+defined('ABSPATH') || exit;
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+?>
 
 <div id="key-fields" class="settings-panel">
-	<h3 class="wpem-admin-tab-title"><?php esc_html_e( 'Key details', 'wpem-rest-api' ); ?></h3>
+	<h3 class="wpem-admin-tab-title"><?php esc_html_e('Key details', 'wpem-rest-api'); ?></h3>
 
-	<input type="hidden" id="key_id" value="<?php echo esc_attr( $key_id ); ?>" />
+	<input type="hidden" id="key_id" value="<?php echo esc_attr($key_id); ?>" />
 	<div class="wpem-admin-body">
 		<table id="api-keys-options" class="form-table">
 			<tbody>
 				<tr valign="top">
 					<th scope="row" class="titledesc">
 						<label for="key_description">
-							<?php esc_html_e( 'Description', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Description', 'wpem-rest-api'); ?>
 						</label>
 					</th>
 					<td class="forminp">
-						<input id="key_description" type="text" class="input-text regular-input" value="<?php echo esc_attr( $key_data['description'] ); ?>" />
-						<p class="description"><?php esc_html_e( 'Friendly name for identifying this key.', 'wpem-rest-api' );?></p>
+						<input id="key_description" type="text" class="input-text regular-input"
+							value="<?php echo esc_attr($key_data['description']); ?>" />
+						<p class="description">
+							<?php esc_html_e('Friendly name for identifying this key.', 'wpem-rest-api'); ?></p>
 					</td>
 				</tr>
 				<tr valign="top">
@@ -25,15 +29,16 @@ defined( 'ABSPATH' ) || exit; ?>
 					</th>
 					<td class="forminp">
 						<?php
-						$event_id        = ! empty( $key_data['event_id'] ) ? absint( $key_data['event_id'] ) : '';
-						$events = array(); ?>
+						$event_id = !empty($key_data['event_id']) ? absint($key_data['event_id']) : '';
+						$events = array();
+						?>
 					</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row" class="titledesc">
 						<label for="key_user">
-							<?php esc_html_e( 'User', 'wpem-rest-api' ); ?>
-							<?php  esc_html_e( 'Owner of these keys.', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('User', 'wpem-rest-api'); ?>
+							<?php esc_html_e('Owner of these keys.', 'wpem-rest-api'); ?>
 						</label>
 					</th>
 					<td class="forminp">
@@ -41,197 +46,217 @@ defined( 'ABSPATH' ) || exit; ?>
 						$disabled = "";
 						$all_users = wpem_get_event_users();
 						global $wpdb;
-						$table_name = esc_sql( $wpdb->prefix . 'wpem_rest_api_keys' );
-
-						$app_user = $wpdb->get_col("SELECT user_id FROM $table_name");
-						$user_id        = ! empty( $key_data['user_id'] ) ? absint( $key_data['user_id'] ) : '';
-						if($user_id > 0) 
+						$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
+						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
+						$app_user = $wpdb->get_col("SELECT user_id FROM {$table_name}");
+						$user_id = !empty($key_data['user_id']) ? absint($key_data['user_id']) : '';
+						if ($user_id > 0)
 							$disabled = "disabled"; ?>
-							<select class="food-manager-select-chosen" id="key_user" data-placeholder="<?php esc_attr_e( 'Search for a user&hellip;', 'wpem-rest-api' ); ?>" data-allow_clear="true" <?php echo esc_attr( $disabled );?>>
+						<select class="food-manager-select-chosen" id="key_user"
+							data-placeholder="<?php esc_attr_e('Search for a user&hellip;', 'wpem-rest-api'); ?>"
+							data-allow_clear="true" <?php echo esc_attr($disabled); ?>>
 							<?php
-							foreach ( $all_users as $user ) { 
-								if(!in_array($user['ID'], $app_user) || $user_id == $user['ID']) { ?>
-								<option value="<?php echo esc_attr( $user['ID'] ); ?>"  <?php if($user['ID'] == $user_id )  echo 'selected="selected"';?>><?php 
-								echo '#';
-								echo esc_attr( $user['ID'] ); 
-								echo ' ';
-								echo esc_html( $user['username'] );// htmlspecialchars to prfood XSS when rendered by chosen. ?></option>
-								<?php
+							foreach ($all_users as $user) {
+								if (!in_array($user['ID'], $app_user) || $user_id == $user['ID']) { ?>
+									<option value="<?php echo esc_attr($user['ID']); ?>" <?php if ($user['ID'] == $user_id)
+											 echo 'selected="selected"'; ?>><?php
+											  echo '#';
+											  echo esc_attr($user['ID']);
+											  echo ' ';
+											  echo esc_html($user['username']);// htmlspecialchars to prfood XSS when rendered by chosen. ?></option>
+									<?php
 								}
 							} ?>
 						</select>
-						<p class="description"><?php esc_attr_e( 'Name of the owner of the Key.', 'wpem-rest-api' );?></p> 
+						<p class="description"><?php esc_attr_e('Name of the owner of the Key.', 'wpem-rest-api'); ?>
+						</p>
 					</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row" class="titledesc">
 						<label for="key_description">
-							<?php esc_html_e( 'Expiry date', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Expiry date', 'wpem-rest-api'); ?>
 						</label>
 					</th>
 					<td class="forminp">
 						<?php
 						//convert date and time into date format
-						if( isset( $key_data['date_expires'] ) && !empty( $key_data['date_expires'] ) ) {
-							$expiry_date = gmdate( 'Y-m-d', strtotime( $key_data['date_expires'] ) ); 
-						} else { 
-							$expiry_date = '';  
+						if (isset($key_data['date_expires']) && !empty($key_data['date_expires'])) {
+							$expiry_date = gmdate('Y-m-d', strtotime($key_data['date_expires']));
+						} else {
+							$expiry_date = '';
 						} ?>
-						<input id="date_expires" type="text" class="input-text regular-input" value="<?php echo esc_attr($expiry_date ); ?>" />
+						<input id="date_expires" type="text" class="input-text regular-input"
+							value="<?php echo esc_attr($expiry_date); ?>" />
 						<p class="description">
-							<?php esc_html_e( 'Set an expiry date till which the key should be activated.','wpem-rest-api' );?>
+							<?php esc_html_e('Set an expiry date till which the key should be activated.', 'wpem-rest-api'); ?>
 						</p>
 					</td>
 				</tr>
 				<tr valign="top">
 					<th scope="row" class="titledesc">
 						<label for="key_permissions">
-							<?php esc_html_e( 'Permissions', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Permissions', 'wpem-rest-api'); ?>
 						</label>
 					</th>
 					<td class="forminp">
 						<select id="key_permissions" class="wpem-enhanced-select">
 							<?php
 							$permissions = array(
-								'read'       => __( 'Read', 'wpem-rest-api' ),
-								'write'      => __( 'Write', 'wpem-rest-api' ),
-								'read_write' => __( 'Read/Write', 'wpem-rest-api' ),
+								'read' => __('Read', 'wpem-rest-api'),
+								'write' => __('Write', 'wpem-rest-api'),
+								'read_write' => __('Read/Write', 'wpem-rest-api'),
 							);
-							foreach ( $permissions as $permission_id => $permission_name ) : ?>
-								<option value="<?php echo esc_attr( $permission_id ); ?>" <?php selected( $key_data['permissions'], $permission_id, true ); ?>><?php echo esc_html( $permission_name ); ?></option>
+							foreach ($permissions as $permission_id => $permission_name): ?>
+								<option value="<?php echo esc_attr($permission_id); ?>" <?php selected($key_data['permissions'], $permission_id, true); ?>>
+									<?php echo esc_html($permission_name); ?></option>
 							<?php endforeach; ?>
 						</select>
 						<p class="description">
-						<?php  esc_html_e( 'Select the access type of these keys.', 'wpem-rest-api' ); ?></p>
+							<?php esc_html_e('Select the access type of these keys.', 'wpem-rest-api'); ?>
+						</p>
 					</td>
 				</tr>
-				<?php 
-					$saved_mobile_menu = get_user_meta($user_id, '_mobile_menu', true);
-					$saved_mobile_menu = is_array($saved_mobile_menu) ? $saved_mobile_menu : [];
+				<?php
+				$saved_mobile_menu = get_user_meta($user_id, '_mobile_menu', true);
+				$saved_mobile_menu = is_array($saved_mobile_menu) ? $saved_mobile_menu : [];
 				?>
 				<tr valign="top">
 					<th scope="row" class="titledesc">
 						<label for="dashboard_menu">
-							<?php esc_html_e( 'Mobile Menu', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Mobile Menu', 'wpem-rest-api'); ?>
 						</label>
 					</th>
 					<td class="forminp">
-						<label><input type="checkbox" name="mobile_menu[]" value="dashboard" <?php checked(in_array('dashboard', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Dashboard', 'wpem-rest-api' ); ?></label><br>
-						<label><input type="checkbox" name="mobile_menu[]" value="attendees" <?php checked(in_array('attendees', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Attendees', 'wpem-rest-api' ); ?></label><br>
-						<label><input type="checkbox" name="mobile_menu[]" value="guest_list" <?php checked(in_array('guest_list', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Guest List', 'wpem-rest-api' ); ?></label><br>
-						<label><input type="checkbox" name="mobile_menu[]" value="orders" <?php checked(in_array('orders', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Orders', 'wpem-rest-api' ); ?></label><br>
-						<label><input type="checkbox" name="mobile_menu[]" value="arrivals" <?php checked(in_array('arrivals', $saved_mobile_menu)); ?>> <?php esc_html_e( 'Arrivals', 'wpem-rest-api' ); ?></label>
+						<label><input type="checkbox" name="mobile_menu[]" value="dashboard" <?php checked(in_array('dashboard', $saved_mobile_menu)); ?>>
+							<?php esc_html_e('Dashboard', 'wpem-rest-api'); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="attendees" <?php checked(in_array('attendees', $saved_mobile_menu)); ?>>
+							<?php esc_html_e('Attendees', 'wpem-rest-api'); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="guest_list" <?php checked(in_array('guest_list', $saved_mobile_menu)); ?>>
+							<?php esc_html_e('Guest List', 'wpem-rest-api'); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="orders" <?php checked(in_array('orders', $saved_mobile_menu)); ?>>
+							<?php esc_html_e('Orders', 'wpem-rest-api'); ?></label><br>
+						<label><input type="checkbox" name="mobile_menu[]" value="arrivals" <?php checked(in_array('arrivals', $saved_mobile_menu)); ?>>
+							<?php esc_html_e('Arrivals', 'wpem-rest-api'); ?></label>
 						<p class="description">
-							<?php esc_html_e( 'Choose which pages this key can access in the mobile app. Only the selected pages will be visible to the user.', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Choose which pages this key can access in the mobile app. Only the selected pages will be visible to the user.', 'wpem-rest-api'); ?>
 						</p>
 					</td>
 				</tr>
 				<tr valign="top">
-						<th scope="row" class="titledesc">
-							<label for="event_display_option"><?php esc_html_e( 'Event Show By', 'wpem-rest-api' ); ?></label>
-						</th>
-						<td class="forminp">
-							<?php
-							$event_show_by = isset( $key_data['event_show_by'] ) ? $key_data['event_show_by'] : 'loggedin'; // Default
-							?>
-							<label>
-								<input type="radio"  name="event_show_by" value="loggedin" <?php checked( $event_show_by, 'loggedin' ); ?> />
-								<?php esc_html_e( 'Show logged-in user events', 'wpem-rest-api' ); ?>
-							</label><br/>
-							<label>
-								<input type="radio"  name="event_show_by" value="selected" <?php checked( $event_show_by, 'selected' ); ?> />
-								<?php esc_html_e( 'Show selected events', 'wpem-rest-api' ); ?>
-							</label>
-							<p class="description"><?php esc_html_e( 'Choose how events are loaded for this key.', 'wpem-rest-api' ); ?></p>
-						</td>
-					</tr>
-					<tr valign="top" id="select-events-row" style="display:none">
 					<th scope="row" class="titledesc">
-						<label for="select_events"><?php esc_html_e( 'Select Events', 'wpem-rest-api' ); ?></label>
+						<label
+							for="event_display_option"><?php esc_html_e('Event Show By', 'wpem-rest-api'); ?></label>
 					</th>
 					<td class="forminp">
 						<?php
-							$selected_events = array();
-							if (isset($key_data['selected_events'])) {
-								if (is_serialized($key_data['selected_events'])) {
-									$selected_events = maybe_unserialize($key_data['selected_events']);
-								} elseif (is_array($key_data['selected_events'])) {
-									$selected_events = $key_data['selected_events'];
-								}
-								
-								$selected_events = array_map('absint', (array)$selected_events);
-							}
-							$events = get_posts(array(
-								'post_type'      => 'event_listing',
-								'post_status'    => 'publish',
-								'posts_per_page' => -1,
-								'orderby'        => 'title',
-								'order'          => 'ASC',
-							));
+						$event_show_by = isset($key_data['event_show_by']) ? $key_data['event_show_by'] : 'loggedin'; // Default
 						?>
-						<select id="select_events" name="select_events[]" class="event-manager-select-chosen" multiple data-placeholder="<?php esc_attr_e( 'Choose events&hellip;', 'wpem-rest-api' ); ?>">
-							<?php foreach ($events as $event) : ?>
+						<label>
+							<input type="radio" name="event_show_by" value="loggedin" <?php checked($event_show_by, 'loggedin'); ?> />
+							<?php esc_html_e('Show logged-in user events', 'wpem-rest-api'); ?>
+						</label><br />
+						<label>
+							<input type="radio" name="event_show_by" value="selected" <?php checked($event_show_by, 'selected'); ?> />
+							<?php esc_html_e('Show selected events', 'wpem-rest-api'); ?>
+						</label>
+						<p class="description">
+							<?php esc_html_e('Choose how events are loaded for this key.', 'wpem-rest-api'); ?></p>
+					</td>
+				</tr>
+				<tr valign="top" id="select-events-row" style="display:none">
+					<th scope="row" class="titledesc">
+						<label for="select_events"><?php esc_html_e('Select Events', 'wpem-rest-api'); ?></label>
+					</th>
+					<td class="forminp">
+						<?php
+						$selected_events = array();
+						if (isset($key_data['selected_events'])) {
+							if (is_serialized($key_data['selected_events'])) {
+								$selected_events = maybe_unserialize($key_data['selected_events']);
+							} elseif (is_array($key_data['selected_events'])) {
+								$selected_events = $key_data['selected_events'];
+							}
+
+							$selected_events = array_map('absint', (array) $selected_events);
+						}
+						$events = get_posts(array(
+							'post_type' => 'event_listing',
+							'post_status' => 'publish',
+							'posts_per_page' => -1,
+							'orderby' => 'title',
+							'order' => 'ASC',
+						));
+						?>
+						<select id="select_events" name="select_events[]" class="event-manager-select-chosen" multiple
+							data-placeholder="<?php esc_attr_e('Choose events&hellip;', 'wpem-rest-api'); ?>">
+							<?php foreach ($events as $event): ?>
 								<option value="<?php echo esc_attr($event->ID); ?>" <?php selected(in_array($event->ID, $selected_events), true); ?>>
 									<?php echo esc_html($event->post_title); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
-						<p class="description"><?php esc_html_e('Select one or more events to associate with this key.', 'wpem-rest-api'); ?></p>
+						<p class="description">
+							<?php esc_html_e('Select one or more events to associate with this key.', 'wpem-rest-api'); ?>
+						</p>
 					</td>
 				</tr>
 
-				<?php if ( 0 !== $key_id ) : ?>
+				<?php if (0 !== $key_id): ?>
 					<tr valign="top">
 						<th scope="row" class="titledesc">
-							<?php esc_html_e( 'Consumer key ending in', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Consumer key ending in', 'wpem-rest-api'); ?>
 						</th>
 						<td class="forminp">
-							<code>&hellip;<?php echo esc_html( $key_data['truncated_key'] ); ?></code>
+							<code>&hellip;<?php echo esc_html($key_data['truncated_key']); ?></code>
 						</td>
 					</tr>
 					<tr valign="top">
 						<th scope="row" class="titledesc">
-							<?php esc_html_e( 'Last access', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Last access', 'wpem-rest-api'); ?>
 						</th>
 						<td class="forminp">
 							<span>
 								<?php
-								if ( ! empty( $key_data['last_access'] ) ) {
+								if (!empty($key_data['last_access'])) {
 									/* translators: 1: last access date 2: last access time */
-									$date = sprintf( __( '%1$s at %2$s', 'wpem-rest-api' ), date_i18n( get_option('date_format'), strtotime( $key_data['last_access'] ) ), date_i18n(get_option('time_format'), strtotime( $key_data['last_access'] ) ) );
+									$date = sprintf(__('%1$s at %2$s', 'wpem-rest-api'), date_i18n(get_option('date_format'), strtotime($key_data['last_access'])), date_i18n(get_option('time_format'), strtotime($key_data['last_access'])));
 
-									echo esc_html( apply_filters( 'wpem_api_key_last_access_datetime', $date, $key_data['last_access'] ) );
+									echo esc_html(apply_filters('wpem_api_key_last_access_datetime', $date, $key_data['last_access']));
 								} else {
-									esc_html_e( 'Unknown', 'wpem-rest-api' );
+									esc_html_e('Unknown', 'wpem-rest-api');
 								} ?>
 							</span>
 						</td>
 					</tr>
 					<tr valign="top">
 						<th scope="row" class="titledesc">
-							<?php esc_html_e( 'Restrict Check-in', 'wpem-rest-api' ); ?>
+							<?php esc_html_e('Restrict Check-in', 'wpem-rest-api'); ?>
 						</th>
-						<?php $restrict = get_user_meta( $key_data["user_id"], '_restrict_check_in',true );
-						 ?>
-						<td class="forminp" id="js-restrict-check-in" >
-							<input id="js-restrict-check-in" type="checkbox" name="restrict_check_in"   <?php echo ($restrict === '1') ? 'checked="checked"' : ''; ?> value="1" >
+						<?php $restrict = get_user_meta($key_data["user_id"], '_restrict_check_in', true);
+						?>
+						<td class="forminp" id="js-restrict-check-in">
+							<input id="js-restrict-check-in" type="checkbox" name="restrict_check_in" <?php echo ($restrict === '1') ? 'checked="checked"' : ''; ?> value="1">
 						</td>
 					</tr>
-					
+
 				<?php endif ?>
 			</tbody>
-		</table>	
+		</table>
 	</div>
 
-	<?php do_action( 'wpem_admin_key_fields', $key_data ); 
+	<?php
+	// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+	do_action('wpem_admin_key_fields', $key_data);
 
-	if ( 0 === intval( $key_id ) ) {
-		submit_button( __( 'Generate API key', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'wpem_update_api_key' );
+	if (0 === intval($key_id)) {
+		submit_button(__('Generate API key', 'wpem-rest-api'), 'primary wpem-backend-theme-button', 'wpem_update_api_key');
 		echo '<div id="api_key_loader" class="loader" style="display:none;margin-left: 20px;"></div>';
 	} else { ?>
 		<p class="submit">
-			<?php submit_button( __( 'Save changes', 'wpem-rest-api' ), 'primary wpem-backend-theme-button', 'wpem_update_api_key', false ); ?>
-			<a class="wpem-backend-theme-button wpem-revoke-button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'revoke-key' => $key_id ), admin_url( 'edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access' ) ), 'revoke' ) ); ?>"><?php esc_html_e( 'Revoke key', 'wpem-rest-api' ); ?></a>
+			<?php submit_button(__('Save changes', 'wpem-rest-api'), 'primary wpem-backend-theme-button', 'wpem_update_api_key', false); ?>
+			<a class="wpem-backend-theme-button wpem-revoke-button"
+				href="<?php echo esc_url(wp_nonce_url(add_query_arg(array('revoke-key' => $key_id), admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access')), 'revoke')); ?>"><?php esc_html_e('Revoke key', 'wpem-rest-api'); ?></a>
 		</p>
 		<?php
 	} ?>
@@ -243,7 +268,7 @@ defined( 'ABSPATH' ) || exit; ?>
 		<tbody>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
-					<?php esc_html_e( 'App key', 'wpem-rest-api' ); ?>
+					<?php esc_html_e('App key', 'wpem-rest-api'); ?>
 				</th>
 				<td class="forminp">
 					<input id="app_key" type="text" value="{{ data.app_key }}" size="55" readonly="readonly">
@@ -252,7 +277,7 @@ defined( 'ABSPATH' ) || exit; ?>
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
-					<?php esc_html_e( 'Consumer key', 'wpem-rest-api' ); ?>
+					<?php esc_html_e('Consumer key', 'wpem-rest-api'); ?>
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_key" type="text" value="{{ data.consumer_key }}" size="55" readonly="readonly">
@@ -261,7 +286,7 @@ defined( 'ABSPATH' ) || exit; ?>
 			</tr>
 			<tr valign="top">
 				<th scope="row" class="titledesc">
-					<?php esc_html_e( 'Consumer secret', 'wpem-rest-api' ); ?>
+					<?php esc_html_e('Consumer secret', 'wpem-rest-api'); ?>
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_secret" type="text" value="{{ data.consumer_secret }}" size="55" readonly="readonly">
@@ -276,21 +301,21 @@ defined( 'ABSPATH' ) || exit; ?>
 
 <script>
 	function app_key_copy_fun() {
-		var app_key_copy = document.getElementById( "app_key" );
-		var btn_text_app = document.querySelector( '#app_key + button' );
-		navigator.clipboard.writeText( app_key_copy.value );
+		var app_key_copy = document.getElementById("app_key");
+		var btn_text_app = document.querySelector('#app_key + button');
+		navigator.clipboard.writeText(app_key_copy.value);
 		btn_text_app.innerHTML = 'copied';
 	}
 	function consumer_copy_fun() {
-		var consumer_copy = document.getElementById( "key_consumer_key" );
-		var btn_text_key = document.querySelector( '#key_consumer_key + button' );
-		navigator.clipboard.writeText( consumer_copy.value );
+		var consumer_copy = document.getElementById("key_consumer_key");
+		var btn_text_key = document.querySelector('#key_consumer_key + button');
+		navigator.clipboard.writeText(consumer_copy.value);
 		btn_text_key.innerHTML = 'copied';
 	}
 	function secret_copy_fun() {
-		var secret_copy = document.getElementById( "key_consumer_secret" );
-		var btn_text_secret = document.querySelector( '#key_consumer_secret + button' );
-		navigator.clipboard.writeText( secret_copy.value );
+		var secret_copy = document.getElementById("key_consumer_secret");
+		var btn_text_secret = document.querySelector('#key_consumer_secret + button');
+		navigator.clipboard.writeText(secret_copy.value);
 		btn_text_secret.innerHTML = 'copied';
 	}
 </script>

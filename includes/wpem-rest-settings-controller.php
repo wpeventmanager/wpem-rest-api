@@ -13,7 +13,8 @@
 
 defined('ABSPATH') || exit;
 
-class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller {
+class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller
+{
     /**
      * Endpoint namespace.
      *
@@ -31,23 +32,25 @@ class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller {
     /**
      * Initialize routes.
      */
-    public function __construct() {
+    public function __construct()
+    {
         add_action('rest_api_init', array($this, 'register_routes'), 10);
     }
 
     /**
      * Register matchmaking settings routes (event-controller style structure).
      */
-    public function register_routes() {
+    public function register_routes()
+    {
         register_rest_route(
             $this->namespace,
             '/' . $this->rest_base,
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
-                    'callback'            => array($this, 'get_settings'),
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => array($this, 'get_settings'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(),
+                    'args' => array(),
                 )
             )
         );
@@ -55,15 +58,33 @@ class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller {
         register_rest_route(
             $this->namespace,
             '/' . $this->rest_base,
-           array(
+            array(
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
-                    'callback'            => array($this, 'update_settings'),
+                    'methods' => WP_REST_Server::EDITABLE,
+                    'callback' => array($this, 'update_settings'),
                     'permission_callback' => array($this, 'permission_check'),
-                    'args'                => array(),
+                    'args' => array(),
                 )
             )
         );
+    }
+    
+    /**
+     * Permission callback: ensure matchmaking is enabled and user is authorized.
+     *
+     * Note: This follows the plugin's pattern of returning the standardized
+     * error payload via prepare_error_for_response on failure.
+     *
+     * @param WP_REST_Request $request
+     * @return bool|WP_Error True if allowed, or sends JSON error.
+     */
+    public function permission_check($request)
+    {
+        $auth_check = $this->wpem_check_authorized_user();
+        if ($auth_check) {
+            return $auth_check; // Standardized error already sent
+        }
+        return true;
     }
 
     /**
@@ -73,12 +94,13 @@ class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller {
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function get_settings($request) {
-        $user_id  = wpem_rest_get_current_user_id();
-		$print_badge_mode = get_user_meta($user_id, 'wpem_print_badge_mode', true) ? get_user_meta($user_id, 'wpem_print_badge_mode', true)  : 0;
+    public function get_settings($request)
+    {
+        $user_id = wpem_rest_get_current_user_id();
+        $print_badge_mode = get_user_meta($user_id, 'wpem_print_badge_mode', true) ? get_user_meta($user_id, 'wpem_print_badge_mode', true) : 0;
 
         $settings = [
-            'wpem_print_badge_mode' => (int)$print_badge_mode, 
+            'wpem_print_badge_mode' => (int) $print_badge_mode,
         ];
 
         $response_data = self::prepare_error_for_response(200);
@@ -95,11 +117,12 @@ class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller {
      * @return WP_REST_Response $response The response object.
      * @since 1.1.0
      */
-    public function update_settings($request) {
+    public function update_settings($request)
+    {
         $user_id = wpem_rest_get_current_user_id();
         $wpem_print_badge_mode = $request->get_param('wpem_print_badge_mode') ? 1 : 0;
 
-		update_user_meta($user_id, 'wpem_print_badge_mode', (int) $wpem_print_badge_mode);
+        update_user_meta($user_id, 'wpem_print_badge_mode', (int) $wpem_print_badge_mode);
 
         return self::prepare_error_for_response(200);
     }
