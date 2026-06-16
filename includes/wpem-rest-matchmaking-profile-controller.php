@@ -157,7 +157,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_wpem_matchmaking_filter_users'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'permission_callback' => array($this, 'search_profiles_permission_check'),
                     'args' => array(
                         'profession' => array('required' => false, 'type' => 'string'),
                         'company_name' => array('required' => false, 'type' => 'string'),
@@ -244,6 +244,30 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $current_user_id = wpem_rest_get_current_user_id();
 
         if ( user_can( $current_user_id, 'manage_options' ) || user_can( $current_user_id, 'manage_organizers' ) ) {
+            return true;
+        }
+
+        return self::prepare_error_for_response( 403 );
+    }
+
+    public function search_profiles_permission_check( $request ) {
+
+        $auth_check = $this->wpem_check_authorized_user();
+
+        if ( $auth_check ) {
+            return $auth_check;
+        }
+
+        $current_user_id = wpem_rest_get_current_user_id();
+
+        // User must have an active matchmaking profile.
+        $matchmaking_enabled = get_user_meta(
+            $current_user_id,
+            '_matchmaking_profile',
+            true
+        );
+
+        if ( ! empty( $matchmaking_enabled ) ) {
             return true;
         }
 
