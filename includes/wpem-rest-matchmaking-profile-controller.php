@@ -208,6 +208,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
 
     public function get_user_profile_permission_check( $request ) {
+
+        // Authentication
+        $auth_check = $this->wpem_check_authorized_user();
+
+        if ( $auth_check ) {
+            return $auth_check;
+        }
+
         $current_user = (int) wpem_rest_get_current_user_id();
         $requested_user = absint( $request->get_param( 'user_id' ) );
         if ( user_can( $current_user, 'manage_options' ) || user_can( $current_user, 'manage_organizers' ) ) {
@@ -225,41 +233,21 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
     public function approve_profile_permission_check( $request ) {
 
+        // Authentication
         $auth_check = $this->wpem_check_authorized_user();
 
         if ( $auth_check ) {
             return $auth_check;
         }
 
-        $current_user_id = (int) wpem_rest_get_current_user_id();
+        // Authorization
+        $current_user_id = wpem_rest_get_current_user_id();
 
-        // Admin
-        if ( user_can( $current_user_id, 'manage_options' ) ) {
+        if ( user_can( $current_user_id, 'manage_options' ) || user_can( $current_user_id, 'manage_organizers' ) ) {
             return true;
         }
 
-        $params = $request->get_json_params();
-
-        $registration_id = isset( $params['registration_id'] ) ? absint( $params['registration_id'] ) : 0;
-
-        if ( ! $registration_id ) {
-            return self::prepare_error_for_response(403);
-        }
-
-        $event_id = (int) wp_get_post_parent_id( $registration_id );
-
-        if ( ! $event_id ) {
-            return self::prepare_error_for_response(403);
-        }
-
-        // Event organizer
-        $event_owner = (int) get_post_field( 'post_author', $event_id );
-
-        if ( $event_owner === $current_user_id ) {
-            return true;
-        }
-
-        return self::prepare_error_for_response(403);
+        return self::prepare_error_for_response( 403 );
     }
     
     /**
