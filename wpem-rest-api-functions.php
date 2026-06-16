@@ -295,6 +295,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'message' => __('You Do Not Have Permission to Delete Resource.', 'wpem-rest-api')
             ),
             array(
+                'code' => 414,
+                'status' => 'Error',
+                'message' => __('You are not allowed to view this profile.', 'wpem-rest-api')
+            ),
+            array(
                 'code' => 500,
                 'status' => 'Internal server error',
                 'message' => __('An unexpected error has occurred in processing the request. View the logs on the device for details.', 'wpem-rest-api')

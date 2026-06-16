@@ -47,7 +47,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_user_profile_data'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'permission_callback' => array($this, 'get_user_profile_permission_check'),
                     'args' => array(),
                 )
             )
@@ -205,6 +205,22 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return $auth_check; // Standardized error already sent
         }
         return true;
+    }
+
+    public function get_user_profile_permission_check( $request ) {
+        $current_user = (int) wpem_rest_get_current_user_id();
+        $requested_user = absint( $request->get_param( 'user_id' ) );
+        if ( user_can( $current_user, 'manage_options' ) || user_can( $current_user, 'manage_organizers' ) ) {
+            return true;
+        }
+        if ( empty( $requested_user ) ) {
+            return true; // own profile
+        }
+        if ( $current_user === $requested_user ) {
+            return true;
+        }
+        
+        return self::prepare_error_for_response(414);
     }
 
     public function approve_profile_permission_check( $request ) {
