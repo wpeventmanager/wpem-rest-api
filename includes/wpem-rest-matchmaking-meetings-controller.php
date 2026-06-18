@@ -210,7 +210,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($auth_check) {
             return $auth_check; // Standardized error already sent
         }
-        return true;
+        
+        $current_user_id = (int) wpem_rest_get_current_user_id();
+        $current_user = get_userdata( $current_user_id );
+        $allowed_roles = array('administrator', 'organizer', 'customer', get_option( 'default_role' ));
+        if ( array_intersect( $current_user->roles, $allowed_roles ) ) {
+            return true;
+        }
     }
     
     /**
