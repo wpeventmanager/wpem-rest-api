@@ -217,6 +217,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ( array_intersect( $current_user->roles, $allowed_roles ) ) {
             return true;
         }
+        return self::prepare_error_for_response( 403 );
     }
     
     /**
