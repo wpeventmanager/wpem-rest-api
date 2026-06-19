@@ -216,9 +216,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return $auth_check;
         }
 
+        global $wpdb;
         $current_user = (int) wpem_rest_get_current_user_id();
         $requested_user = absint( $request->get_param( 'user_id' ) );
-        if ( user_can( $current_user, 'manage_options' ) || user_can( $current_user, 'manage_organizers' ) ) {
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
+        $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $current_user));
+        $is_user_organizer = ($user_info) ? 1 : 0;
+
+        if ( (!empty($is_user_organizer)) && (user_can($current_user, 'manage_options') || user_can($current_user, 'manage_organizers') || user_can($current_user, 'customer') || get_option( 'default_role' )) ) {
             return true;
         }
         if ( empty( $requested_user ) ) {
