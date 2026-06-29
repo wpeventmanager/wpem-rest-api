@@ -152,6 +152,42 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                     $payment_method = get_post_meta( $order_id, '_payment_method', true );
                     $order_amount = get_post_meta( $order_id, '_order_total', true );
 
+                    // get organizer name and venue
+                    $organizer_name = '';
+                    $venue_name     = '';
+
+                    $order_event_meta = maybe_unserialize( get_post_meta( $order_id, '_event_id', true ) );
+                    $order_event_id = 0;
+                    if ( is_array( $order_event_meta ) && ! empty( $order_event_meta[0] ) ) {
+                        $order_event_id = absint( $order_event_meta[0] );
+                    }
+                    if ( $order_event_id ) {
+                        // Venue
+                        $venue_name = get_post_meta( $order_event_id, '_event_location', true );
+                        if ( empty( $venue_name ) ) {
+                            $venue_name = '';
+                        }
+
+                        // Organizer
+                        $organizer_ids = maybe_unserialize( get_post_meta( $order_event_id, '_event_organizer_ids', true ) );
+                        if ( is_array( $organizer_ids ) && ! empty( $organizer_ids[0] ) ) {
+                            $organizer_id = absint( $organizer_ids[0] );
+                            if ( $organizer_id ) {
+                                $organizer_name = get_post_meta( $organizer_id, '_organizer_name', true );
+                                if ( empty( $organizer_name ) ) {
+                                    $organizer_name = '';
+                                }
+                            }
+                        }
+                    }
+
+                    $get_payment_status = $wpdb->get_var($wpdb->prepare( "SELECT post_status FROM {$wpdb->posts} WHERE ID = %d", $order_id));
+                    if($get_payment_status === 'wc-completed') {
+                        $payment_status = 'paid';
+                    } else {
+                        $payment_status = 'unpaid';
+                    }
+
                     $event_data[ $event_id ]['ticket_detail'][] = array(
                         'registration_id' => absint( $registration_id ),
                         'order_id'        => $order_id,
@@ -160,9 +196,12 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         'last_name'       => $last_name,
                         'email'           => $email,
                         'user_photo'      => $user_photo,
-                        'payment_method'  => $payment_method,
                         'order_date'      => wp_date( 'Y-m-d', strtotime( $order_date ) ),
                         'order_amount'    => $order_amount,
+                        'payment_method'  => $payment_method,
+                        'payment_status'  => $payment_status,
+                        'organizer_name'  => $organizer_name,
+                        'event_venue'      => $venue_name,
                     );
                 }
             }
