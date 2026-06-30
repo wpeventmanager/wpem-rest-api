@@ -188,6 +188,9 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         $payment_status = 'unpaid';
                     }
 
+                    // get seat number
+                    $seatnumber = maybe_unserialize( get_post_meta( $registration_id, '_seats_details', true ) );
+
                     $event_data[ $event_id ]['ticket_detail'][] = array(
                         'registration_id' => absint( $registration_id ),
                         'order_id'        => $order_id,
@@ -202,6 +205,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         'payment_status'  => $payment_status,
                         'organizer_name'  => $organizer_name,
                         'event_venue'      => $venue_name,
+                        'seat_number'      => is_array( $seatnumber ) ? $seatnumber[0] : $seatnumber,
                     );
                 }
             }
