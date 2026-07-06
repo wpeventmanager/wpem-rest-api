@@ -62,13 +62,13 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods'             => WP_REST_Server::READABLE,
                     'callback'            => array($this, 'get_items'),
-                    'permission_callback' => array($this, 'get_items_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_collection_params(),
                 ),
                 array(
                     'methods'             => WP_REST_Server::CREATABLE,
                     'callback'            => array($this, 'create_item'),
-                    'permission_callback' => array($this, 'create_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
@@ -88,7 +88,7 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods'             => WP_REST_Server::READABLE,
                     'callback'            => array($this, 'get_item'),
-                    'permission_callback' => array($this, 'get_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(
                         'context' => $this->get_context_param(array('default' => 'view')),
                     ),
@@ -96,13 +96,13 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods'             => WP_REST_Server::EDITABLE,
                     'callback'            => array($this, 'update_item'),
-                    'permission_callback' => array($this, 'update_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
                     'methods'             => WP_REST_Server::DELETABLE,
                     'callback'            => array($this, 'delete_item'),
-                    'permission_callback' => array($this, 'delete_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => array(
                         'force' => array(
                             'default'     => false,
@@ -122,7 +122,7 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods'             => WP_REST_Server::EDITABLE,
                     'callback'            => array($this, 'batch_items'),
-                    'permission_callback' => array($this, 'batch_items_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args'                => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 'schema' => array($this, 'get_public_batch_schema'),

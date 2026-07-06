@@ -47,7 +47,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_user_profile_data'),
-                    'permission_callback' => array($this, 'get_user_profile_permission_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => array(),
                 )
             )
@@ -92,7 +92,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             array(
                 'methods' => WP_REST_Server::CREATABLE,
                 'callback' => array($this, 'approve_matchmaking_profile'),
-                'permission_callback' => array($this, 'approve_profile_permission_check'),
+                'permission_callback' => array($this, 'permission_check'),
                 // 'args'     => array(
                 //     'registration_id' => array(
                 //         'required' => true,
@@ -157,7 +157,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_wpem_matchmaking_filter_users'),
-                    'permission_callback' => array($this, 'search_profiles_permission_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => array(
                         'profession' => array('required' => false, 'type' => 'string'),
                         'company_name' => array('required' => false, 'type' => 'string'),

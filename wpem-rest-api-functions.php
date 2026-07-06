@@ -562,18 +562,20 @@ function wpem_get_user_login_status($user_id)
     $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
     $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $user_id));
+    $is_admin  = user_can( $user_id, 'manage_options' );
 
     if ($user_info) {
         $date_expires = strtotime($user_info->date_expires);
         $today = strtotime(gmdate('Y-m-d'));
-
-        if ($date_expires < $today) {
+        $user_status['is_organizer'] = 1;
+        if ($date_expires < $today && !$is_admin) {
             $user_status['is_organizer'] = 0;
-        } else {
-            $user_status['is_organizer'] = 1;
         }
     } else {
         $user_status['is_organizer'] = 0;
+        if ($is_admin) {
+            $user_status['is_organizer'] = 1;
+        }
     }
 
     return $user_status;

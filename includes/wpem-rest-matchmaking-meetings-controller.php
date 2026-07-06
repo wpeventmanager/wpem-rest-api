@@ -194,31 +194,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             )
         );
     }
-
-    /**
-     * Permission callback: ensure matchmaking is enabled and user is authorized.
-     *
-     * Note: This follows the plugin's pattern of returning the standardized
-     * error payload via prepare_error_for_response on failure.
-     *
-     * @param WP_REST_Request $request
-     * @return bool|WP_Error True if allowed, or sends JSON error.
-     */
-    public function permission_check($request)
-    {
-        $auth_check = $this->wpem_check_authorized_user();
-        if ($auth_check) {
-            return $auth_check; // Standardized error already sent
-        }
-        
-        $current_user_id = (int) wpem_rest_get_current_user_id();
-        $current_user = get_userdata( $current_user_id );
-        $allowed_roles = array('administrator', 'organizer', 'customer', get_option( 'default_role' ));
-        if ( array_intersect( $current_user->roles, $allowed_roles ) ) {
-            return true;
-        }
-        return self::prepare_error_for_response( 403 );
-    }
     
     /**
      * Format a DB row as API response data.

@@ -688,13 +688,13 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * Function to check authorization and return user data
      * @since 1.0.1
      */
-    public function wpem_check_authorized_user()
+    public function wpem_check_authorized_user_old()
     {
         // Get the authorization header
         global $wpdb;
         $headers = getallheaders();
         $token = '';
-
+        
         // First try standard header
         if (isset($headers['Authorization'])) {
             $token = trim(str_replace('Bearer', '', $headers['Authorization']));
@@ -721,38 +721,162 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             if (!wp_check_password($user_data['password'], $user->user_pass, $user->ID)) {
                 return self::prepare_error_for_response(405);
             } else {
-                $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                $user_meta = get_user_meta($user->ID, '_matchmaking_profile', true);
-                if ($user_info) {
-                    $date_expires = gmdate('Y-m-d', strtotime($user_info->date_expires));
-                    if ($user_info->permissions == 'write') {
-                        return self::prepare_error_for_response(203);
-                    } else if ($date_expires < gmdate('Y-m-d')) {
-                        if (!empty($user_meta) && $user_meta == 1) {
-                            if (!get_option('enable_matchmaking', false)) {
-                                return self::prepare_error_for_response(506);
+               if ( user_can( $user->ID, 'manage_options' ) ) {
+                    $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    $user_meta = get_user_meta($user->ID, '_matchmaking_profile', true);
+                    if ($user_info) {
+                        $date_expires = gmdate('Y-m-d', strtotime($user_info->date_expires));
+                        if ($user_info->permissions == 'write') {
+                            return self::prepare_error_for_response(203);
+                        } else if ($date_expires < gmdate('Y-m-d')) {
+                            if (!empty($user_meta) && $user_meta == 1) {
+                                if (!get_option('enable_matchmaking', false)) {
+                                    return self::prepare_error_for_response(506);
+                                } else {
+                                    return false;
+                                }
                             } else {
-                                return false;
+                                return self::prepare_error_for_response(503);
                             }
                         } else {
-                            return self::prepare_error_for_response(503);
+                            return false;
+                        }
+                    } else if (!empty($user_meta) && $user_meta == 1) {
+                        if (!get_option('enable_matchmaking', false)) {
+                            return self::prepare_error_for_response(506);
+                        } else {
+                            return false;
                         }
                     } else {
                         return false;
                     }
-                } else if (!empty($user_meta) && $user_meta == 1) {
-                    if (!get_option('enable_matchmaking', false)) {
-                        return self::prepare_error_for_response(506);
+               }else{
+                    $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    $user_meta = get_user_meta($user->ID, '_matchmaking_profile', true);
+                    if ($user_info) {
+                        $date_expires = gmdate('Y-m-d', strtotime($user_info->date_expires));
+                        if ($user_info->permissions == 'write') {
+                            return self::prepare_error_for_response(203);
+                        } else if ($date_expires < gmdate('Y-m-d')) {
+                            if (!empty($user_meta) && $user_meta == 1) {
+                                if (!get_option('enable_matchmaking', false)) {
+                                    return self::prepare_error_for_response(506);
+                                } else {
+                                    return false;
+                                }
+                            } else {
+                                return self::prepare_error_for_response(503);
+                            }
+                        } else {
+                            return false;
+                        }
+                    } else if (!empty($user_meta) && $user_meta == 1) {
+                        if (!get_option('enable_matchmaking', false)) {
+                            return self::prepare_error_for_response(506);
+                        } else {
+                            return false;
+                        }
                     } else {
-                        return false;
+                        return self::prepare_error_for_response(405);
                     }
-                } else {
-                    return self::prepare_error_for_response(405);
-                }
+               }
             }
         } else {
             return self::prepare_error_for_response(405);
         }
+    }
+
+    public function wpem_check_authorized_user() {
+        global $wpdb;
+
+        // Get the authorization header
+        $headers = getallheaders();
+        $token   = '';
+
+        // Get bearer token.
+        if ( isset( $headers['Authorization'] ) ) {
+                // First try standard header
+            $token = trim( str_replace( 'Bearer', '', $headers['Authorization'] ) );
+        } elseif ( isset( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
+                // Try for some server environments
+            $token = trim( str_replace( 'Bearer', '', wp_kses_post( wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ) ) ) );
+        } elseif ( isset( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) ) {
+                // NGINX or fastcgi_pass may use this
+            $token = trim( str_replace( 'Bearer', '', sanitize_text_field( wp_unslash( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) ) ) );
+        }
+
+        if ( empty( $token ) ) {
+            return self::prepare_error_for_response( 405 );
+        }
+
+        $user_data = self::wpem_validate_jwt_token( $token );
+
+        if ( ! $user_data ) {
+            return self::prepare_error_for_response( 405 );
+        }
+
+        $user = get_userdata( $user_data['id'] );
+
+        if ( ! $user || ! wp_check_password( $user_data['password'], $user->user_pass, $user->ID ) ) {
+            return self::prepare_error_for_response( 405 );
+        }
+
+        $is_admin  = user_can( $user->ID, 'manage_options' );
+        $user_meta = get_user_meta( $user->ID, '_matchmaking_profile', true );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$user->ID));
+
+        if ( $user_info ) {
+
+            if ( 'write' === $user_info->permissions ) {
+                return self::prepare_error_for_response( 203 );
+            }
+
+            $date_expires = gmdate( 'Y-m-d', strtotime( $user_info->date_expires ) );
+
+            if ( $date_expires < gmdate( 'Y-m-d' ) ) {
+
+                if ( ! empty( $user_meta ) && 1 == $user_meta ) {
+
+                    if ( ! get_option( 'enable_matchmaking', false ) ) {
+                        return self::prepare_error_for_response( 506 );
+                    }
+
+                    return false;
+                }
+
+                if ( $is_admin ) {
+                    return false;
+                }
+
+                return self::prepare_error_for_response( 503 );
+            }
+
+            return false;
+        }
+
+        // Admin will have full access if match making functionality is enabled, otherwise return error.
+        // If admin matchmaking is enabled or not they will have access the API.
+        if ( $is_admin ) {
+
+            if ( ! get_option( 'enable_matchmaking', false ) ) {
+                return self::prepare_error_for_response( 506 );
+            }
+
+            return false;
+        }
+
+        // No API key found.
+        if ( ! empty( $user_meta ) && 1 == $user_meta ) {
+
+            if ( ! get_option( 'enable_matchmaking', false ) ) {
+                return self::prepare_error_for_response( 506 );
+            }
+
+            return false;
+        }
+        
+        return self::prepare_error_for_response( 405 );
     }
 
     /**
