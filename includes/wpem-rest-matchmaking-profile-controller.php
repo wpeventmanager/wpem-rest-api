@@ -215,21 +215,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if ( $auth_check ) {
             return $auth_check;
         }
-
-        global $wpdb;
+        
         $current_user = (int) wpem_rest_get_current_user_id();
+        $is_admin  = user_can( $current_user, 'manage_options' );
         $requested_user = absint( $request->get_param( 'user_id' ) );
-        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-        $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $current_user));
-        $is_user_organizer = ($user_info) ? 1 : 0;
 
-        if ( (!empty($is_user_organizer)) && (user_can($current_user, 'manage_options') || user_can($current_user, 'manage_organizers') || user_can($current_user, 'customer') || get_option( 'default_role' )) ) {
-            return true;
-        }
-        if ( empty( $requested_user ) ) {
-            return true; // own profile
-        }
-        if ( $current_user === $requested_user ) {
+        if ( empty( $requested_user ) || ($current_user === $requested_user) || $is_admin ) {
             return true;
         }
         
@@ -664,6 +655,11 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function approve_matchmaking_profile($request)
     {
+        $current_user = wpem_rest_get_current_user_id();
+        if($this->wpem_user_has_permission($current_user, 'read')) {
+            return self::prepare_error_for_response(403);
+        }
+        
         $params = $request->get_json_params();
         $registration_id = isset($params['registration_id']) ? trim($params['registration_id']) : 0;
         $profile_status = isset($params['profile_status']) ? $params['profile_status'] : 0;

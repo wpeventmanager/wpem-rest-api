@@ -942,4 +942,31 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             return null;  // Or handle the case where code 400 is not found
         }
     }
+
+    /**
+     * Check if a user has the exact permission.
+     *
+     * @param int    $user_id
+     * @param string $required_permission read, write, or read_write.
+     *
+     * @return bool
+     */
+    function wpem_user_has_permission( $user_id, $required_permission ) {
+        global $wpdb;
+
+        $permission = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT permissions
+                FROM {$wpdb->prefix}wpem_rest_api_keys
+                WHERE user_id = %d",
+                $user_id
+            )
+        );
+
+        if ( empty( $permission ) ) {
+            return false;
+        }
+
+        return $permission === $required_permission;
+    }
 }
