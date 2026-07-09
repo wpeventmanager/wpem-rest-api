@@ -101,6 +101,7 @@ class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller
 
         $settings = [
             'wpem_print_badge_mode' => (int) $print_badge_mode,
+            'participant_activation' => get_option('participant_activation') ? get_option('participant_activation') : 'auto',
         ];
 
         $response_data = self::prepare_error_for_response(200);

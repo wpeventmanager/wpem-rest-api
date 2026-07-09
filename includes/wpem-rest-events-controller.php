@@ -418,6 +418,172 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
+     * Create a single item.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|WP_REST_Response
+     */
+    public function create_item($request)
+    {
+        $current_user = absint(wpem_rest_get_current_user_id());
+        if($this->wpem_user_has_permission($current_user, 'read')) {
+            return self::prepare_error_for_response(403);
+        }
+
+        if (!empty($request['id'])) {
+            /* translators: %s: post type */
+            return parent::prepare_error_for_response(400);
+        }
+
+        $object = $this->save_object($request, true);
+
+        if (is_wp_error($object)) {
+            return $object;
+        }
+
+        try {
+            $this->update_additional_fields_for_object($object, $request);
+            /**
+             * Fires after a single object is created or updated via the REST API.
+             *
+             * @param WP_REST_Request $request   Request object.
+             * @param boolean         $creating  True when creating object, false when updating.
+             */
+            do_action("wpem_rest_insert_{$this->post_type}_object", $object, $request, true);
+        } catch (Exception $e) {
+            wp_delete_post($object->ID);
+            return new WP_Error($e->getErrorCode(), $e->getMessage(), array('status' => $e->getCode()));
+        }
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+        $response = rest_ensure_response($response);
+        $response->set_status(201);
+        $response->header('Location', rest_url(sprintf('/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID)));
+
+        return $response;
+    }
+
+    /**
+     * Update a single post.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|WP_REST_Response
+     */
+    public function update_item($request)
+    {
+        $current_user = absint(wpem_rest_get_current_user_id());
+        if($this->wpem_user_has_permission($current_user, 'read')) {
+            return self::prepare_error_for_response(403);
+        }
+
+        $object = $this->get_object((int) $request['id']);
+
+        if (!$object || 0 === $object->ID) {
+            return parent::prepare_error_for_response(400);
+        }
+
+        $object = $this->save_object($request, false);
+
+        if (is_wp_error($object)) {
+            return $object;
+        }
+
+        try {
+            $this->update_additional_fields_for_object($object, $request);
+            /**
+             * Fires after a single object is created or updated via the REST API.
+             *
+             * @param Post Data         $object    Inserted object.
+             * @param WP_REST_Request $request   Request object.
+             * @param boolean         $creating  True when creating object, false when updating.
+             */
+            do_action("wpem_rest_insert_{$this->post_type}_object", $object, $request, false);
+        } catch (Exception $e) {
+            return new WP_Error($e->getErrorCode(), $e->getMessage(), array('status' => $e->getCode()));
+        }
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+        return rest_ensure_response($response);
+    }
+
+    /**
+     * Delete a single item.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_REST_Response|WP_Error|Array
+     */
+    public function delete_item($request)
+    {
+        $current_user = absint(wpem_rest_get_current_user_id());
+        if($this->wpem_user_has_permission($current_user, 'read')) {
+            return self::prepare_error_for_response(403);
+        }
+
+        $force = isset($request["force"]) && (bool) $request['force'];
+
+        $object = $this->get_object((int) $request['id']);
+        $result = false;
+
+        if (!$object || 0 === $object->ID) {
+            return parent::prepare_error_for_response(404);
+        }
+
+        $supports_trash = EMPTY_TRASH_DAYS > 0;
+
+        /**
+         * Filter whether an object is trashable.
+         *
+         * Return false to disable trash support for the object.
+         *
+         * @param boolean $supports_trash Whether the object type support trashing.
+         * @param Post Data $object         The object being considered for trashing support.
+         */
+        $supports_trash = apply_filters("wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object);
+
+        if (!wpem_rest_api_check_post_permissions($this->post_type, 'delete', $object->ID)) {
+            return parent::prepare_error_for_response(412);
+        }
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+
+        // If we're forcing, then delete permanently.
+        if ($force) {
+            wp_delete_post($object->ID, true);
+            //$result = 0 === $object->ID;
+            $result = 1;
+        } else {
+            // If we don't support trashing for this type, error out.
+            if (!$supports_trash) {
+                return parent::prepare_error_for_response(412);
+            } else {
+                if ($object->post_status === 'trash') {
+                    return self::prepare_error_for_response(410);
+                }
+                wp_trash_post($object->ID);
+                $result = 1;
+            }
+        }
+
+
+        if (!$result) {
+            return parent::prepare_error_for_response(500);
+        }
+
+        /**
+         * Fires after a single object is deleted or trashed via the REST API.
+         *
+         * @param Post Data          $object   The deleted or trashed object.
+         * @param WP_REST_Response $response The response data.
+         * @param WP_REST_Request  $request  The request sent to the API.
+         */
+        do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
+        return self::prepare_error_for_response(200);
+    }
+
+    /**
      * Prepare a single event output for response.
      *
      * @param  WP_Post         $post    Post object.

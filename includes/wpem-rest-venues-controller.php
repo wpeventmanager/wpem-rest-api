@@ -343,6 +343,97 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
+     * Create a single item.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|WP_REST_Response
+     */
+    public function create_item($request)
+    {
+        $current_user = absint(wpem_rest_get_current_user_id());
+        if($this->wpem_user_has_permission($current_user, 'read')) {
+            return self::prepare_error_for_response(403);
+        }
+
+        if (!empty($request['id'])) {
+            /* translators: %s: post type */
+            return parent::prepare_error_for_response(400);
+        }
+
+        $object = $this->save_object($request, true);
+
+        if (is_wp_error($object)) {
+            return $object;
+        }
+
+        try {
+            $this->update_additional_fields_for_object($object, $request);
+            /**
+             * Fires after a single object is created or updated via the REST API.
+             *
+             * @param WP_REST_Request $request   Request object.
+             * @param boolean         $creating  True when creating object, false when updating.
+             */
+            do_action("wpem_rest_insert_{$this->post_type}_object", $object, $request, true);
+        } catch (Exception $e) {
+            wp_delete_post($object->ID);
+            return new WP_Error($e->getErrorCode(), $e->getMessage(), array('status' => $e->getCode()));
+        }
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+        $response = rest_ensure_response($response);
+        $response->set_status(201);
+        $response->header('Location', rest_url(sprintf('/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID)));
+
+        return $response;
+    }
+
+    /**
+     * Update a single post.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|WP_REST_Response
+     */
+    public function update_item($request)
+    {
+        $current_user = absint(wpem_rest_get_current_user_id());
+        if($this->wpem_user_has_permission($current_user, 'read')) {
+            return self::prepare_error_for_response(403);
+        }
+
+        $object = $this->get_object((int) $request['id']);
+
+        if (!$object || 0 === $object->ID) {
+            return parent::prepare_error_for_response(400);
+        }
+
+        $object = $this->save_object($request, false);
+
+        if (is_wp_error($object)) {
+            return $object;
+        }
+
+        try {
+            $this->update_additional_fields_for_object($object, $request);
+            /**
+             * Fires after a single object is created or updated via the REST API.
+             *
+             * @param Post Data         $object    Inserted object.
+             * @param WP_REST_Request $request   Request object.
+             * @param boolean         $creating  True when creating object, false when updating.
+             */
+            do_action("wpem_rest_insert_{$this->post_type}_object", $object, $request, false);
+        } catch (Exception $e) {
+            return new WP_Error($e->getErrorCode(), $e->getMessage(), array('status' => $e->getCode()));
+        }
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+        return rest_ensure_response($response);
+    }
+
+    /**
      * Delete a single item.
      *
      * @param WP_REST_Request $request Full details about the request.
@@ -350,6 +441,11 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      */
     public function delete_item($request)
     {
+        $current_user = absint(wpem_rest_get_current_user_id());
+        if($this->wpem_user_has_permission($current_user, 'read')) {
+            return self::prepare_error_for_response(403);
+        }
+
         $force  = (bool) $request['force'];
         $object = $this->get_object((int) $request['id']);
 
