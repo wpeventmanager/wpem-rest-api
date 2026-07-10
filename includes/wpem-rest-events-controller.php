@@ -516,71 +516,73 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     public function delete_item($request)
     {
+        global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
-        if($this->wpem_user_has_permission($current_user, 'read')) {
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if($this->wpem_user_has_permission($current_user, 'read')) {
+                return self::prepare_error_for_response(403);
+            }
+
+            $force = isset($request["force"]) && (bool) $request['force'];
+
+            $object = $this->get_object((int) $request['id']);
+            $result = false;
+
+            if (!$object || 0 === $object->ID) {
+                return parent::prepare_error_for_response(404);
+            }
+
+            $supports_trash = EMPTY_TRASH_DAYS > 0;
+
+            /**
+             * Filter whether an object is trashable.
+             *
+             * Return false to disable trash support for the object.
+             *
+             * @param boolean $supports_trash Whether the object type support trashing.
+             * @param Post Data $object         The object being considered for trashing support.
+             */
+            $supports_trash = apply_filters("wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object);
+
+            $request->set_param('context', 'edit');
+            $response = $this->prepare_object_for_response($object, $request);
+
+            // If we're forcing, then delete permanently.
+            if ($force) {
+                wp_delete_post($object->ID, true);
+                //$result = 0 === $object->ID;
+                $result = 1;
+            } else {
+                // If we don't support trashing for this type, error out.
+                if (!$supports_trash) {
+                    return parent::prepare_error_for_response(412);
+                } else {
+                    if ($object->post_status === 'trash') {
+                        return self::prepare_error_for_response(410);
+                    }
+                    wp_trash_post($object->ID);
+                    $result = 1;
+                }
+            }
+
+
+            if (!$result) {
+                return parent::prepare_error_for_response(500);
+            }
+
+            /**
+             * Fires after a single object is deleted or trashed via the REST API.
+             *
+             * @param Post Data          $object   The deleted or trashed object.
+             * @param WP_REST_Response $response The response data.
+             * @param WP_REST_Request  $request  The request sent to the API.
+             */
+            do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
+            return self::prepare_error_for_response(200);
+        } else {
             return self::prepare_error_for_response(403);
         }
-
-        $force = isset($request["force"]) && (bool) $request['force'];
-
-        $object = $this->get_object((int) $request['id']);
-        $result = false;
-
-        if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(404);
-        }
-
-        $supports_trash = EMPTY_TRASH_DAYS > 0;
-
-        /**
-         * Filter whether an object is trashable.
-         *
-         * Return false to disable trash support for the object.
-         *
-         * @param boolean $supports_trash Whether the object type support trashing.
-         * @param Post Data $object         The object being considered for trashing support.
-         */
-        $supports_trash = apply_filters("wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object);
-
-        if (!wpem_rest_api_check_post_permissions($this->post_type, 'delete', $object->ID)) {
-            return parent::prepare_error_for_response(412);
-        }
-
-        $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
-
-        // If we're forcing, then delete permanently.
-        if ($force) {
-            wp_delete_post($object->ID, true);
-            //$result = 0 === $object->ID;
-            $result = 1;
-        } else {
-            // If we don't support trashing for this type, error out.
-            if (!$supports_trash) {
-                return parent::prepare_error_for_response(412);
-            } else {
-                if ($object->post_status === 'trash') {
-                    return self::prepare_error_for_response(410);
-                }
-                wp_trash_post($object->ID);
-                $result = 1;
-            }
-        }
-
-
-        if (!$result) {
-            return parent::prepare_error_for_response(500);
-        }
-
-        /**
-         * Fires after a single object is deleted or trashed via the REST API.
-         *
-         * @param Post Data          $object   The deleted or trashed object.
-         * @param WP_REST_Response $response The response data.
-         * @param WP_REST_Request  $request  The request sent to the API.
-         */
-        do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
-        return self::prepare_error_for_response(200);
     }
 
     /**
@@ -1244,9 +1246,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             foreach ($query_results['objects'] as $object) {
                 $object_id = isset($object->ID) ? $object->ID : $object->get_id();
 
-                if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
-                    continue;
-                }
+                // if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
+                //     continue;
+                // }
                 $data = $this->prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
             }
