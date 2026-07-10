@@ -5,7 +5,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.7
 Tested up to: 7.0
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 
 Requires PHP: 8.0.0
 License: GPLv3
