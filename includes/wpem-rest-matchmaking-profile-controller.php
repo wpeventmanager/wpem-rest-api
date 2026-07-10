@@ -658,9 +658,25 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function approve_matchmaking_profile($request)
     {
-        $current_user = wpem_rest_get_current_user_id();
-        if($this->wpem_user_has_permission($current_user, 'read')) {
-            return self::prepare_error_for_response(403);
+        global $wpdb;
+        $current_user = absint(wpem_rest_get_current_user_id());
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
         }
         
         $params = $request->get_json_params();
