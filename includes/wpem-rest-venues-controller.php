@@ -434,6 +434,49 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
+     * Get a collection of posts.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|WP_REST_Response
+     */
+    public function get_items($request)
+    {
+        $query_args = $this->prepare_objects_query($request);
+        $query_results = $this->get_objects($query_args);
+
+        $objects = array();
+        foreach ($query_results['objects'] as $object) {
+
+            if (!isset($object->ID)) {
+                $object_id = $object->get_id();
+            } else {
+                $object_id = $object->ID;
+            }
+
+            if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
+                continue;
+            }
+
+            $data = $this->prepare_object_for_response($object, $request);
+            $objects[] = $this->prepare_response_for_collection($data);
+        }
+
+        $page = isset($query_args['paged']) ? (int) $query_args['paged'] : 1;
+
+        $total_pages = ceil($query_results['total'] / $query_args['posts_per_page']);
+        $response_data = self::prepare_error_for_response(200);
+        $response_data['data'] = array(
+            'total_post_count' => isset($query_results['total']) ? $query_results['total'] : null,
+            'current_page' => $page,
+            'last_page' => max(1, $total_pages),
+            'total_pages' => $total_pages,
+            $this->rest_base => $objects,
+            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+        );
+        return wp_send_json($response_data);
+    }
+
+    /**
      * Delete a single item.
      *
      * @param WP_REST_Request $request Full details about the request.
