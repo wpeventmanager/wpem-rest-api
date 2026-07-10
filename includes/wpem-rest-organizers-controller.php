@@ -346,9 +346,25 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
      */
     public function create_item($request)
     {
+        global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
-        if($this->wpem_user_has_permission($current_user, 'read')) {
-            return self::prepare_error_for_response(403);
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
         }
 
         if (!empty($request['id'])) {
@@ -393,9 +409,25 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
      */
     public function update_item($request)
     {
+        global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
-        if($this->wpem_user_has_permission($current_user, 'read')) {
-            return self::prepare_error_for_response(403);
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
         }
         
         $object = $this->get_object((int) $request['id']);
@@ -437,9 +469,25 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
      */
     public function delete_item($request)
     {
+        global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
-        if($this->wpem_user_has_permission($current_user, 'read')) {
-            return self::prepare_error_for_response(403);
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
         }
 
         $force  = (bool) $request['force'];
@@ -447,14 +495,6 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
 
         if (!$object || 0 === $object->ID) {
             return parent::prepare_error_for_response(404);
-        }
-
-        if (!wpem_rest_api_check_post_permissions($this->post_type, 'delete', $object->ID)) {
-            return new WP_Error(
-                "wpem_rest_user_cannot_delete_{$this->post_type}",
-                sprintf(__('Sorry, you are not allowed to delete %s.', 'wpem-rest-api'), $this->post_type),
-                array('status' => rest_authorization_required_code())
-            );
         }
 
         $request->set_param('context', 'edit');
