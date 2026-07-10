@@ -120,6 +120,12 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 == Changelog ==
 
+= 1.4.2 [ 10th July 2026 ] =
+
+Fixed : Authentication data securities
+Fixed : Permission-check issues
+Fixed : Data Santization
+
 = 1.4.1 [ 5th June 2026 ] =
 
 Fixed : WordPress.org security problems.
