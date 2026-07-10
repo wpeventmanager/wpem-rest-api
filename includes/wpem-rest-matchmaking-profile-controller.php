@@ -209,20 +209,21 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
     public function get_user_profile_permission_check( $request ) {
 
-        $is_user_authorised = false;
         // Authentication
         $auth_check = $this->wpem_check_authorized_user();
 
         if ( $auth_check ) {
             return $auth_check;
         }
-        $is_user_authorised = true;
 
         $current_user = (int) wpem_rest_get_current_user_id();
         $is_admin  = user_can( $current_user, 'manage_options' );
         $requested_user = absint( $request->get_param( 'user_id' ) );
 
-        if ( empty( $requested_user ) || ($current_user === $requested_user) || $is_admin || $is_user_authorised ) {
+        $user_status = wpem_get_user_login_status($current_user);
+        $is_organizer = isset( $user_status['is_organizer'] ) ? (int) $user_status['is_organizer'] : 0;
+
+        if ( empty( $requested_user ) || ($current_user === $requested_user) || $is_organizer == 1 || $is_admin ) {
             return true;
         }
         
