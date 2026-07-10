@@ -1245,10 +1245,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             $objects = array();
             foreach ($query_results['objects'] as $object) {
                 $object_id = isset($object->ID) ? $object->ID : $object->get_id();
-
-                // if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
-                //     continue;
-                // }
                 $data = $this->prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
             }
