@@ -297,7 +297,7 @@ if (!function_exists('wpem_response_default_status')) {
             array(
                 'code' => 414,
                 'status' => 'Error',
-                'message' => __('You are not allowed to view this profile.', 'wpem-rest-api')
+                'message' => __('You are not allowed to access this resourece.', 'wpem-rest-api')
             ),
             array(
                 'code' => 500,
