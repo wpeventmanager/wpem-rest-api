@@ -96,11 +96,12 @@ class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller
      */
     public function get_settings($request)
     {
-        $user_id = wpem_rest_get_current_user_id();
+        $user_id = (int) wpem_rest_get_current_user_id();
         $print_badge_mode = get_user_meta($user_id, 'wpem_print_badge_mode', true) ? get_user_meta($user_id, 'wpem_print_badge_mode', true) : 0;
 
         $settings = [
             'wpem_print_badge_mode' => (int) $print_badge_mode,
+            'participant_activation' => get_option('participant_activation') ? get_option('participant_activation') : 'auto',
         ];
 
         $response_data = self::prepare_error_for_response(200);
@@ -119,7 +120,7 @@ class WPEM_REST_Settings_Controller extends WPEM_REST_CRUD_Controller
      */
     public function update_settings($request)
     {
-        $user_id = wpem_rest_get_current_user_id();
+        $user_id = (int) wpem_rest_get_current_user_id();
         $wpem_print_badge_mode = $request->get_param('wpem_print_badge_mode') ? 1 : 0;
 
         update_user_meta($user_id, 'wpem_print_badge_mode', (int) $wpem_print_badge_mode);

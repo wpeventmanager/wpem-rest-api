@@ -47,7 +47,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_user_profile_data'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'permission_callback' => array($this, 'get_user_profile_permission_check'),
                     'args' => array(),
                 )
             )
@@ -205,6 +205,77 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return $auth_check; // Standardized error already sent
         }
         return true;
+    }
+
+    public function get_user_profile_permission_check( $request ) {
+
+        // Authentication
+        $auth_check = $this->wpem_check_authorized_user();
+
+        if ( $auth_check ) {
+            return $auth_check;
+        }
+
+        $current_user = (int) wpem_rest_get_current_user_id();
+        $is_admin  = user_can( $current_user, 'manage_options' );
+        $requested_user = absint( $request->get_param( 'user_id' ) );
+
+        $user_status = wpem_get_user_login_status($current_user);
+        $is_organizer = isset( $user_status['is_organizer'] ) ? (int) $user_status['is_organizer'] : 0;
+
+        if ( empty( $requested_user ) || ($current_user === $requested_user) || $is_organizer == 1 || $is_admin ) {
+            return true;
+        }
+        
+        return self::prepare_error_for_response(414);
+    }
+
+    public function approve_profile_permission_check( $request ) {
+
+        // Authentication
+        $auth_check = $this->wpem_check_authorized_user();
+
+        if ( $auth_check ) {
+            return $auth_check;
+        }
+
+        // Authorization
+        global $wpdb;
+        $current_user = wpem_rest_get_current_user_id();
+        $requested_user = absint( $request->get_param( 'user_id' ) );
+        $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
+        $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %d", $current_user));
+        $is_user_organizer = ($user_info) ? 1 : 0;
+
+        if ( (!empty($is_user_organizer)) && (user_can($current_user, 'manage_options') || user_can($current_user, 'manage_organizers') || user_can($current_user, 'customer') || get_option( 'default_role' )) ) {
+            return true;
+        }
+
+        return self::prepare_error_for_response( 403 );
+    }
+
+    public function search_profiles_permission_check( $request ) {
+
+        $auth_check = $this->wpem_check_authorized_user();
+
+        if ( $auth_check ) {
+            return $auth_check;
+        }
+
+        $current_user_id = wpem_rest_get_current_user_id();
+
+        // User must have an active matchmaking profile.
+        $matchmaking_enabled = get_user_meta(
+            $current_user_id,
+            '_matchmaking_profile',
+            true
+        );
+
+        if ( ! empty( $matchmaking_enabled ) ) {
+            return true;
+        }
+
+        return self::prepare_error_for_response( 403 );
     }
     
     /**
@@ -587,6 +658,27 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function approve_matchmaking_profile($request)
     {
+        global $wpdb;
+        $current_user = absint(wpem_rest_get_current_user_id());
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
+        }
+        
         $params = $request->get_json_params();
         $registration_id = isset($params['registration_id']) ? trim($params['registration_id']) : 0;
         $profile_status = isset($params['profile_status']) ? $params['profile_status'] : 0;
