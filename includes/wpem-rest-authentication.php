@@ -821,14 +821,26 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 
 				// Keep the API key check logic unchanged
 				$key_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE user_id = %s", $user_id)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
+    			$is_admin  = user_can( $user_id, 'manage_options' );
 				if (!empty($key_data)) {
-					if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {
-						$key_data->expiry = false;
+					if((gmdate( 'Y-m-d', strtotime( $key_data->date_expires )) < gmdate( 'Y-m-d' )) && $is_admin == 1) {
+						$appkey = $key_data->app_key;
+						$data['organizer_info'] = array('permissions' => 'read_write', 'event_show_by' => 'loggedin', 'expiry' => false, 'user_id' => $user_id, 'app_key' => $appkey);
 					} else {
-						$key_data->expiry = true;
+						if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {
+							$key_data->expiry = false;
+						} else {
+							$key_data->expiry = true;
+							if( $is_admin ){
+								$key_data->expiry = false;
+							}
+						}
+						$data['organizer_info'] = $key_data;
 					}
-					$data['organizer_info'] = $key_data;
+				}else{
+					if( $is_admin ){
+						$data['organizer_info'] = array('permissions' => 'read_write', 'event_show_by' => 'loggedin', 'expiry' => false, 'user_id' => $user_id);
+					}
 				}
 
 				if (empty($key_data) && !get_user_meta($user_id, '_matchmaking_profile', true)) {

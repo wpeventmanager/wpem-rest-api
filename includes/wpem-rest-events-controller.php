@@ -66,13 +66,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_items'),
-                    'permission_callback' => array($this, 'get_items_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => $this->get_collection_params(),
                 ),
                 array(
                     'methods' => WP_REST_Server::CREATABLE,
                     'callback' => array($this, 'create_item'),
-                    'permission_callback' => array($this, 'create_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
@@ -92,7 +92,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_item'),
-                    'permission_callback' => array($this, 'get_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => array(
                         'context' => $this->get_context_param(
                             array(
@@ -104,13 +104,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
                     'callback' => array($this, 'update_item'),
-                    'permission_callback' => array($this, 'update_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
                     'methods' => WP_REST_Server::DELETABLE,
                     'callback' => array($this, 'delete_item'),
-                    'permission_callback' => array($this, 'delete_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => array(
                         'force' => array(
                             'default' => false,
@@ -130,7 +130,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
                     'callback' => array($this, 'batch_items'),
-                    'permission_callback' => array($this, 'batch_items_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 'schema' => array($this, 'get_public_batch_schema'),
@@ -150,7 +150,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 array(
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'get_event_fields'),
-                    'permission_callback' => array($this, 'get_item_permissions_check'),
+                    'permission_callback' => array($this, 'permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::READABLE),
                 )
             )
@@ -415,6 +415,216 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             $data['venue']['QRCode'] = $venue_qrcode;
         }
         return apply_filters("wpem_rest_get_{$this->post_type}_data", $data, $event, $context);
+    }
+
+    /**
+     * Create a single item.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|WP_REST_Response
+     */
+    public function create_item($request)
+    {
+        global $wpdb;
+        $current_user = absint(wpem_rest_get_current_user_id());
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
+        }
+
+        if (!empty($request['id'])) {
+            /* translators: %s: post type */
+            return parent::prepare_error_for_response(400);
+        }
+
+        $object = $this->save_object($request, true);
+
+        if (is_wp_error($object)) {
+            return $object;
+        }
+
+        try {
+            $this->update_additional_fields_for_object($object, $request);
+            /**
+             * Fires after a single object is created or updated via the REST API.
+             *
+             * @param WP_REST_Request $request   Request object.
+             * @param boolean         $creating  True when creating object, false when updating.
+             */
+            do_action("wpem_rest_insert_{$this->post_type}_object", $object, $request, true);
+        } catch (Exception $e) {
+            wp_delete_post($object->ID);
+            return new WP_Error($e->getErrorCode(), $e->getMessage(), array('status' => $e->getCode()));
+        }
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+        $response = rest_ensure_response($response);
+        $response->set_status(201);
+        $response->header('Location', rest_url(sprintf('/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID)));
+
+        return $response;
+    }
+
+    /**
+     * Update a single post.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_Error|WP_REST_Response
+     */
+    public function update_item($request)
+    {
+        global $wpdb;
+        $current_user = absint(wpem_rest_get_current_user_id());
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
+        }
+
+        $object = $this->get_object((int) $request['id']);
+
+        if (!$object || 0 === $object->ID) {
+            return parent::prepare_error_for_response(400);
+        }
+
+        $object = $this->save_object($request, false);
+
+        if (is_wp_error($object)) {
+            return $object;
+        }
+
+        try {
+            $this->update_additional_fields_for_object($object, $request);
+            /**
+             * Fires after a single object is created or updated via the REST API.
+             *
+             * @param Post Data         $object    Inserted object.
+             * @param WP_REST_Request $request   Request object.
+             * @param boolean         $creating  True when creating object, false when updating.
+             */
+            do_action("wpem_rest_insert_{$this->post_type}_object", $object, $request, false);
+        } catch (Exception $e) {
+            return new WP_Error($e->getErrorCode(), $e->getMessage(), array('status' => $e->getCode()));
+        }
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+        return rest_ensure_response($response);
+    }
+
+    /**
+     * Delete a single item.
+     *
+     * @param  WP_REST_Request $request Full details about the request.
+     * @return WP_REST_Response|WP_Error|Array
+     */
+    public function delete_item($request)
+    {
+        global $wpdb;
+        $current_user = absint(wpem_rest_get_current_user_id());
+        $is_admin  = user_can( $current_user, 'manage_options' );
+
+        $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
+        if ($user_info) {
+            if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
+                if ( !$is_admin ) {
+                    return self::prepare_error_for_response(403);
+                }
+            }else{
+                if($this->wpem_user_has_permission($current_user, 'read')) {
+                    return self::prepare_error_for_response(403);
+                }
+            }
+        }else{
+            if ( !$is_admin ) {
+                return self::prepare_error_for_response(403);
+            }
+        }
+
+        $force = isset($request["force"]) && (bool) $request['force'];
+
+        $object = $this->get_object((int) $request['id']);
+        $result = false;
+
+        if (!$object || 0 === $object->ID) {
+            return parent::prepare_error_for_response(404);
+        }
+
+        $supports_trash = EMPTY_TRASH_DAYS > 0;
+
+        /**
+         * Filter whether an object is trashable.
+         *
+         * Return false to disable trash support for the object.
+         *
+         * @param boolean $supports_trash Whether the object type support trashing.
+         * @param Post Data $object         The object being considered for trashing support.
+         */
+        $supports_trash = apply_filters("wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object);
+
+        $request->set_param('context', 'edit');
+        $response = $this->prepare_object_for_response($object, $request);
+
+        // If we're forcing, then delete permanently.
+        if ($force) {
+            wp_delete_post($object->ID, true);
+            //$result = 0 === $object->ID;
+            $result = 1;
+        } else {
+            // If we don't support trashing for this type, error out.
+            if (!$supports_trash) {
+                return parent::prepare_error_for_response(412);
+            } else {
+                if ($object->post_status === 'trash') {
+                    return self::prepare_error_for_response(410);
+                }
+                wp_trash_post($object->ID);
+                $result = 1;
+            }
+        }
+
+
+        if (!$result) {
+            return parent::prepare_error_for_response(500);
+        }
+
+        /**
+         * Fires after a single object is deleted or trashed via the REST API.
+         *
+         * @param Post Data          $object   The deleted or trashed object.
+         * @param WP_REST_Response $response The response data.
+         * @param WP_REST_Request  $request  The request sent to the API.
+         */
+        do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
+        return self::prepare_error_for_response(200);
     }
 
     /**
@@ -1057,7 +1267,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         $user_id = intval($request['user_id']);
-        $auth_check = $this->wpem_check_authorized_user($user_id);
+        $auth_check = $this->permission_check($user_id);
         if ($auth_check) {
             return parent::get_items($request);
         } else {
@@ -1077,10 +1287,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             $objects = array();
             foreach ($query_results['objects'] as $object) {
                 $object_id = isset($object->ID) ? $object->ID : $object->get_id();
-
-                if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
-                    continue;
-                }
                 $data = $this->prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
             }
