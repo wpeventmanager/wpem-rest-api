@@ -396,11 +396,11 @@ function wpem_rest_api_pre_check_before_installing_event_rest_api()
 		echo '<p><strong>WP Event Manager Premium Plugins:</strong> ';
 		echo esc_html__(
 			'Install the WPEM Updater plugin to enable automatic updates for your WP Event Manager premium add-ons.',
-			'wp-event-manager'
+			'wpem-rest-api'
 		);
 		echo '</p>';
 		echo '<p><a class="button button-primary" target="_blank" href="https://wp-eventmanager.com/wp-content/uploads/wpem-autoupdater.zip">';
-		echo esc_html__('Download Add-ons Updater', 'wp-event-manager');
+		echo esc_html__('Download Add-ons Updater', 'wpem-rest-api');
 		echo '</a></p>';
 		echo '</div>';
 	}
