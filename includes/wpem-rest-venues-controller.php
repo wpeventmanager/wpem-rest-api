@@ -46,14 +46,14 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      */
     public function __construct()
     {
-        add_action("wpem_rest_insert_{$this->post_type}_object", array($this, 'clear_transients'));
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
+        add_action("wpem_rest_insert_{$this->post_type}_object", array($this, 'wpem_clear_transients'));
+        add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
     }
 
     /**
      * Register the routes for venues.
      */
-    public function register_routes()
+    public function wpem_register_routes()
     {
         register_rest_route(
             $this->namespace,
@@ -61,14 +61,14 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_items'),
-                    'permission_callback' => array($this, 'permission_check'),
-                    'args' => $this->get_collection_params(),
+                    'callback' => array($this, 'wpem_get_items'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
+                    'args' => $this->wpem_get_collection_params(),
                 ),
                 array(
                     'methods' => WP_REST_Server::CREATABLE,
-                    'callback' => array($this, 'create_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_create_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
@@ -87,8 +87,8 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
                 ),
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(
                         'context' => $this->get_context_param(
                             array(
@@ -99,14 +99,14 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
                 ),
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'update_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_update_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
                     'methods' => WP_REST_Server::DELETABLE,
-                    'callback' => array($this, 'delete_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_delete_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(
                         'force' => array(
                             'default' => false,
@@ -125,11 +125,11 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'batch_items'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_batch_items'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
-                'schema' => array($this, 'get_public_batch_schema'),
+                'schema' => array($this, 'wpem_get_public_batch_schema'),
             )
         );
     }
@@ -140,7 +140,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param int $id Object ID.
      * @return WP_Post|null
      */
-    protected function get_object($id)
+    protected function wpem_get_object($id)
     {
         $post = get_post($id);
         if ( $post && $post->post_type === $this->post_type ) {
@@ -156,7 +156,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function prepare_object_for_response($object, $request)
+    public function wpem_prepare_object_for_response($object, $request)
     {
         $context = 'view';
         if (
@@ -166,13 +166,13 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         ) {
             $context = sanitize_text_field($request['context']);
         }
-        $data = $this->get_venue_data($object, $context);
+        $data = $this->wpem_get_venue_data($object, $context);
 
         $data = $this->add_additional_fields_to_object($data, $request);
         $data = $this->filter_response_by_context($data, $context);
         $response = rest_ensure_response($data);
         if (is_user_logged_in()) {
-            $response->add_links($this->prepare_links($object, $request));
+            $response->add_links($this->wpem_prepare_links($object, $request));
         }
 
         return apply_filters("wpem_rest_prepare_{$this->post_type}_object", $response, $object, $request);
@@ -184,9 +184,9 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request Full details about the request.
      * @return array
      */
-    protected function prepare_objects_query($request)
+    protected function wpem_prepare_objects_query($request)
     {
-        $args = parent::prepare_objects_query($request);
+        $args = parent::wpem_prepare_objects_query($request);
 
         // Set post_status.
         $args['post_status'] = $request['status'];
@@ -202,7 +202,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param string  $context Request context: 'view' or 'edit'.
      * @return array
      */
-    protected function get_venue_data($venue, $context = 'view')
+    protected function wpem_get_venue_data($venue, $context = 'view')
     {
         // Get the venue description safely from post content.
         $description = $venue->post_content;
@@ -224,7 +224,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
             'id'            => $venue->ID,
             'name'          => $venue->post_title,
             'slug'          => $venue->post_name,
-            'permalink'     => get_permalink($venue->ID),
+            'permalink'     => wpem_get_permalink($venue->ID),
             'date_created'  => get_the_date('', $venue),
             'date_modified' => get_the_modified_date('', $venue),
             'status'        => $venue->post_status,
@@ -244,7 +244,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function prepare_item_for_response($post, $request)
+    public function wpem_prepare_item_for_response($post, $request)
     {
         $venue = get_post($post);
         $context = 'view';
@@ -255,12 +255,12 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         ) {
             $context = sanitize_text_field($request['context']);
         }
-        $data = $this->get_venue_data($venue, $context);
+        $data = $this->wpem_get_venue_data($venue, $context);
         $data = $this->add_additional_fields_to_object($data, $request);
         $data = $this->filter_response_by_context($data, $context);
 
         $response = rest_ensure_response($data);
-        $response->add_links($this->prepare_links($venue, $request));
+        $response->add_links($this->wpem_prepare_links($venue, $request));
 
         return apply_filters("wpem_rest_prepare_{$this->post_type}", $response, $post, $request);
     }
@@ -272,7 +272,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request Request object.
      * @return array Links for the given post.
      */
-    protected function prepare_links($object, $request)
+    protected function wpem_prepare_links($object, $request)
     {
         $links = array(
             'self' => array(
@@ -298,7 +298,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param bool            $creating If is creating a new object.
      * @return WP_Error|WP_Post
      */
-    protected function prepare_object_for_database($request, $creating = false)
+    protected function wpem_prepare_object_for_database($request, $creating = false)
     {
         $id = isset($request['id']) ? absint($request['id']) : 0;
 
@@ -337,7 +337,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      *
      * @param WP_Post $object Object data.
      */
-    public function clear_transients($object)
+    public function wpem_clear_transients($object)
     {
         // call wpem clear transient here
     }
@@ -348,7 +348,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function create_item($request)
+    public function wpem_create_item($request)
     {
         global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
@@ -358,25 +358,25 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
                 if ( !$is_admin ) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }else{
                 if($this->wpem_user_has_permission($current_user, 'read')) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }
         }else{
             if ( !$is_admin ) {
-                return self::prepare_error_for_response(403);
+                return self::wpem_prepare_error_for_response(403);
             }
         }
 
         if (!empty($request['id'])) {
             /* translators: %s: post type */
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
-        $object = $this->save_object($request, true);
+        $object = $this->wpem_save_object($request, true);
 
         if (is_wp_error($object)) {
             return $object;
@@ -397,7 +397,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
         $response = rest_ensure_response($response);
         $response->set_status(201);
         $response->header('Location', rest_url(sprintf('/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID)));
@@ -411,7 +411,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function update_item($request)
+    public function wpem_update_item($request)
     {
         global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
@@ -421,26 +421,26 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
                 if ( !$is_admin ) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }else{
                 if($this->wpem_user_has_permission($current_user, 'read')) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }
         }else{
             if ( !$is_admin ) {
-                return self::prepare_error_for_response(403);
+                return self::wpem_prepare_error_for_response(403);
             }
         }
 
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
 
         if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
-        $object = $this->save_object($request, false);
+        $object = $this->wpem_save_object($request, false);
 
         if (is_wp_error($object)) {
             return $object;
@@ -461,7 +461,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
         return rest_ensure_response($response);
     }
 
@@ -471,10 +471,10 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_items($request)
+    public function wpem_get_items($request)
     {
-        $query_args = $this->prepare_objects_query($request);
-        $query_results = $this->get_objects($query_args);
+        $query_args = $this->wpem_prepare_objects_query($request);
+        $query_results = $this->wpem_get_objects($query_args);
 
         $objects = array();
         foreach ($query_results['objects'] as $object) {
@@ -484,14 +484,14 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
             } else {
                 $object_id = $object->ID;
             }
-            $data = $this->prepare_object_for_response($object, $request);
+            $data = $this->wpem_prepare_object_for_response($object, $request);
             $objects[] = $this->prepare_response_for_collection($data);
         }
 
         $page = isset($query_args['paged']) ? (int) $query_args['paged'] : 1;
 
         $total_pages = ceil($query_results['total'] / $query_args['posts_per_page']);
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array(
             'total_post_count' => isset($query_results['total']) ? $query_results['total'] : null,
             'current_page' => $page,
@@ -509,7 +509,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request Full details about the request.
      * @return WP_REST_Response|WP_Error
      */
-    public function delete_item($request)
+    public function wpem_delete_item($request)
     {
         global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
@@ -519,34 +519,34 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
                 if ( !$is_admin ) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }else{
                 if($this->wpem_user_has_permission($current_user, 'read')) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }
         }else{
             if ( !$is_admin ) {
-                return self::prepare_error_for_response(403);
+                return self::wpem_prepare_error_for_response(403);
             }
         }
 
         $force  = (bool) $request['force'];
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
 
         if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(404);
+            return parent::wpem_prepare_error_for_response(404);
         }
         
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
 
         if ($force) {
             wp_delete_post($object->ID, true);
         } else {
             if ($object->post_status === 'trash') {
-                return parent::prepare_error_for_response(410);
+                return parent::wpem_prepare_error_for_response(410);
             }
             wp_trash_post($object->ID);
         }
@@ -561,7 +561,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    public function get_item_schema()
+    public function wpem_get_item_schema()
     {
         $schema = array(
             '$schema'    => 'http://json-schema.org/draft-04/schema#',
@@ -641,16 +641,16 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
                 ),
             ),
         );
-        return $this->add_additional_fields_schema($schema);
+        return $this->wpem_add_additional_fields_schema($schema);
     }
 
     /**
      * Get the query params for collections of venues.
      * @return array
      */
-    public function get_collection_params()
+    public function wpem_get_collection_params()
     {
-        $params = parent::get_collection_params();
+        $params = parent::wpem_get_collection_params();
 
         $params['orderby']['enum'] = array_merge($params['orderby']['enum'], array('menu_order'));
 

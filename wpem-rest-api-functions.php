@@ -504,12 +504,12 @@ if (!function_exists('wpem_rest_get_current_user_id')) {
             $token = trim(str_replace('Bearer', '', sanitize_text_field(wp_unslash($_SERVER['REDIRECT_HTTP_AUTHORIZATION']))));
         }
         if (empty($token)) {
-            return WPEM_REST_CRUD_Controller::prepare_error_for_response(401);
+            return WPEM_REST_CRUD_Controller::wpem_prepare_error_for_response(401);
         }
 
         $user_data = WPEM_REST_CRUD_Controller::wpem_validate_jwt_token($token);
         if (!$user_data) {
-            return WPEM_REST_CRUD_Controller::prepare_error_for_response(405);
+            return WPEM_REST_CRUD_Controller::wpem_prepare_error_for_response(405);
         }
 
         $user_id = $user_data['id'];

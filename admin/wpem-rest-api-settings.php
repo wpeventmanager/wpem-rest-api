@@ -18,15 +18,15 @@ class WPEM_Rest_API_Settings
 	public function __construct()
 	{
 		$this->settings_group = 'wpem_rest_api';
-		add_action('admin_init', array($this, 'register_settings'));
+		add_action('admin_init', array($this, 'wpem_register_settings'));
 	}
 
 	/**
-	 * init_settings function.
+	 * wpem_init_settings function.
 	 * @access public
 	 * @return void
 	 */
-	public function init_settings()
+	public function wpem_init_settings()
 	{
 		$this->settings = apply_filters(
 			'wpem_rest_api_settings',
@@ -98,7 +98,7 @@ class WPEM_Rest_API_Settings
 								'desc' => __('Choose one or more user roles.', 'wpem-rest-api'),
 								'type' => 'multi-select-checkbox',
 								'attributes' => array(),
-								'options' => $this->get_all_roles_for_multiselect(),
+								'options' => $this->wpem_get_all_roles_for_multiselect(),
 							),
 						),
 					),
@@ -108,13 +108,13 @@ class WPEM_Rest_API_Settings
 	}
 
 	/**
-	 * register_settings function.
+	 * wpem_register_settings function.
 	 * @access public
 	 * @return void
 	 */
-	public function register_settings()
+	public function wpem_register_settings()
 	{
-		$this->init_settings();
+		$this->wpem_init_settings();
 
 		foreach ($this->settings as $settings) {
 			if (isset($settings['sections']))
@@ -128,7 +128,7 @@ class WPEM_Rest_API_Settings
 							// Use array-safe sanitizer for multi-select-checkbox fields;
 							// sanitize_text_field() on an array returns "" and silently wipes the value.
 							if (isset($option['type']) && $option['type'] === 'multi-select-checkbox') {
-								register_setting($this->settings_group, $option['name'], ['sanitize_callback' => array($this, 'sanitize_multiselect')]);
+								register_setting($this->settings_group, $option['name'], ['sanitize_callback' => array($this, 'wpem_sanitize_multiselect')]);
 							} else {
 								register_setting($this->settings_group, $option['name'], ['sanitize_callback' => 'sanitize_text_field']);
 							}
@@ -144,7 +144,7 @@ class WPEM_Rest_API_Settings
 	 * @param mixed $value Raw POST value (array of strings, or null when nothing checked).
 	 * @return array Sanitized array of role slugs.
 	 */
-	public function sanitize_multiselect($value)
+	public function wpem_sanitize_multiselect($value)
 	{
 		if (empty($value) || !is_array($value)) {
 			return array();
@@ -157,9 +157,9 @@ class WPEM_Rest_API_Settings
 	 * @access public
 	 * @return void
 	 */
-	public function output()
+	public function wpem_output()
 	{
-		$this->init_settings();
+		$this->wpem_init_settings();
 
 		wp_enqueue_style('wpem-rest-api-backend', WPEM_REST_API_PLUGIN_URL . '/assets/css/backend.min.css', array(), WPEM_REST_API_VERSION);
 		wp_enqueue_script('wpem-rest-api-admin-js');
@@ -231,7 +231,7 @@ class WPEM_Rest_API_Settings
 	 * @return array
 	 * @since 1.2.0
 	 */
-	private function get_all_roles_for_multiselect()
+	private function wpem_get_all_roles_for_multiselect()
 	{
 		if (!function_exists('wp_roles')) {
 			return array();
@@ -250,7 +250,7 @@ class WPEM_Rest_API_Settings
 	 * Expects $option keys: name, options (key=>label), std (array), desc
 	 * @since 1.2.0
 	 */
-	private function create_multi_select_checkbox($option)
+	private function wpem_create_multi_select_checkbox($option)
 	{
 		$saved = get_option($option['name']);
 		if (!is_array($saved)) {

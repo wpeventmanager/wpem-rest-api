@@ -45,18 +45,18 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller
 	 */
 	public function __construct()
 	{
-		add_action('rest_api_init', array($this, 'register_routes'), 10);
+		add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
 	}
 	/**
 	 * Register the routes for ecosystem.
 	 */
-	public function register_routes()
+	public function wpem_register_routes()
 	{
 		register_rest_route($this->namespace, '/' . $this->rest_base, array(
 			array(
 				'methods' => WP_REST_Server::READABLE,
 				'callback' => array($this, 'wpem_get_echosystem_overview'),
-				'permission_callback' => array($this, 'get_items_permissions_check'),
+				'permission_callback' => array($this, 'wpem_get_items_permissions_check'),
 			)
 		));
 	}
@@ -68,9 +68,9 @@ class WPEM_REST_Ecosystem_Controller extends WPEM_REST_CRUD_Controller
 	{
 		$auth_check = $this->wpem_check_authorized_user();
 		if ($auth_check) {
-			return self::prepare_error_for_response(405);
+			return self::wpem_prepare_error_for_response(405);
 		} else {
-			$response_data = self::prepare_error_for_response(200);
+			$response_data = self::wpem_prepare_error_for_response(200);
 			$response_data['data'] = array(
 				'ecosystem_info' => wpem_rest_api_get_ecosystem_info(),
 				'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())

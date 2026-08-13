@@ -34,13 +34,13 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
      */
     public function __construct()
     {
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
+        add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
     }
 
     /**
      * Register matchmaking settings routes (event-controller style structure).
      */
-    public function register_routes()
+    public function wpem_register_routes()
     {
         register_rest_route(
             $this->namespace,
@@ -48,8 +48,8 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_settings'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_settings'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(),
                 )
             )
@@ -60,8 +60,8 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             '/taxonomy-list',
             array(
                 'methods' => WP_REST_Server::READABLE,
-                'callback' => array($this, 'get_taxonomy_terms'),
-                'permission_callback' => array($this, 'permission_check'),
+                'callback' => array($this, 'wpem_get_taxonomy_terms'),
+                'permission_callback' => array($this, 'wpem_permission_check'),
                 'args' => array(
                     'taxonomy' => array(
                         'required' => true,
@@ -81,7 +81,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function get_settings($request)
+    public function wpem_get_settings($request)
     {
         $settings = [
             'request_mode' => get_option('wpem_meeting_request_mode'),
@@ -92,7 +92,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             'participant_activation' => get_option('participant_activation'),
         ];
 
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $settings;
         $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
@@ -106,12 +106,12 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
      * @return WP_REST_Response $response The response object.
      * @since 1.1.0
      */
-    public function get_taxonomy_terms($request)
+    public function wpem_get_taxonomy_terms($request)
     {
         $taxonomy = sanitize_text_field($request->get_param('taxonomy'));
 
         if (!taxonomy_exists($taxonomy)) {
-            return self::prepare_error_for_response(400);
+            return self::wpem_prepare_error_for_response(400);
         }
 
         $terms = get_terms(array(
@@ -120,12 +120,12 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
         ));
 
         if (is_wp_error($terms)) {
-            return self::prepare_error_for_response(500);
+            return self::wpem_prepare_error_for_response(500);
         }
 
-        $term_list = array_map(array($this, 'format_term_data'), $terms);
+        $term_list = array_map(array($this, 'wpem_format_term_data'), $terms);
 
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array(
             'terms' => $term_list,
             'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id()),
@@ -139,7 +139,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
      * @param $term
      * @return array
      */
-    private function format_term_data($term)
+    private function wpem_format_term_data($term)
     {
         return array(
             'id' => $term->term_id,

@@ -80,44 +80,44 @@ class WPEM_Rest_API
         include 'includes/wpem-rest-matchmaking-settings-controller.php';
 
         // Activate
-        register_activation_hook(__FILE__, array($this, 'install'));
+        register_activation_hook(__FILE__, array($this, 'wpem_install'));
 
         // Add actions
-        add_action('init', array($this, 'load_plugin_textdomain'), 12);
+        add_action('init', array($this, 'wpem_load_plugin_textdomain'), 12);
 
         // Call when update plugin
-        add_action('admin_init', array($this, 'updater'));
+        add_action('admin_init', array($this, 'wpem_updater'));
         // Restrict Scanner role from accessing wp-admin
-        add_action('admin_init', array($this, 'restrict_scanner_admin'));
+        add_action('admin_init', array($this, 'wpem_restrict_scanner_admin'));
         // Enforce that Scanner users can only manage their own registrations
-        // add_filter('map_meta_cap', array($this, 'limit_scanner_own_registration'), 10, 4);
+        // add_filter('map_meta_cap', array($this, 'wpem_limit_scanner_own_registration'), 10, 4);
     }
 
     /**
      * Localisation
      **/
-    public function load_plugin_textdomain()
+    public function wpem_load_plugin_textdomain()
     {
         $domain = 'wpem-rest-api';
         $locale = apply_filters('wpem_plugin_locale', get_locale(), $domain);
         load_textdomain($domain, WP_LANG_DIR . "/wpem-rest-api/" . $domain . "-" . $locale . ".mo");
-        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- needed for non-dotorg plugin.
-        load_plugin_textdomain($domain, false, dirname(plugin_basename(__FILE__)) . '/languages/');
+        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.wpem_load_plugin_textdomainFound -- needed for non-dotorg plugin.
+        wpem_load_plugin_textdomain($domain, false, dirname(plugin_basename(__FILE__)) . '/languages/');
     }
 
     /**
      * Handle Updates.
      * @since 1.1.2
      */
-    public function updater()
+    public function wpem_updater()
     {
         if (version_compare(get_option('wpem_rest_api_version', WPEM_REST_API_VERSION), '1.0.9', '<')) {
-            $this->check_rest_api_table();
+            $this->wpem_check_rest_api_table();
             flush_rewrite_rules();
         }
         if (version_compare(WPEM_REST_API_VERSION, get_option('wpem_rest_api_version'), '>')) {
             // Ensure roles/capabilities exist on admin init (covers updates)
-            $this->init_user_roles();
+            $this->wpem_init_user_roles();
             flush_rewrite_rules();
         }
     }
@@ -127,7 +127,7 @@ class WPEM_Rest_API
      * @since 1.1.2
      * @return void
      */
-    public function check_rest_api_table()
+    public function wpem_check_rest_api_table()
     {
         global $wpdb;
 
@@ -202,7 +202,7 @@ class WPEM_Rest_API
      * Init user roles.
      * Creates/updates roles and capabilities used by this plugin.
      */
-    private function init_user_roles()
+    private function wpem_init_user_roles()
     {
         global $wp_roles;
         if (class_exists('WP_Roles') && !isset($wp_roles)) {
@@ -222,7 +222,7 @@ class WPEM_Rest_API
             );
 
             // Ensure administrator has full capabilities.
-            $capabilities = $this->get_core_capabilities();
+            $capabilities = $this->wpem_get_core_capabilities();
             foreach ($capabilities as $cap_group) {
                 foreach ($cap_group as $cap) {
                     $wp_roles->add_cap('administrator', $cap);
@@ -265,7 +265,7 @@ class WPEM_Rest_API
      * Get capabilities required by the plugin.
      * @return array
      */
-    private function get_core_capabilities()
+    private function wpem_get_core_capabilities()
     {
         return array(
             'core' => array(
@@ -292,7 +292,7 @@ class WPEM_Rest_API
     /**
      * Restrict Scanner role from accessing wp-admin (except AJAX).
      */
-    public function restrict_scanner_admin()
+    public function wpem_restrict_scanner_admin()
     {
         if (!is_admin()) {
             return;
@@ -311,7 +311,7 @@ class WPEM_Rest_API
      * Enforce that Scanner users can only manage their own event_registration posts.
      * Denies edit/read/delete on registrations not authored by the current Scanner user.
      */
-    public function limit_scanner_own_registration($caps, $cap, $user_id, $args)
+    public function wpem_limit_scanner_own_registration($caps, $cap, $user_id, $args)
     {
         // Only act on singular registration caps where a post ID is present
         $target_caps = array('edit_event_registration', 'delete_event_registration', 'read_event_registration');
@@ -351,10 +351,10 @@ class WPEM_Rest_API
     /**
      * Install
      */
-    public function install()
+    public function wpem_install()
     {
-        $this->check_rest_api_table();
-        $this->init_user_roles();
+        $this->wpem_check_rest_api_table();
+        $this->wpem_init_user_roles();
     }
 }
 

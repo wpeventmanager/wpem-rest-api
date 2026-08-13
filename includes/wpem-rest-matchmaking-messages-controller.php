@@ -38,7 +38,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
     {
         global $wpdb;
         $this->table = esc_sql($wpdb->prefix . 'wpem_matchmaking_users_messages');
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
+        add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
     }
 
     /**
@@ -46,7 +46,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      *
      * @since 1.1.0
      */
-    public function register_routes()
+    public function wpem_register_routes()
     {
         register_rest_route(
             $this->namespace,
@@ -54,26 +54,26 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_items'),
-                    'permission_callback' => array($this, 'permission_check'),
-                    'args' => $this->get_collection_params(),
+                    'callback' => array($this, 'wpem_get_items'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
+                    'args' => $this->wpem_get_collection_params(),
                 ),
                 array(
                     'methods' => WP_REST_Server::CREATABLE,
-                    'callback' => array($this, 'send_message'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_send_message'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(),
                 ),
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'update_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_update_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
                     'methods' => WP_REST_Server::DELETABLE,
-                    'callback' => array($this, 'delete_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_delete_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
@@ -92,19 +92,19 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
                 ),
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                 ),
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'update_message'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_update_message'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
                     'methods' => WP_REST_Server::DELETABLE,
-                    'callback' => array($this, 'delete_message'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_delete_message'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
             )
@@ -116,8 +116,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_conversation'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_conversation'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(
                         'paged' => array(
                             'description' => __('Current page of the collection.', 'wpem-rest-api'),
@@ -144,7 +144,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
     /**
      * Check if user can access the message.
      */
-    public function get_item_permissions_check( $request ) {
+    public function wpem_get_item_permissions_check( $request ) {
     
         if ( ! is_user_logged_in() ) {
             return new WP_Error(
@@ -195,15 +195,15 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
     /**
      * Check if user can update the message.
      */
-    public function update_item_permissions_check( $request ) {
-        return $this->get_item_permissions_check( $request );
+    public function wpem_update_item_permissions_check( $request ) {
+        return $this->wpem_get_item_permissions_check( $request );
     }
     
     /**
      * Check if user can delete the message.
      */
-    public function delete_item_permissions_check( $request ) {
-        return $this->get_item_permissions_check( $request );
+    public function wpem_delete_item_permissions_check( $request ) {
+        return $this->wpem_get_item_permissions_check( $request );
     }
 
     /**
@@ -212,7 +212,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_items($request)
+    public function wpem_get_items($request)
     {
         global $wpdb;
 
@@ -220,7 +220,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $partner_id = intval($request->get_param('partner_id'));
 
         if (!$partner_id) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         // Pagination setup
@@ -264,7 +264,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         $total_pages = max(1, ceil($total_messages / $per_page));
 
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
             'total_message_count' => intval($total_messages),
             'current_page' => $page,
@@ -284,7 +284,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function send_message(WP_REST_Request $request)
+    public function wpem_send_message(WP_REST_Request $request)
     {
         global $wpdb;
         // --- Current User ---
@@ -297,7 +297,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $receiver_user = get_user_by('id', $partner_id);
 
         if (!$sender_user || !$receiver_user) {
-            return self::prepare_error_for_response(400);
+            return self::wpem_prepare_error_for_response(400);
         }
 
         $sender_name = trim(get_user_meta($user_id, 'first_name', true) . ' ' . get_user_meta($user_id, 'last_name', true));
@@ -308,7 +308,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $receiver_notify = (int) get_user_meta($partner_id, '_message_notification', true);
 
         if ($sender_notify !== 1 || $receiver_notify !== 1) {
-            return self::prepare_error_for_response(403);
+            return self::wpem_prepare_error_for_response(403);
         }
 
         // --- File Upload (if provided) ---
@@ -324,7 +324,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         // --- Ensure at least one of message or image ---
         if (!$text_message && !$image_url) {
-            return self::prepare_error_for_response(400);
+            return self::wpem_prepare_error_for_response(400);
         }
 
         // --- Build Final Message ---
@@ -407,7 +407,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * @param WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_conversation($request)
+    public function wpem_get_conversation($request)
     {
         global $wpdb;
         $user_id = wpem_rest_get_current_user_id();
@@ -421,7 +421,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $conversation_user_ids = $wpdb->get_col($wpdb->prepare(" SELECT DISTINCT other_user FROM ( SELECT receiver_id AS other_user FROM $this->table WHERE sender_id = %d UNION SELECT sender_id AS other_user FROM $this->table WHERE receiver_id = %d ) AS temp WHERE other_user != %d ", $user_id, $user_id, $user_id));
 
         if (empty($conversation_user_ids)) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         /**
@@ -469,7 +469,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         /**
          * Step 4: Return formatted response
          */
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
             'total_users_count' => intval($total_count),
             'current_page' => $paged,
@@ -485,7 +485,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * This function handles the update of a message.
      * @since 1.3.0
      */
-    public function update_message(WP_REST_Request $request)
+    public function wpem_update_message(WP_REST_Request $request)
     {
         global $wpdb;
 
@@ -506,7 +506,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         // --- Ensure at least one of message or image ---
         if (!$text_message && !$image_url) {
-            return self::prepare_error_for_response(400);
+            return self::wpem_prepare_error_for_response(400);
         }
         $table = esc_sql($this->table);
         // --- Validate Message Exists ---
@@ -514,7 +514,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $message = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id));
 
         if (!$message) {
-            return self::prepare_error_for_response(404); // message not found
+            return self::wpem_prepare_error_for_response(404); // message not found
         }
 
         // --- Build Final Message ---
@@ -535,7 +535,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             ['%s', '%s'],
             ['%d']
         );
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
             'id' => $message_id,
             'user_id' => $user_id,
@@ -552,7 +552,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      * This function handles the deletion of a message.
      * @since 1.3.0
      */
-    public function delete_message($request)
+    public function wpem_delete_message($request)
     {
         global $wpdb;
 
@@ -564,7 +564,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $message = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id));
 
         if (!$message) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         // Delete
@@ -576,10 +576,10 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         );
 
         if (false === $deleted) {
-            return self::prepare_error_for_response(500);
+            return self::wpem_prepare_error_for_response(500);
         }
 
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
             'id' => $message_id,
             'user_id' => $user_id,
@@ -593,9 +593,9 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
      *
      * @return array
      */
-    public function get_collection_params()
+    public function wpem_get_collection_params()
     {
-        $params = parent::get_collection_params();
+        $params = parent::wpem_get_collection_params();
         $params['context']['default'] = 'view';
         $params['partner_id'] = array(
             'description' => __('Limit results to messages sent by a specific user.', 'wpem-rest-api'),

@@ -48,7 +48,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function get_items_permissions_check($request)
+    public function wpem_get_items_permissions_check($request)
     {
         if (!wpem_rest_api_check_post_permissions($this->post_type, 'read')) {
             return new WP_Error('wpem_rest_cannot_view', __('Sorry, you cannot list resources.', 'wpem-rest-api'), array('status' => rest_authorization_required_code()));
@@ -62,7 +62,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function create_item_permissions_check($request)
+    public function wpem_create_item_permissions_check($request)
     {
         if (!wpem_rest_api_check_post_permissions($this->post_type, 'create')) {
             return new WP_Error('wpem_rest_cannot_create', __('Sorry, you are not allowed to create resources.', 'wpem-rest-api'), array('status' => rest_authorization_required_code()));
@@ -76,7 +76,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function get_item_permissions_check($request)
+    public function wpem_get_item_permissions_check($request)
     {
         $post = get_post((int) $request['id']);
         if ($post && !wpem_rest_api_check_post_permissions($this->post_type, 'read', $post->ID)) {
@@ -91,7 +91,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function update_item_permissions_check($request)
+    public function wpem_update_item_permissions_check($request)
     {
         $post = get_post((int) $request['id']);
 
@@ -107,7 +107,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return bool|WP_Error
      */
-    public function delete_item_permissions_check($request)
+    public function wpem_delete_item_permissions_check($request)
     {
         $post = get_post((int) $request['id']);
 
@@ -123,7 +123,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param WP_REST_Request $request Full details about the request.
      * @return boolean|WP_Error
      */
-    public function batch_items_permissions_check($request)
+    public function wpem_batch_items_permissions_check($request)
     {
         if (!wpem_rest_api_check_post_permissions($this->post_type, 'batch')) {
             return new WP_Error('wpem_rest_cannot_batch', __('Sorry, you are not allowed to batch manipulate this resource.', 'wpem-rest-api'), array('status' => rest_authorization_required_code()));
@@ -137,20 +137,20 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_item($request)
+    public function wpem_get_item($request)
     {
         $id = (int) $request['id'];
         $post = get_post($id);
 
         if (empty($id) || empty($post->ID) || $post->post_type !== $this->post_type) {
-            return parent::prepare_error_for_response(404);
+            return parent::wpem_prepare_error_for_response(404);
         }
 
-        $data = $this->prepare_item_for_response($post, $request);
+        $data = $this->wpem_prepare_item_for_response($post, $request);
         $response = rest_ensure_response($data);
 
         if ($this->public) {
-            $response->link_header('alternate', get_permalink($id), array('type' => 'text/html'));
+            $response->link_header('alternate', wpem_get_permalink($id), array('type' => 'text/html'));
         }
 
         /**
@@ -169,10 +169,10 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function create_item($request)
+    public function wpem_create_item($request)
     {
         if (!empty($request['id'])) {
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
         $post = $this->prepare_item_for_database($request);
@@ -198,10 +198,10 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
         $this->update_additional_fields_for_object($post, $request);
 
         // Add meta fields.
-        $meta_fields = $this->add_post_meta_fields($post, $request);
+        $meta_fields = $this->wpem_add_post_meta_fields($post, $request);
         if (is_wp_error($meta_fields)) {
             // Remove post.
-            $this->delete_post($post);
+            $this->wpem_delete_post($post);
             return $meta_fields;
         }
 
@@ -215,7 +215,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
         do_action("wpem_rest_insert_{$this->post_type}", $post, $request, true);
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_item_for_response($post, $request);
+        $response = $this->wpem_prepare_item_for_response($post, $request);
         $response = rest_ensure_response($response);
         $response->set_status(201);
         $response->header('Location', rest_url(sprintf('/%s/%s/%d', $this->namespace, $this->rest_base, $post_id)));
@@ -230,7 +230,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request WP_REST_Request Object.
      * @return bool|WP_Error
      */
-    protected function add_post_meta_fields($post, $request)
+    protected function wpem_add_post_meta_fields($post, $request)
     {
         return true;
     }
@@ -240,7 +240,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      *
      * @param WP_Post $post Post object.
      */
-    protected function delete_post($post)
+    protected function wpem_delete_post($post)
     {
         wp_delete_post($post->ID, true);
     }
@@ -251,13 +251,13 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function update_item($request)
+    public function wpem_update_item($request)
     {
         $id = (int) $request['id'];
         $post = get_post($id);
 
         if (empty($id) || empty($post->ID) || $post->post_type !== $this->post_type) {
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
         $post = $this->prepare_item_for_database($request);
@@ -279,7 +279,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
         $this->update_additional_fields_for_object($post, $request);
 
         // Update meta fields.
-        $meta_fields = $this->update_post_meta_fields($post, $request);
+        $meta_fields = $this->wpem_update_post_meta_fields($post, $request);
         if (is_wp_error($meta_fields)) {
             return $meta_fields;
         }
@@ -294,7 +294,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
         do_action("wpem_rest_insert_{$this->post_type}", $post, $request, false);
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_item_for_response($post, $request);
+        $response = $this->wpem_prepare_item_for_response($post, $request);
         return rest_ensure_response($response);
     }
 
@@ -304,7 +304,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_items($request)
+    public function wpem_get_items($request)
     {
         $args = array();
         $args['offset'] = $request['offset'];
@@ -350,7 +350,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
          * @param WP_REST_Request $request The request used.
          */
         $args = apply_filters("wpem_rest_{$this->post_type}_query", $args, $request);
-        $query_args = $this->prepare_items_query($args, $request);
+        $query_args = $this->wpem_prepare_items_query($args, $request);
 
         $posts_query = new WP_Query();
         $query_result = $posts_query->query($query_args);
@@ -361,7 +361,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
                 continue;
             }
 
-            $data = $this->prepare_item_for_response($post, $request);
+            $data = $this->wpem_prepare_item_for_response($post, $request);
             $posts[] = $this->prepare_response_for_collection($data);
         }
 
@@ -413,14 +413,14 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_REST_Response|WP_Error
      */
-    public function delete_item($request)
+    public function wpem_delete_item($request)
     {
         $id = (int) $request['id'];
         $force = (bool) $request['force'];
         $post = get_post($id);
 
         if (empty($id) || empty($post->ID) || $post->post_type !== $this->post_type) {
-            return parent::prepare_error_for_response(404);
+            return parent::wpem_prepare_error_for_response(404);
         }
         $supports_trash = EMPTY_TRASH_DAYS > 0;
 
@@ -440,7 +440,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_item_for_response($post, $request);
+        $response = $this->wpem_prepare_item_for_response($post, $request);
 
         // If we're forcing, then delete permanently.
         if ($force) {
@@ -454,7 +454,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
 
             // Otherwise, only trash if we haven't already.
             if ('trash' === $post->post_status) {
-                return self::prepare_error_for_response(410);
+                return self::wpem_prepare_error_for_response(410);
             }
 
             // (Note that internally this falls through to `wp_delete_post` if
@@ -462,7 +462,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
             $result = wp_trash_post($id);
         }
         if (!$result) {
-            return parent::prepare_error_for_response(500);
+            return parent::wpem_prepare_error_for_response(500);
         }
 
         /**
@@ -483,7 +483,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Request object.
      * @return array Links for the given post.
      */
-    protected function prepare_links($post, $request)
+    protected function wpem_prepare_links($post, $request)
     {
         $links = array(
             'self' => array(
@@ -497,22 +497,22 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
     }
 
     /**
-     * Determine the allowed query_vars for a get_items() response and
+     * Determine the allowed query_vars for a wpem_get_items() response and
      * prepare for WP_Query.
      *
      * @param  array           $prepared_args Prepared arguments.
      * @param  WP_REST_Request $request       Request object.
      * @return array          $query_args
      */
-    protected function prepare_items_query($prepared_args = array(), $request = null)
+    protected function wpem_prepare_items_query($prepared_args = array(), $request = null)
     {
 
-        $valid_vars = array_flip($this->get_allowed_query_vars());
+        $valid_vars = array_flip($this->wpem_get_allowed_query_vars());
         $query_args = array();
         foreach ($valid_vars as $var => $index) {
             if (isset($prepared_args[$var])) {
                 /**
-                 * Filter the query_vars used in `get_items` for the constructed query.
+                 * Filter the query_vars used in `wpem_get_items` for the constructed query.
                  * The dynamic portion of the hook name, $var, refers to the query_var key.
                  *
                  * @param mixed $prepared_args[ $var ] The query_var value.
@@ -537,7 +537,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * Get all the WP Query vars that are allowed for the API request.
      * @return array
      */
-    protected function get_allowed_query_vars()
+    protected function wpem_get_allowed_query_vars()
     {
         global $wp;
 
@@ -611,9 +611,9 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      *
      * @return array
      */
-    public function get_collection_params()
+    public function wpem_get_collection_params()
     {
-        $params = parent::get_collection_params();
+        $params = parent::wpem_get_collection_params();
 
         $params['context']['default'] = 'view';
 
@@ -714,7 +714,7 @@ abstract class WPEM_REST_Posts_Controller extends WPEM_REST_Controller
      * @param  WP_REST_Request $request Request object.
      * @return bool|WP_Error
      */
-    protected function update_post_meta_fields($post, $request)
+    protected function wpem_update_post_meta_fields($post, $request)
     {
         return true;
     }

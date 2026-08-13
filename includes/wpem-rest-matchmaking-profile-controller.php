@@ -31,13 +31,13 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function __construct()
     {
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
+        add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
     }
 
     /**
      * Register profile routes in the event-controller format.
      */
-    public function register_routes()
+    public function wpem_register_routes()
     {
         // GET - Retrieve single or all matchmaking profiles
         register_rest_route(
@@ -46,8 +46,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_user_profile_data'),
-                    'permission_callback' => array($this, 'get_user_profile_permission_check'),
+                    'callback' => array($this, 'wpem_get_user_profile_data'),
+                    'permission_callback' => array($this, 'wpem_get_user_profile_permission_check'),
                     'args' => array(),
                 )
             )
@@ -59,8 +59,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'update_matchmaking_profile'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_update_matchmaking_profile'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(),
                 )
             )
@@ -73,8 +73,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::CREATABLE,
-                    'callback' => array($this, 'upload_user_file'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_upload_user_file'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(
                         'user_id' => array(
                             'required' => true,
@@ -91,8 +91,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             '/matchmaking-profile-approval',
             array(
                 'methods' => WP_REST_Server::CREATABLE,
-                'callback' => array($this, 'approve_matchmaking_profile'),
-                'permission_callback' => array($this, 'permission_check'),
+                'callback' => array($this, 'wpem_approve_matchmaking_profile'),
+                'permission_callback' => array($this, 'wpem_permission_check'),
                 // 'args'     => array(
                 //     'registration_id' => array(
                 //         'required' => true,
@@ -112,8 +112,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             '/matchmaking-profile-settings',
             array(
                 'methods' => WP_REST_Server::READABLE,
-                'callback' => array($this, 'get_matchmaking_profile_settings'),
-                'permission_callback' => array($this, 'permission_check'),
+                'callback' => array($this, 'wpem_get_matchmaking_profile_settings'),
+                'permission_callback' => array($this, 'wpem_permission_check'),
                 'args' => array(),
             ),
         );
@@ -122,8 +122,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             '/matchmaking-profile-settings',
             array(
                 'methods' => WP_REST_Server::CREATABLE,
-                'callback' => array($this, 'update_matchmaking_profile_settings'),
-                'permission_callback' => array($this, 'permission_check'),
+                'callback' => array($this, 'wpem_update_matchmaking_profile_settings'),
+                'permission_callback' => array($this, 'wpem_permission_check'),
                 'args' => array(
                     'user_id' => array(
                         'required' => false,
@@ -156,8 +156,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_wpem_matchmaking_filter_users'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_wpem_matchmaking_filter_users'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(
                         'profession' => array('required' => false, 'type' => 'string'),
                         'company_name' => array('required' => false, 'type' => 'string'),
@@ -182,8 +182,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_wpem_matchmaking_user_events'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_wpem_matchmaking_user_events'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                 )
             )
         );
@@ -193,12 +193,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * Permission callback: ensure matchmaking is enabled and user is authorized.
      *
      * Note: This follows the plugin's pattern of returning the standardized
-     * error payload via prepare_error_for_response on failure.
+     * error payload via wpem_prepare_error_for_response on failure.
      *
      * @param WP_REST_Request $request
      * @return bool|WP_Error True if allowed, or sends JSON error.
      */
-    public function permission_check($request)
+    public function wpem_permission_check($request)
     {
         $auth_check = $this->wpem_check_authorized_user();
         if ($auth_check) {
@@ -207,7 +207,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         return true;
     }
 
-    public function get_user_profile_permission_check( $request ) {
+    public function wpem_get_user_profile_permission_check( $request ) {
 
         // Authentication
         $auth_check = $this->wpem_check_authorized_user();
@@ -227,10 +227,10 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return true;
         }
         
-        return self::prepare_error_for_response(414);
+        return self::wpem_prepare_error_for_response(414);
     }
 
-    public function approve_profile_permission_check( $request ) {
+    public function wpem_approve_profile_permission_check( $request ) {
 
         // Authentication
         $auth_check = $this->wpem_check_authorized_user();
@@ -251,10 +251,10 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return true;
         }
 
-        return self::prepare_error_for_response( 403 );
+        return self::wpem_prepare_error_for_response( 403 );
     }
 
-    public function search_profiles_permission_check( $request ) {
+    public function wpem_search_profiles_permission_check( $request ) {
 
         $auth_check = $this->wpem_check_authorized_user();
 
@@ -275,7 +275,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return true;
         }
 
-        return self::prepare_error_for_response( 403 );
+        return self::wpem_prepare_error_for_response( 403 );
     }
     
     /**
@@ -285,12 +285,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function get_user_profile_data($request)
+    public function wpem_get_user_profile_data($request)
     {
         $user_id = (int) $request->get_param('user_id') ? (int) $request->get_param('user_id') : wpem_rest_get_current_user_id();
         $user = get_user_by('ID', $user_id);
         if (!$user) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         $user_meta = get_user_meta($user_id);
@@ -390,7 +390,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $profile['organization_logo'] = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 
         // Build response
-        $response = self::prepare_error_for_response(200);
+        $response = self::wpem_prepare_error_for_response(200);
         $response['data'] = $profile;
         return wp_send_json($response);
     }
@@ -402,12 +402,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function update_matchmaking_profile($request)
+    public function wpem_update_matchmaking_profile($request)
     {
         $user_id = (int) wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
         if (!$user) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         // Get all defined profile fields
@@ -485,7 +485,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
         }
         
-        return self::prepare_error_for_response(200);
+        return self::wpem_prepare_error_for_response(200);
     }
 
     /**
@@ -495,16 +495,16 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function upload_user_file($request)
+    public function wpem_upload_user_file($request)
     {
         $user_id = (int) wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
         if (!$user) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
         if (empty($_FILES['file'])) {
-            return self::prepare_error_for_response(400, array('message' => 'No file uploaded.'));
+            return self::wpem_prepare_error_for_response(400, array('message' => 'No file uploaded.'));
         }
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -512,13 +512,13 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $upload_overrides = array('test_form' => false); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
         $movefile = wp_handle_upload($file, $upload_overrides);
         if (!isset($movefile['url'])) {
-            return self::prepare_error_for_response(500, array('message' => 'File upload failed.'));
+            return self::wpem_prepare_error_for_response(500, array('message' => 'File upload failed.'));
         }
 
         $file_url = esc_url_raw($movefile['url']);
         update_user_meta($user_id, '_profile_photo', $file_url);
 
-        $response = self::prepare_error_for_response(200);
+        $response = self::wpem_prepare_error_for_response(200);
         $response['message'] = 'File uploaded and stored successfully.';
         $response['data'] = array(
             'profile_photo' => $file_url,
@@ -535,7 +535,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @return WP_REST_Response
      * @since 1.1.3
      */
-    public function get_matchmaking_profile_settings($request)
+    public function wpem_get_matchmaking_profile_settings($request)
     {
         $user_id = wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
@@ -579,7 +579,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $settings['custom_timezone'] = get_user_meta($user_id, '_custom_timezone', true);
             $settings['custom_timezone_offset'] = DateTimeZone::listIdentifiers();
         }
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $settings;
         $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
@@ -593,7 +593,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @return WP_REST_Response
      * @since 1.1.3
      */
-    public function update_matchmaking_profile_settings($request)
+    public function wpem_update_matchmaking_profile_settings($request)
     {
         $user_id = wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
@@ -614,7 +614,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 if ($timezone && in_array($timezone, $tzlist, true)) {
                     update_user_meta($user_id, '_custom_timezone', sanitize_text_field($timezone));
                 } else {
-                    self::prepare_error_for_response(400);
+                    self::wpem_prepare_error_for_response(400);
                 }
             } else {
                 delete_user_meta($user_id, '_custom_timezone');
@@ -645,7 +645,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 }
             }
         }
-        return self::prepare_error_for_response(200);
+        return self::wpem_prepare_error_for_response(200);
     }
 
     /**
@@ -656,7 +656,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * @return WP_REST_Response
      * @since 1.1.3
      */
-    public function approve_matchmaking_profile($request)
+    public function wpem_approve_matchmaking_profile($request)
     {
         global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
@@ -666,16 +666,16 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
                 if ( !$is_admin ) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }else{
                 if($this->wpem_user_has_permission($current_user, 'read')) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }
         }else{
             if ( !$is_admin ) {
-                return self::prepare_error_for_response(403);
+                return self::wpem_prepare_error_for_response(403);
             }
         }
         
@@ -684,7 +684,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $profile_status = isset($params['profile_status']) ? $params['profile_status'] : 0;
         // Update user meta values
         if (empty($registration_id) || $registration_id <= 0) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         // Get user_id and email from the current registration
@@ -708,7 +708,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             update_post_meta($reg->ID, '_attendee_approved', $profile_status);
         }
 
-        return self::prepare_error_for_response(200);
+        return self::wpem_prepare_error_for_response(200);
     }
 
     /**
@@ -716,7 +716,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * Route: POST /wp-json/wpem/matchmaking-profile/filter
      * @since 1.1.4
      */
-    public function get_wpem_matchmaking_filter_users(WP_REST_Request $request)
+    public function wpem_get_wpem_matchmaking_filter_users(WP_REST_Request $request)
     {
         $filters = $request->get_params();
         $current_user = wpem_rest_get_current_user_id();
@@ -751,7 +751,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         if (empty($event_ids)) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         // Step 2: Collect attendees with matchmaking
@@ -850,7 +850,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $users = array_values($filtered_users);
 
         if (empty($users)) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         // Step 3: Apply filters (search, profession, etc.) — keep your existing filter logic here
@@ -926,7 +926,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         if (empty($final_users)) {
-            return self::prepare_error_for_response(404);
+            return self::wpem_prepare_error_for_response(404);
         }
 
         // Step 4: Pagination
@@ -935,7 +935,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $offset = ($page - 1) * $per_page;
         $paged_users = array_slice($final_users, $offset, $per_page);
 
-        $response = self::prepare_error_for_response(200);
+        $response = self::wpem_prepare_error_for_response(200);
         $response['data'] = [
             'total' => count($final_users),
             'page' => $page,
@@ -951,7 +951,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      * This function is used to get event list for which current loggedin user has registered
      * @since 1.3.0
      */
-    public function get_wpem_matchmaking_user_events($request)
+    public function wpem_get_wpem_matchmaking_user_events($request)
     {
         $user_id = wpem_rest_get_current_user_id();
 
@@ -1056,7 +1056,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
         $total_pages = (int) ceil($total / $per_page);
 
-        $response = self::prepare_error_for_response(200);
+        $response = self::wpem_prepare_error_for_response(200);
         $response['data'] = array(
             'total_post_count' => $total,
             'current_page' => $page,

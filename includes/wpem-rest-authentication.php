@@ -42,7 +42,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		add_filter('rest_pre_dispatch', array($this, 'wpem_rest_check_user_permissions'), 10, 3);
 
 		//register rout here for app key and login
-		add_action('rest_api_init', array($this, 'register_routes'), 10);
+		add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
 	}
 
 	/**
@@ -51,7 +51,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @since    1.0.0
 	 * @return bool
 	 */
-	protected function is_request_to_rest_api()
+	protected function wpem_is_request_to_rest_api()
 	{
 		if (empty($_SERVER['REQUEST_URI'])) {
 			return false;
@@ -79,17 +79,17 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	public function wpem_rest_authenticate($user_id)
 	{
 		// Do not authenticate twice and check if is a request to our endpoint in the WP REST API.
-		if (!empty($user_id) || !$this->is_request_to_rest_api()) {
+		if (!empty($user_id) || !$this->wpem_is_request_to_rest_api()) {
 			return $user_id;
 		}
 		if (is_ssl()) {
-			$user_id = $this->perform_basic_authentication();
+			$user_id = $this->wpem_perform_basic_authentication();
 		}
 		if ($user_id) {
 			return $user_id;
 		}
 
-		return $this->perform_oauth_authentication();
+		return $this->wpem_perform_oauth_authentication();
 	}
 
 	/**
@@ -106,7 +106,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 			return $error;
 		}
 
-		return $this->get_error();
+		return $this->wpem_get_error();
 	}
 
 	/**
@@ -114,7 +114,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @since    1.0.0
 	 * @param WP_Error $error Authentication error data.
 	 */
-	protected function set_error($error)
+	protected function wpem_set_error($error)
 	{
 		// Reset user.
 		$this->user = null;
@@ -126,7 +126,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @since    1.0.0
 	 * @return WP_Error|null.
 	 */
-	protected function get_error()
+	protected function wpem_get_error()
 	{
 		return $this->error;
 	}
@@ -142,7 +142,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @since    1.0.0
 	 * @return int|bool
 	 */
-	private function perform_basic_authentication()
+	private function wpem_perform_basic_authentication()
 	{
 		$this->auth_method = 'basic_auth';
 		$consumer_key = '';
@@ -166,20 +166,20 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		}
 
 		// Get user data.
-		$this->user = $this->get_user_data_by_consumer_key($consumer_key);
+		$this->user = $this->wpem_get_user_data_by_consumer_key($consumer_key);
 		if (empty($this->user)) {
 			return false;
 		}
 
 		// Validate user secret.
 		if (!hash_equals($this->user->consumer_secret, $consumer_secret)) { // @codingStandardsIgnoreLine
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 		$current_date = gmdate('Y-m-d H:i:s');
 
 		//Check for key expiry
 		if (isset($this->user->date_expires) && $current_date > $this->user->date_expires) {
-			return parent::prepare_error_for_response(503);
+			return parent::wpem_prepare_error_for_response(503);
 
 			return false;
 		}
@@ -194,7 +194,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 *
 	 * @return array Map of parameter values.
 	 */
-	public function parse_header($header)
+	public function wpem_parse_header($header)
 	{
 		if ('OAuth ' !== substr($header, 0, 6)) {
 			return array();
@@ -225,7 +225,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 *
 	 * @return string Authorization header if set.
 	 */
-	public function get_authorization_header()
+	public function wpem_get_authorization_header()
 	{
 		if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
 			return wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION'])); // WPCS: sanitization ok.
@@ -249,7 +249,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 *
 	 * @return array|WP_Error
 	 */
-	public function get_oauth_parameters()
+	public function wpem_get_oauth_parameters()
 	{
 
 		$param_names = array(
@@ -272,11 +272,11 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		}
 
 		// Authorization header
-		$header = $this->get_authorization_header();
+		$header = $this->wpem_get_authorization_header();
 
 		if (!empty($header)) {
 			$header = trim($header);
-			$header_params = $this->parse_header($header);
+			$header_params = $this->wpem_parse_header($header);
 
 			if (!empty($header_params)) {
 				$params = array_merge($params, $header_params);
@@ -303,7 +303,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				_n('Missing OAuth parameter %s', 'Missing OAuth parameters %s', count($errors), 'wpem-rest-api'),
 				implode(', ', $errors)
 			);
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 
 		return $params;
@@ -325,32 +325,32 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @since    1.0.0
 	 * @return int|bool
 	 */
-	private function perform_oauth_authentication()
+	private function wpem_perform_oauth_authentication()
 	{
 		$this->auth_method = 'oauth1';
 
-		$params = $this->get_oauth_parameters();
+		$params = $this->wpem_get_oauth_parameters();
 		if (empty($params)) {
 			return false;
 		}
 
 		// Fetch WP user by consumer key.
-		$this->user = $this->get_user_data_by_consumer_key($params['oauth_consumer_key']);
+		$this->user = $this->wpem_get_user_data_by_consumer_key($params['oauth_consumer_key']);
 
 		if (empty($this->user)) {
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 
 		// Perform OAuth validation.
-		$signature = $this->check_oauth_signature($this->user, $params);
+		$signature = $this->wpem_check_oauth_signature($this->user, $params);
 		if (is_wp_error($signature)) {
-			$this->set_error($signature);
+			$this->wpem_set_error($signature);
 			return false;
 		}
 
-		$timestamp_and_nonce = $this->check_oauth_timestamp_and_nonce($this->user, $params['oauth_timestamp'], $params['oauth_nonce']);
+		$timestamp_and_nonce = $this->wpem_check_oauth_timestamp_and_nonce($this->user, $params['oauth_timestamp'], $params['oauth_nonce']);
 		if (is_wp_error($timestamp_and_nonce)) {
-			$this->set_error($timestamp_and_nonce);
+			$this->wpem_set_error($timestamp_and_nonce);
 			return false;
 		}
 
@@ -366,7 +366,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @param array    $params The request parameters.
 	 * @return true|WP_Error
 	 */
-	private function check_oauth_signature($user, $params)
+	private function wpem_check_oauth_signature($user, $params)
 	{
 		$http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(wp_kses_post(wp_unslash($_SERVER['REQUEST_METHOD']))) : ''; // WPCS: sanitization ok.
 		$request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : ''; // WPCS: sanitization ok.
@@ -382,16 +382,16 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 
 		// Sort parameters.
 		if (!uksort($params, 'strcmp')) {
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 
 		// Normalize parameter key/values.
-		$params = $this->normalize_parameters($params);
-		$query_string = implode('%26', $this->join_with_equals_sign($params)); // Join with ampersand.
+		$params = $this->wpem_normalize_parameters($params);
+		$query_string = implode('%26', $this->wpem_join_with_equals_sign($params)); // Join with ampersand.
 		$string_to_sign = $http_method . '&' . $base_request_uri . '&' . $query_string;
 
 		if ('HMAC-SHA1' !== $params['oauth_signature_method'] && 'HMAC-SHA256' !== $params['oauth_signature_method']) {
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 
 		$hash_algorithm = strtolower(str_replace('HMAC-', '', $params['oauth_signature_method']));
@@ -399,7 +399,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		$signature = base64_encode(hash_hmac($hash_algorithm, $string_to_sign, $secret, true));
 
 		if (!hash_equals($signature, $consumer_signature)) { // @codingStandardsIgnoreLine
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 
 		return true;
@@ -414,14 +414,14 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @param  string $key          Optional Array key to append.
 	 * @return string               Array of urlencoded strings.
 	 */
-	private function join_with_equals_sign($params, $query_params = array(), $key = '')
+	private function wpem_join_with_equals_sign($params, $query_params = array(), $key = '')
 	{
 		foreach ($params as $param_key => $param_value) {
 			if ($key) {
 				$param_key = $key . '%5B' . $param_key . '%5D'; // Handle multi-dimensional array.
 			}
 			if (is_array($param_value)) {
-				$query_params = $this->join_with_equals_sign($param_value, $query_params, $param_key);
+				$query_params = $this->wpem_join_with_equals_sign($param_value, $query_params, $param_key);
 			} else {
 				$string = $param_key . '=' . $param_value; // Join with equals sign.
 				$query_params[] = wpem_rest_api_urlencode_rfc3986($string);
@@ -449,7 +449,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @param array $parameters Un-normalized parameters.
 	 * @return array Normalized parameters.
 	 */
-	private function normalize_parameters($parameters)
+	private function wpem_normalize_parameters($parameters)
 	{
 		$keys = wpem_rest_api_urlencode_rfc3986(array_keys($parameters));
 		$values = wpem_rest_api_urlencode_rfc3986(array_values($parameters));
@@ -469,14 +469,14 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @param string   $nonce     A unique (for the given user) 32 alphanumeric string, consumer-generated.
 	 * @return bool|WP_Error
 	 */
-	private function check_oauth_timestamp_and_nonce($user, $timestamp, $nonce)
+	private function wpem_check_oauth_timestamp_and_nonce($user, $timestamp, $nonce)
 	{
 		global $wpdb;
 
 		$valid_window = 15 * 60; // 15 minute window.
 
 		if (($timestamp < time() - $valid_window) || ($timestamp > time() + $valid_window)) {
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 		$used_nonces = maybe_unserialize($user->nonces);
 
@@ -485,7 +485,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		}
 
 		if (in_array($nonce, $used_nonces, true)) {
-			return parent::prepare_error_for_response(401);
+			return parent::wpem_prepare_error_for_response(401);
 		}
 
 		$used_nonces[$timestamp] = $nonce;
@@ -508,7 +508,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @param string $consumer_key Consumer key.
 	 * @return array
 	 */
-	private function get_user_data_by_consumer_key($consumer_key)
+	private function wpem_get_user_data_by_consumer_key($consumer_key)
 	{
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
@@ -524,14 +524,14 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * @param string $method Request method.
 	 * @return bool|WP_Error
 	 */
-	private function check_permissions($method)
+	private function wpem_check_permissions($method)
 	{
 		$permissions = $this->user->permissions;
 		switch ($method) {
 			case 'HEAD':
 			case 'GET':
 				if ('read' !== $permissions && 'read_write' !== $permissions) {
-					return parent::prepare_error_for_response(401);
+					return parent::wpem_prepare_error_for_response(401);
 				}
 				break;
 			case 'POST':
@@ -539,14 +539,14 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 			case 'PATCH':
 			case 'DELETE':
 				if ('write' !== $permissions && 'read_write' !== $permissions) {
-					return parent::prepare_error_for_response(401);
+					return parent::wpem_prepare_error_for_response(401);
 				}
 				break;
 			case 'OPTIONS':
 				return true;
 
 			default:
-				return parent::prepare_error_for_response(401);
+				return parent::wpem_prepare_error_for_response(401);
 		}
 		return true;
 	}
@@ -554,7 +554,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	/**
 	 * Updated API Key last access datetime.
 	 */
-	private function update_last_access()
+	private function wpem_update_last_access()
 	{
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
@@ -571,7 +571,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 */
 	public function wpem_rest_send_unauthorized_headers($response)
 	{
-		if (is_wp_error($this->get_error()) && 'basic_auth' === $this->auth_method) {
+		if (is_wp_error($this->wpem_get_error()) && 'basic_auth' === $this->auth_method) {
 			$auth_message = __('WPEM API. Use a consumer key in the username field and a consumer secret in the password field.', 'wpem-rest-api');
 			$response->header('WWW-Authenticate', 'Basic realm="' . $auth_message . '"', true);
 		}
@@ -590,12 +590,12 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	{
 		if ($this->user) {
 			// Check API Key permissions.
-			$allowed = $this->check_permissions($request->get_method());
+			$allowed = $this->wpem_check_permissions($request->get_method());
 			if (is_wp_error($allowed)) {
 				return $allowed;
 			}
 			// Register last access.
-			$this->update_last_access();
+			$this->wpem_update_last_access();
 		}
 		return $result;
 	}
@@ -603,7 +603,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	/**
 	 * Register the routes for auth login and appkey auth.
 	 */
-	public function register_routes()
+	public function wpem_register_routes()
 	{
 		register_rest_route(
 			'wpem',
@@ -611,7 +611,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 			array(
 				array(
 					'methods' => WP_REST_Server::CREATABLE,
-					'callback' => array($this, 'perform_user_authentication'),
+					'callback' => array($this, 'wpem_perform_user_authentication'),
 					'permission_callback' => '__return_true'
 				),
 			)
@@ -622,7 +622,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 			array(
 				array(
 					'methods' => WP_REST_Server::CREATABLE,
-					'callback' => array($this, 'perform_login_authentication'),
+					'callback' => array($this, 'wpem_perform_login_authentication'),
 					'permission_callback' => '__return_true'
 				),
 			)
@@ -634,7 +634,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 *
 	 * @since 1.0.1
 	 */
-	public function perform_login_authentication($request)
+	public function wpem_perform_login_authentication($request)
 	{
 		$params = $request->get_json_params();
 		$username = isset($params['username']) ? trim($params['username']) : '';
@@ -643,7 +643,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
 			if (is_wp_error($user)) {
-				return parent::prepare_error_for_response(401);
+				return parent::wpem_prepare_error_for_response(401);
 			} else {
 				global $wpdb;
 				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
@@ -653,18 +653,18 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				if (!empty($key_data->date_expires) && strtotime($key_data->date_expires) >= strtotime(gmdate('Y-m-d H:i:s'))) {
 					$key_data->expiry = false;
 				} else {
-					return parent::prepare_error_for_response(503);
+					return parent::wpem_prepare_error_for_response(503);
 				}
 				if (empty($key_data))
-					return parent::prepare_error_for_response(401);
-				$response_data = self::prepare_error_for_response(200);
+					return parent::wpem_prepare_error_for_response(401);
+				$response_data = self::wpem_prepare_error_for_response(200);
 				$response_data['data'] = array(
 					'user_info' => $key_data,
 				);
 				return $response_data;
 			}
 		} else {
-			return parent::prepare_error_for_response(400);
+			return parent::wpem_prepare_error_for_response(400);
 		}
 	}
 
@@ -673,7 +673,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 *
 	 * @since 1.0.0
 	 */
-	public function perform_user_authentication($request)
+	public function wpem_perform_user_authentication($request)
 	{
 		$params = $request->get_json_params();
 		$username = isset($params['username']) ? trim($params['username']) : '';
@@ -683,7 +683,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
 			if (is_wp_error($user)) {
-				return parent::prepare_error_for_response(401);
+				return parent::wpem_prepare_error_for_response(401);
 			} else {
 				global $wpdb;
 				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
@@ -844,15 +844,15 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				}
 
 				if (empty($key_data) && !get_user_meta($user_id, '_matchmaking_profile', true)) {
-					return parent::prepare_error_for_response(405);
+					return parent::wpem_prepare_error_for_response(405);
 				}
 				$data['user_status'] = wpem_get_user_login_status($user_id);
-				$response_data = parent::prepare_error_for_response(200);
+				$response_data = parent::wpem_prepare_error_for_response(200);
 				$response_data['data'] = $data;
 				return $response_data;
 			}
 		} else {
-			return parent::prepare_error_for_response(400);
+			return parent::wpem_prepare_error_for_response(400);
 		}
 	}
 
@@ -889,14 +889,14 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * This function will used to check authentication while use the match making apis
 	 * @since 1.1.0
 	 */
-	public function check_authentication($request)
+	public function wpem_check_authentication($request)
 	{
-		$auth_header = $this->get_authorization_header();
+		$auth_header = $this->wpem_get_authorization_header();
 
 		if (preg_match('/Bearer\s(\S+)/', $auth_header, $matches)) {
 			$token = $matches[1];
 
-			return $this->validate_jwt_token($token);
+			return $this->wpem_validate_jwt_token($token);
 		}
 
 		return new WP_Error('rest_forbidden', __('Missing or invalid authorization token.', 'wpem-rest-api'), array('status' => 401));
@@ -905,7 +905,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * This function will used to check validation of jwt token 
 	 * @since 1.1.0
 	 */
-	private function validate_jwt_token($token)
+	private function wpem_validate_jwt_token($token)
 	{
 		$parts = explode('.', $token);
 		if (count($parts) !== 3) {
