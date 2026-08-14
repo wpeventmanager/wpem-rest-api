@@ -896,7 +896,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		if (preg_match('/Bearer\s(\S+)/', $auth_header, $matches)) {
 			$token = $matches[1];
 
-			return $this->wpem_validate_jwt_token($token);
+			return $this->wpem_validation_jwt_token($token);
 		}
 
 		return new WP_Error('rest_forbidden', __('Missing or invalid authorization token.', 'wpem-rest-api'), array('status' => 401));
@@ -905,7 +905,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 * This function will used to check validation of jwt token 
 	 * @since 1.1.0
 	 */
-	private function wpem_validate_jwt_token($token)
+	private function wpem_validation_jwt_token($token)
 	{
 		$parts = explode('.', $token);
 		if (count($parts) !== 3) {
