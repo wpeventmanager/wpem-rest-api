@@ -101,7 +101,7 @@ class WPEM_Rest_API
         $domain = 'wpem-rest-api';
         $locale = apply_filters('wpem_plugin_locale', get_locale(), $domain);
         load_textdomain($domain, WP_LANG_DIR . "/wpem-rest-api/" . $domain . "-" . $locale . ".mo");
-        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.wpem_load_plugin_textdomainFound -- needed for non-dotorg plugin.
+        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- needed for non-dotorg plugin.
         load_plugin_textdomain($domain, false, dirname(plugin_basename(__FILE__)) . '/languages/');
     }
 

@@ -880,10 +880,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $meeting_id = (int) $request['id'];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $row = $wpdb->get_row(
-            $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id ),
-            ARRAY_A
-        );
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d AND user_id = %d", $meeting_id, $user_id ), ARRAY_A );
         if ( ! $row ) {
             return self::wpem_prepare_error_for_response( 404 );
         }
@@ -1061,13 +1058,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             // phpcs:enable
 
             // -- 2c. Table availability check -----------------------------
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $event_room_count = (int) $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$rooms_table} WHERE event_id = %d",
-                    $event_id
-                )
-            );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $event_room_count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$rooms_table} WHERE event_id = %d", $event_id ) );
 
             $new_table_id = null;
             if ( $event_room_count > 0 ) {
@@ -1112,12 +1104,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             // -- 2d. Release old table booking and create a new one -------
             if ( ! is_null( $new_table_id ) ) {
                 // Remove previous booking(s) for this meeting.
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-                $wpdb->delete(
-                    $table_bookings_table,
-                    array( 'meeting_id' => $meeting_id ),
-                    array( '%d' )
-                );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                $wpdb->delete( $table_bookings_table, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
 
                 // Insert new booking.
                 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
@@ -1191,10 +1179,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $row = $wpdb->get_row(
-            $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $meeting_id ),
-            ARRAY_A
-        );
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $meeting_id ), ARRAY_A );
 
         $response_data         = self::wpem_prepare_error_for_response( 200 );
         $response_data['data'] = $this->wpem_format_meeting_row( $row );

@@ -852,14 +852,8 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
     function wpem_user_has_permission( $user_id, $required_permission ) {
         global $wpdb;
 
-        $permission = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT permissions
-                FROM {$wpdb->prefix}wpem_rest_api_keys
-                WHERE user_id = %d",
-                $user_id
-            )
-        );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $permission = $wpdb->get_var( $wpdb->prepare( "SELECT permissions FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d", $user_id ) );
 
         if ( empty( $permission ) ) {
             return false;

@@ -354,6 +354,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         $current_user = absint(wpem_rest_get_current_user_id());
         $is_admin  = user_can( $current_user, 'manage_options' );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, 	WordPress.DB.DirectDatabaseQuery.NoCaching
         $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
@@ -417,6 +418,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         $current_user = absint(wpem_rest_get_current_user_id());
         $is_admin  = user_can( $current_user, 'manage_options' );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
@@ -515,6 +517,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
         $current_user = absint(wpem_rest_get_current_user_id());
         $is_admin  = user_can( $current_user, 'manage_options' );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {

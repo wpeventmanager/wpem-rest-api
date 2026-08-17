@@ -89,8 +89,10 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
 
                 $processed_orders[ $order_id ] = true;
                 // Get ALL registrations belonging to this order.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, 	WordPress.DB.DirectDatabaseQuery.NoCaching
                 $registration_ids = $wpdb->get_col($wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %d", '_order_id', $order_id));
 
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                 $order_date = $wpdb->get_var($wpdb->prepare( "SELECT DATE(post_date) FROM {$wpdb->posts} WHERE ID = %d", $order_id));
 
                 foreach ( $registration_ids as $registration_id ) {
@@ -181,6 +183,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         }
                     }
 
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                     $get_payment_status = $wpdb->get_var($wpdb->prepare( "SELECT post_status FROM {$wpdb->posts} WHERE ID = %d", $order_id));
                     if($get_payment_status === 'wc-completed') {
                         $payment_status = 'paid';
