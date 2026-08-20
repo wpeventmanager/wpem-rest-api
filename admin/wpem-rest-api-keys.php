@@ -12,7 +12,7 @@ class WPEM_Rest_API_Keys
      */
     public function __construct()
     {
-        add_action('admin_init', array($this, 'actions'));
+        add_action('admin_init', array($this, 'wpem_actions'));
     }
 
     /**
@@ -22,7 +22,7 @@ class WPEM_Rest_API_Keys
      * @param  bool $allow If allow save settings.
      * @return bool
      */
-    public function allow_save_settings($allow)
+    public function wpem_allow_save_settings($allow)
     {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
         if (!isset($_GET['create-key'], $_GET['edit-key'])) { // WPCS: input var okay, CSRF ok.
@@ -37,7 +37,7 @@ class WPEM_Rest_API_Keys
      *
      * @return bool
      */
-    private function is_api_keys_settings_page()
+    private function wpem_is_api_keys_settings_page()
     {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
         return isset($_GET['page']) && 'wpem-rest-api-settings' === $_GET['page']; // WPCS: input var okay, CSRF ok.
@@ -46,7 +46,7 @@ class WPEM_Rest_API_Keys
     /**
      * Page output.
      */
-    public static function page_output()
+    public static function wpem_page_output()
     {
         // Hide the save button.
         $GLOBALS['wpem_hide_save_button'] = true;
@@ -55,7 +55,7 @@ class WPEM_Rest_API_Keys
         if (isset($_GET['create-key']) || isset($_GET['edit-key'])) {
 
             $key_id = isset($_GET['edit-key']) ? absint($_GET['edit-key']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
-            $key_data = self::get_key_data($key_id);
+            $key_data = self::wpem_get_key_data($key_id);
             $user_id = (int) $key_data['user_id'];
 
             if ($key_id && $user_id && !current_user_can('edit_user', $user_id)) {
@@ -65,18 +65,18 @@ class WPEM_Rest_API_Keys
             }
             include dirname(__FILE__) . '/templates/html-keys-edit.php';
         } else {
-            self::table_list_output();
+            self::wpem_table_list_output();
         }
     }
 
     /**
      * Add screen option.
      */
-    public function screen_option()
+    public function wpem_screen_option()
     {
         global $wpem_keys_table_list;
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
-        if (!isset($_GET['create-key']) && !isset($_GET['edit-key']) && $this->is_api_keys_settings_page()) { // WPCS: input var okay, CSRF ok.
+        if (!isset($_GET['create-key']) && !isset($_GET['edit-key']) && $this->wpem_is_api_keys_settings_page()) { // WPCS: input var okay, CSRF ok.
             $wpem_keys_table_list = new WPEM_API_Keys_Table_List();
 
             // Add screen option.
@@ -88,13 +88,13 @@ class WPEM_Rest_API_Keys
                 )
             );
         }
-        self::page_output();
+        self::wpem_page_output();
     }
 
     /**
      * Table list output.
      */
-    private static function table_list_output()
+    private static function wpem_table_list_output()
     {
         global $wpdb, $wpem_keys_table_list;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
@@ -104,7 +104,7 @@ class WPEM_Rest_API_Keys
         $all_users = wpem_get_event_users();
         global $wpdb;
         $key_id = isset($_GET['edit-key']) ? absint($_GET['edit-key']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
-        $key_data = self::get_key_data($key_id);
+        $key_data = self::wpem_get_key_data($key_id);
         $app_user = $wpdb->get_col("SELECT user_id FROM {$table_name}");// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $user_id = !empty($key_data['user_id']) ? absint($key_data['user_id']) : '';
         foreach ($all_users as $user) {
@@ -121,9 +121,9 @@ class WPEM_Rest_API_Keys
         $count = $wpdb->get_var("SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
         if (absint($count) && $count > 0) {
-            $wpem_keys_table_list->prepare_items();
+            $wpem_keys_table_list->wpem_prepare_items();
             $wpem_keys_table_list->views();
-            $wpem_keys_table_list->search_box(__('Search by User', 'wpem-rest-api'), 'user');
+            $wpem_keys_table_list->wpem_search_box(__('Search by User', 'wpem-rest-api'), 'user');
             $wpem_keys_table_list->display();
 
         } else {
@@ -155,7 +155,7 @@ class WPEM_Rest_API_Keys
      * @param  int $key_id API Key ID.
      * @return array
      */
-    private static function get_key_data($key_id)
+    private static function wpem_get_key_data($key_id)
     {
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
@@ -187,19 +187,19 @@ class WPEM_Rest_API_Keys
     /**
      * API Keys admin actions.
      */
-    public function actions()
+    public function wpem_actions()
     {
-        if ($this->is_api_keys_settings_page()) {
+        if ($this->wpem_is_api_keys_settings_page()) {
             // Revoke key.
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             if (isset($_REQUEST['revoke-key'])) { // WPCS: input var okay, CSRF ok.
-                $this->revoke_key();
+                $this->wpem_revoke_key();
             }
 
             // Bulk actions.
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             if (isset($_REQUEST['action']) && isset($_REQUEST['key'])) { // WPCS: input var okay, CSRF ok.
-                $this->bulk_actions();
+                $this->wpem_bulk_actions();
             }
         }
     }
@@ -207,7 +207,7 @@ class WPEM_Rest_API_Keys
     /**
      * Notices.
      */
-    public static function notices()
+    public static function wpem_notices()
     {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
         if (isset($_GET['revoked'])) { // WPCS: input var okay, CSRF ok.
@@ -222,7 +222,7 @@ class WPEM_Rest_API_Keys
     /**
      * Revoke key.
      */
-    private function revoke_key()
+    private function wpem_revoke_key()
     {
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
@@ -234,7 +234,7 @@ class WPEM_Rest_API_Keys
             $user_id = (int) $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$table} WHERE key_id = %d", $key_id)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
             if ($key_id && $user_id && (current_user_can('edit_user', $user_id) || get_current_user_id() === $user_id)) {
-                $this->remove_key($key_id);
+                $this->wpem_remove_key($key_id);
             } else {
                 wp_die(esc_html__('You do not have permission to revoke this API Key', 'wpem-rest-api'));
             }
@@ -247,7 +247,7 @@ class WPEM_Rest_API_Keys
     /**
      * Bulk actions.
      */
-    private function bulk_actions()
+    private function wpem_bulk_actions()
     {
         if (!current_user_can('manage_options')) {
             wp_die(esc_html__('You do not have permission to edit API Keys', 'wpem-rest-api'));
@@ -258,7 +258,7 @@ class WPEM_Rest_API_Keys
             $keys = isset($_REQUEST['key']) ? array_map('absint', (array) $_REQUEST['key']) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WPCS: input var okay, CSRF ok.
             if ('revoke' === $action) {
-                $this->bulk_revoke_key($keys);
+                $this->wpem_bulk_revoke_key($keys);
             }
         }
     }
@@ -268,7 +268,7 @@ class WPEM_Rest_API_Keys
      *
      * @param array $keys API Keys.
      */
-    private function bulk_revoke_key($keys)
+    private function wpem_bulk_revoke_key($keys)
     {
         if (!current_user_can('remove_users')) {
             wp_die(esc_html__('You do not have permission to revoke API Keys', 'wpem-rest-api'));
@@ -276,7 +276,7 @@ class WPEM_Rest_API_Keys
 
         $qty = 0;
         foreach ($keys as $key_id) {
-            $result = $this->remove_key($key_id);
+            $result = $this->wpem_remove_key($key_id);
             if ($result) {
                 $qty++;
             }
@@ -293,7 +293,7 @@ class WPEM_Rest_API_Keys
      * @param  int $key_id API Key ID.
      * @return bool
      */
-    private function remove_key($key_id)
+    private function wpem_remove_key($key_id)
     {
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');

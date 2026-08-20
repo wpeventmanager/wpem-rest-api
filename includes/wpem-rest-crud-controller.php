@@ -37,10 +37,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  int $id Object ID.
      * @return object Post Data object or WP_Error object.
      */
-    protected function get_object($id)
+    protected function wpem_get_object($id)
     {
         // translators: %s: Class method name.
-        return self::prepare_error_for_response(405);
+        return self::wpem_prepare_error_for_response(405);
     }
 
     /**
@@ -49,9 +49,9 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function get_item_permissions_check($request)
+    public function wpem_get_item_permissions_check($request)
     {
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
         if (!is_wp_error($object) && $object) {
             $object_id = $object->ID;
             if ($object->post_type === 'product') {
@@ -59,7 +59,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             }
 
             if (!wpem_rest_api_check_post_permissions($this->post_type, 'read', $object_id)) {
-                return self::prepare_error_for_response(203);
+                return self::wpem_prepare_error_for_response(203);
             }
             return true;
         } else {
@@ -74,12 +74,12 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function update_item_permissions_check($request)
+    public function wpem_update_item_permissions_check($request)
     {
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
         if (!is_wp_error($object) && $object) {
             if ($object && 0 !== $object->ID && !wpem_rest_api_check_post_permissions($this->post_type, 'edit', $object->ID)) {
-                return self::prepare_error_for_response(504);
+                return self::wpem_prepare_error_for_response(504);
             }
             return true;
         } else {
@@ -94,12 +94,12 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return bool|WP_Error
      */
-    public function delete_item_permissions_check($request)
+    public function wpem_delete_item_permissions_check($request)
     {
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
         if (!is_wp_error($object) && $object) {
             if ($object && 0 !== $object->ID && !wpem_rest_api_check_post_permissions($this->post_type, 'delete', $object->ID)) {
-                return self::prepare_error_for_response(412);
+                return self::wpem_prepare_error_for_response(412);
             }
             return true;
         } else {
@@ -112,12 +112,12 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * Permission callback: ensure matchmaking is enabled and user is authorized.
      *
      * Note: This follows the plugin's pattern of returning the standardized
-     * error payload via prepare_error_for_response on failure.
+     * error payload via wpem_prepare_error_for_response on failure.
      *
      * @param WP_REST_Request $request
      * @return bool|WP_Error True if allowed, or sends JSON error.
      */
-    public function permission_check($request)
+    public function wpem_permission_check($request)
     {
         $auth_check = $this->wpem_check_authorized_user();
         if ($auth_check) {
@@ -132,7 +132,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  object $object Object.
      * @return string
      */
-    protected function get_permalink($object)
+    protected function wpem_get_permalink($object)
     {
         return '';
     }
@@ -145,10 +145,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Request object.
      * @return WP_Error|WP_REST_Response Response object on success, or WP_Error object on failure.
      */
-    protected function prepare_object_for_response($object, $request)
+    protected function wpem_prepare_object_for_response($object, $request)
     {
         // translators: %s: Class method name.
-        return self::prepare_error_for_response(405);
+        return self::wpem_prepare_error_for_response(405);
     }
 
     /**
@@ -159,10 +159,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  bool            $creating If is creating a new object.
      * @return WP_Error|Post Data The prepared item, or WP_Error object on failure.
      */
-    protected function prepare_object_for_database($request, $creating = false)
+    protected function wpem_prepare_object_for_database($request, $creating = false)
     {
         // translators: %s: Class method name.
-        return self::prepare_error_for_response(405);
+        return self::wpem_prepare_error_for_response(405);
     }
 
     /**
@@ -171,21 +171,21 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_item($request)
+    public function wpem_get_item($request)
     {
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
         if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(404);
+            return parent::wpem_prepare_error_for_response(404);
         }
 
-        $data = $this->prepare_object_for_response($object, $request);
+        $data = $this->wpem_prepare_object_for_response($object, $request);
         $response = rest_ensure_response($data);
 
         if ($this->public) {
-            $response->link_header('alternate', $this->get_permalink($object), array('type' => 'text/html'));
+            $response->link_header('alternate', $this->wpem_get_permalink($object), array('type' => 'text/html'));
         }
 
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array(
             $this->rest_base => $response,
             'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
@@ -201,15 +201,15 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  bool            $creating If is creating a new object.
      * @return Post Data|WP_Error
      */
-    protected function save_object($request, $creating = false)
+    protected function wpem_save_object($request, $creating = false)
     {
         try {
-            $object = $this->prepare_object_for_database($request, $creating);
+            $object = $this->wpem_prepare_object_for_database($request, $creating);
 
             if (is_wp_error($object)) {
                 return $object;
             }
-            return $this->get_object($object->ID);
+            return $this->wpem_get_object($object->ID);
         } catch (Exception $e) {
             return new WP_Error($e->getErrorCode(), $e->getMessage(), array('status' => $e->getCode()));
         }
@@ -221,14 +221,14 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function create_item($request)
+    public function wpem_create_item($request)
     {
         if (!empty($request['id'])) {
             /* translators: %s: post type */
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
-        $object = $this->save_object($request, true);
+        $object = $this->wpem_save_object($request, true);
 
         if (is_wp_error($object)) {
             return $object;
@@ -249,7 +249,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
         $response = rest_ensure_response($response);
         $response->set_status(201);
         $response->header('Location', rest_url(sprintf('/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID)));
@@ -263,15 +263,15 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function update_item($request)
+    public function wpem_update_item($request)
     {
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
 
         if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
-        $object = $this->save_object($request, false);
+        $object = $this->wpem_save_object($request, false);
 
         if (is_wp_error($object)) {
             return $object;
@@ -292,7 +292,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
         return rest_ensure_response($response);
     }
 
@@ -303,7 +303,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return array
      */
-    protected function prepare_objects_query($request)
+    protected function wpem_prepare_objects_query($request)
     {
         $args = array();
         $args['offset'] = $request['offset'];
@@ -348,21 +348,21 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
          */
         $args = apply_filters("wpem_rest_{$this->post_type}_object_query", $args, $request);
 
-        return $this->prepare_items_query($args, $request);
+        return $this->wpem_prepare_items_query($args, $request);
     }
 
     /**
-     * Determine the allowed query_vars for a get_items() response and
+     * Determine the allowed query_vars for a wpem_get_items() response and
      * prepare for WP_Query.
      *
      * @param  array           $prepared_args Prepared arguments.
      * @param  WP_REST_Request $request       Request object.
      * @return array          $query_args
      */
-    protected function prepare_items_query($prepared_args = array(), $request = null)
+    protected function wpem_prepare_items_query($prepared_args = array(), $request = null)
     {
 
-        $valid_vars = array_flip($this->get_allowed_query_vars());
+        $valid_vars = array_flip($this->wpem_get_allowed_query_vars());
         $query_args = array();
         foreach ($valid_vars as $var => $index) {
             if (isset($prepared_args[$var])) {
@@ -395,7 +395,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  array $query_args Query args.
      * @return array
      */
-    protected function get_objects($query_args)
+    protected function wpem_get_objects($query_args)
     {
         $query = new WP_Query();
         $result = $query->query($query_args);
@@ -410,7 +410,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         }
 
         return array(
-            'objects' => array_filter(array_map(array($this, 'get_object'), $result)),
+            'objects' => array_filter(array_map(array($this, 'wpem_get_object'), $result)),
             'total' => (int) $total_posts,
             'pages' => (int) ceil($total_posts / (int) $query->query_vars['posts_per_page']),
         );
@@ -422,14 +422,14 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function get_items($request)
+    public function wpem_get_items($request)
     {
         $auth_check = $this->wpem_check_authorized_user();
         if ($auth_check) {
-            return self::prepare_error_for_response(405);
+            return self::wpem_prepare_error_for_response(405);
         } else {
-            $query_args = $this->prepare_objects_query($request);
-            $query_results = $this->get_objects($query_args);
+            $query_args = $this->wpem_prepare_objects_query($request);
+            $query_results = $this->wpem_get_objects($query_args);
 
             $objects = array();
             foreach ($query_results['objects'] as $object) {
@@ -444,14 +444,14 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
                     continue;
                 }
 
-                $data = $this->prepare_object_for_response($object, $request);
+                $data = $this->wpem_prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
             }
 
             $page = isset($query_args['paged']) ? (int) $query_args['paged'] : 1;
 
             $total_pages = ceil($query_results['total'] / $query_args['posts_per_page']);
-            $response_data = self::prepare_error_for_response(200);
+            $response_data = self::wpem_prepare_error_for_response(200);
             $response_data['data'] = array(
                 'total_post_count' => isset($query_results['total']) ? $query_results['total'] : null,
                 'current_page' => $page,
@@ -470,15 +470,15 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_REST_Response|WP_Error|Array
      */
-    public function delete_item($request)
+    public function wpem_delete_item($request)
     {
         $force = isset($request["force"]) && (bool) $request['force'];
 
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
         $result = false;
 
         if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(404);
+            return parent::wpem_prepare_error_for_response(404);
         }
 
         $supports_trash = EMPTY_TRASH_DAYS > 0;
@@ -494,11 +494,11 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         $supports_trash = apply_filters("wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object);
 
         if (!wpem_rest_api_check_post_permissions($this->post_type, 'delete', $object->ID)) {
-            return parent::prepare_error_for_response(412);
+            return parent::wpem_prepare_error_for_response(412);
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
 
         // If we're forcing, then delete permanently.
         if ($force) {
@@ -508,10 +508,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         } else {
             // If we don't support trashing for this type, error out.
             if (!$supports_trash) {
-                return parent::prepare_error_for_response(412);
+                return parent::wpem_prepare_error_for_response(412);
             } else {
                 if ($object->post_status === 'trash') {
-                    return self::prepare_error_for_response(410);
+                    return self::wpem_prepare_error_for_response(410);
                 }
                 wp_trash_post($object->ID);
                 $result = 1;
@@ -520,7 +520,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 
 
         if (!$result) {
-            return parent::prepare_error_for_response(500);
+            return parent::wpem_prepare_error_for_response(500);
         }
 
         /**
@@ -531,7 +531,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
          * @param WP_REST_Request  $request  The request sent to the API.
          */
         do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
-        return self::prepare_error_for_response(200);
+        return self::wpem_prepare_error_for_response(200);
     }
 
     /**
@@ -541,7 +541,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Request object.
      * @return array                   Links for the given post.
      */
-    protected function prepare_links($object, $request)
+    protected function wpem_prepare_links($object, $request)
     {
         $links = array(
             'self' => array(
@@ -560,7 +560,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      *
      * @return array
      */
-    public function get_collection_params()
+    public function wpem_get_collection_params()
     {
         $params = array();
         $params['context'] = $this->get_context_param();
@@ -684,108 +684,6 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         return apply_filters("wpem_rest_{$this->post_type}_collection_params", $params, $this->post_type);
     }
 
-    /**
-     * Function to check authorization and return user data
-     * @since 1.0.1
-     */
-    public function wpem_check_authorized_user_old()
-    {
-        // Get the authorization header
-        global $wpdb;
-        $headers = getallheaders();
-        $token = '';
-        
-        // First try standard header
-        if (isset($headers['Authorization'])) {
-            $token = trim(str_replace('Bearer', '', $headers['Authorization']));
-        }
-        // Try for some server environments
-        elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $token = trim(str_replace('Bearer', '', wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION']))));
-        }
-        // NGINX or fastcgi_pass may use this
-        elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-            $token = trim(str_replace('Bearer', '', sanitize_text_field(wp_unslash($_SERVER['REDIRECT_HTTP_AUTHORIZATION']))));
-        }
-        if (empty($token)) {
-            return WPEM_REST_CRUD_Controller::prepare_error_for_response(405);
-        }
-
-        $user_data = self::wpem_validate_jwt_token($token);
-        if (!$user_data) {
-            return self::prepare_error_for_response(405);
-        }
-        $user = get_userdata($user_data['id']);
-
-        if ($user) {
-            if (!wp_check_password($user_data['password'], $user->user_pass, $user->ID)) {
-                return self::prepare_error_for_response(405);
-            } else {
-               if ( user_can( $user->ID, 'manage_options' ) ) {
-                    $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                    $user_meta = get_user_meta($user->ID, '_matchmaking_profile', true);
-                    if ($user_info) {
-                        $date_expires = gmdate('Y-m-d', strtotime($user_info->date_expires));
-                        if ($user_info->permissions == 'write') {
-                            return self::prepare_error_for_response(203);
-                        } else if ($date_expires < gmdate('Y-m-d')) {
-                            if (!empty($user_meta) && $user_meta == 1) {
-                                if (!get_option('enable_matchmaking', false)) {
-                                    return self::prepare_error_for_response(506);
-                                } else {
-                                    return false;
-                                }
-                            } else {
-                                return self::prepare_error_for_response(503);
-                            }
-                        } else {
-                            return false;
-                        }
-                    } else if (!empty($user_meta) && $user_meta == 1) {
-                        if (!get_option('enable_matchmaking', false)) {
-                            return self::prepare_error_for_response(506);
-                        } else {
-                            return false;
-                        }
-                    } else {
-                        return false;
-                    }
-               }else{
-                    $user_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . esc_sql($wpdb->prefix . 'wpem_rest_api_keys') . " WHERE user_id = %d ", $user->ID)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                    $user_meta = get_user_meta($user->ID, '_matchmaking_profile', true);
-                    if ($user_info) {
-                        $date_expires = gmdate('Y-m-d', strtotime($user_info->date_expires));
-                        if ($user_info->permissions == 'write') {
-                            return self::prepare_error_for_response(203);
-                        } else if ($date_expires < gmdate('Y-m-d')) {
-                            if (!empty($user_meta) && $user_meta == 1) {
-                                if (!get_option('enable_matchmaking', false)) {
-                                    return self::prepare_error_for_response(506);
-                                } else {
-                                    return false;
-                                }
-                            } else {
-                                return self::prepare_error_for_response(503);
-                            }
-                        } else {
-                            return false;
-                        }
-                    } else if (!empty($user_meta) && $user_meta == 1) {
-                        if (!get_option('enable_matchmaking', false)) {
-                            return self::prepare_error_for_response(506);
-                        } else {
-                            return false;
-                        }
-                    } else {
-                        return self::prepare_error_for_response(405);
-                    }
-               }
-            }
-        } else {
-            return self::prepare_error_for_response(405);
-        }
-    }
-
     public function wpem_check_authorized_user() {
         global $wpdb;
 
@@ -806,19 +704,19 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         }
 
         if ( empty( $token ) ) {
-            return self::prepare_error_for_response( 405 );
+            return self::wpem_prepare_error_for_response( 405 );
         }
 
         $user_data = self::wpem_validate_jwt_token( $token );
 
         if ( ! $user_data ) {
-            return self::prepare_error_for_response( 405 );
+            return self::wpem_prepare_error_for_response( 405 );
         }
 
         $user = get_userdata( $user_data['id'] );
 
         if ( ! $user || ! wp_check_password( $user_data['password'], $user->user_pass, $user->ID ) ) {
-            return self::prepare_error_for_response( 405 );
+            return self::wpem_prepare_error_for_response( 405 );
         }
 
         $is_admin  = user_can( $user->ID, 'manage_options' );
@@ -829,7 +727,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         if ( $user_info ) {
 
             if ( 'write' === $user_info->permissions ) {
-                return self::prepare_error_for_response( 203 );
+                return self::wpem_prepare_error_for_response( 203 );
             }
 
             $date_expires = gmdate( 'Y-m-d', strtotime( $user_info->date_expires ) );
@@ -839,7 +737,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
                 if ( ! empty( $user_meta ) && 1 == $user_meta ) {
 
                     if ( ! get_option( 'enable_matchmaking', false ) ) {
-                        return self::prepare_error_for_response( 506 );
+                        return self::wpem_prepare_error_for_response( 506 );
                     }
 
                     return false;
@@ -849,7 +747,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
                     return false;
                 }
 
-                return self::prepare_error_for_response( 503 );
+                return self::wpem_prepare_error_for_response( 503 );
             }
 
             return false;
@@ -860,7 +758,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         if ( $is_admin ) {
 
             if ( ! get_option( 'enable_matchmaking', false ) ) {
-                return self::prepare_error_for_response( 506 );
+                return self::wpem_prepare_error_for_response( 506 );
             }
 
             return false;
@@ -870,13 +768,13 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         if ( ! empty( $user_meta ) && 1 == $user_meta ) {
 
             if ( ! get_option( 'enable_matchmaking', false ) ) {
-                return self::prepare_error_for_response( 506 );
+                return self::wpem_prepare_error_for_response( 506 );
             }
 
             return false;
         }
         
-        return self::prepare_error_for_response( 405 );
+        return self::wpem_prepare_error_for_response( 405 );
     }
 
     /**
@@ -919,7 +817,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param  WP_REST_Request $request Request object.
      * @return WP_Error|WP_REST_Response Response object on success, or WP_Error object on failure.
      */
-    public static function prepare_error_for_response($code, $data = array())
+    public static function wpem_prepare_error_for_response($code, $data = array())
     {
         $error_info = wpem_response_default_status();
 
@@ -954,14 +852,8 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
     function wpem_user_has_permission( $user_id, $required_permission ) {
         global $wpdb;
 
-        $permission = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT permissions
-                FROM {$wpdb->prefix}wpem_rest_api_keys
-                WHERE user_id = %d",
-                $user_id
-            )
-        );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $permission = $wpdb->get_var( $wpdb->prepare( "SELECT permissions FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d", $user_id ) );
 
         if ( empty( $permission ) ) {
             return false;

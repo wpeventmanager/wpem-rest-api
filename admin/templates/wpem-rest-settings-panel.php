@@ -129,7 +129,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                         }
                         break;    
                     case "multi-select-checkbox":
-                        $this->create_multi_select_checkbox( $option );
+                        $this->wpem_create_multi_select_checkbox( $option );
                         break;
                     case "color-picker": ?>
                         <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text wpem-colorpicker" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php echo esc_attr( $value ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> /><?php

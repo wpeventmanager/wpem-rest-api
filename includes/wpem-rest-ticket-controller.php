@@ -34,13 +34,13 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
      */
     public function __construct()
     {
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
+        add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
     }
 
     /**
      * Register matchmaking settings routes (event-controller style structure).
      */
-    public function register_routes()
+    public function wpem_register_routes()
     {
         register_rest_route(
             $this->namespace,
@@ -48,8 +48,8 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_user_registered_events'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_user_registered_events'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(),
                 )
             )
@@ -64,7 +64,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function get_user_registered_events( $request ) 
+    public function wpem_get_user_registered_events( $request ) 
     {
         global $wpdb;
         $user_id = wpem_rest_get_current_user_id();
@@ -89,8 +89,10 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
 
                 $processed_orders[ $order_id ] = true;
                 // Get ALL registrations belonging to this order.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, 	WordPress.DB.DirectDatabaseQuery.NoCaching
                 $registration_ids = $wpdb->get_col($wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %d", '_order_id', $order_id));
 
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                 $order_date = $wpdb->get_var($wpdb->prepare( "SELECT DATE(post_date) FROM {$wpdb->posts} WHERE ID = %d", $order_id));
 
                 foreach ( $registration_ids as $registration_id ) {
@@ -181,6 +183,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         }
                     }
 
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                     $get_payment_status = $wpdb->get_var($wpdb->prepare( "SELECT post_status FROM {$wpdb->posts} WHERE ID = %d", $order_id));
                     if($get_payment_status === 'wc-completed') {
                         $payment_status = 'paid';
@@ -214,7 +217,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
             $event_data = array_values( $event_data );
         }
 
-        $response_data = self::prepare_error_for_response( 200 );
+        $response_data = self::wpem_prepare_error_for_response( 200 );
         $response_data['data'] = array(
             'event_data'  => $event_data,
             'user_status' => wpem_get_user_login_status( $user_id ),

@@ -34,13 +34,13 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
      */
     public function __construct()
     {
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
+        add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
     }
 
     /**
      * Register matchmaking settings routes (event-controller style structure).
      */
-    public function register_routes()
+    public function wpem_register_routes()
     {
         register_rest_route(
             $this->namespace,
@@ -48,8 +48,8 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_contacts'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_contacts'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(),
                 )
             )
@@ -61,8 +61,8 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::DELETABLE,
-                    'callback' => array($this, 'delete_contact'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_delete_contact'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(),
                 )
             )
@@ -74,8 +74,8 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'add_contact'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_add_contact'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(),
                 )
             )
@@ -89,7 +89,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
      */
-    public function get_contacts($request)
+    public function wpem_get_contacts($request)
     {
 
         $user_id = wpem_rest_get_current_user_id();
@@ -142,7 +142,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             ];
         }
 
-        $response_data = self::prepare_error_for_response(200);
+        $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
             'contacts' => $contacts_data,
             'user_status' => wpem_get_user_login_status($user_id),
@@ -159,7 +159,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
      * @return WP_REST_Response $response The response object.
      * @since 1.1.0
      */
-    public function add_contact($request)
+    public function wpem_add_contact($request)
     {
         $user_id = wpem_rest_get_current_user_id();
         $contact_id = $request->get_param('contact_id') ?? 0;
@@ -167,7 +167,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             // check user is exist or not
             $contact_user = get_user_by('id', $contact_id);
             if (!$contact_user) {
-                return self::prepare_error_for_response(400);
+                return self::wpem_prepare_error_for_response(400);
             }
             if ($user_id === $contact_id) {
                 return new WP_REST_Response(
@@ -203,7 +203,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             $contacts[] = $contact_id;
             update_user_meta($user_id, 'user_contacts', $contacts);
 
-            $response_data = self::prepare_error_for_response(200);
+            $response_data = self::wpem_prepare_error_for_response(200);
             $response_data['data'] = array(
                 'contact_id' => $contact_id,
                 'user_status' => wpem_get_user_login_status($user_id),
@@ -229,13 +229,13 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return WP_REST_Response
      */
-    public function delete_contact($request){
+    public function wpem_delete_contact($request){
     $user_id    = wpem_rest_get_current_user_id();
     $contact_id = absint($request['id']);
 
     // Validate contact ID
     if (empty($contact_id)) {
-        return self::prepare_error_for_response(400);
+        return self::wpem_prepare_error_for_response(400);
     }
 
     // Get contacts
@@ -250,7 +250,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
 
     // Check if contact exists
     if (!in_array($contact_id, $contacts, true)) {
-        return self::prepare_error_for_response(404);
+        return self::wpem_prepare_error_for_response(404);
     }
 
     // Remove contact
@@ -267,7 +267,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
     update_user_meta($user_id, 'user_contacts', $contacts);
 
     // Response
-    $response_data = self::prepare_error_for_response(200);
+    $response_data = self::wpem_prepare_error_for_response(200);
 
     $response_data['data'] = array(
         'contact_id' => $contact_id,

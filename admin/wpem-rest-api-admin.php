@@ -26,21 +26,21 @@ class WPEM_Rest_API_Admin
         $this->settings_page = new WPEM_Rest_API_Settings();
 
         //add actions
-        add_action('admin_menu', array($this, 'admin_menu'), 10);
-        add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
+        add_action('admin_menu', array($this, 'wpem_admin_menu'), 10);
+        add_action('admin_enqueue_scripts', array($this, 'wpem_admin_enqueue_scripts'));
         add_filter('event_manager_admin_screen_ids', array($this, 'wpem_rest_api_add_admin_screen'));
 
         add_action("wp_ajax_wpem_save_rest_api_keys", array($this, "wpem_update_api_key"));
     }
 
     /**
-     * admin_enqueue_scripts function.
+     * wpem_admin_enqueue_scripts function.
      *
      * @since  1.0.0
      * @access public
      * @return void
      */
-    public function admin_enqueue_scripts()
+    public function wpem_admin_enqueue_scripts()
     {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Non-sensitive tab switch.
         if (isset($_GET['page']) && $_GET['page'] == 'wpem-rest-api-settings') {
@@ -64,7 +64,7 @@ class WPEM_Rest_API_Admin
     }
 
     /**
-     * admin_enqueue_scripts function.
+     * wpem_rest_api_add_admin_screen function.
      *
      * @since  1.0.0
      * @access public
@@ -77,15 +77,15 @@ class WPEM_Rest_API_Admin
     }
 
     /**
-     * admin_menu function.
+     * wpem_admin_menu function.
      *
      * @since  1.0.0
      * @access public
      * @return void
      */
-    public function admin_menu()
+    public function wpem_admin_menu()
     {
-        add_submenu_page('edit.php?post_type=event_listing', __('Rest API Settings', 'wpem-rest-api'), __('Rest API', 'wpem-rest-api'), 'manage_options', 'wpem-rest-api-settings', array($this->settings_page, 'output'));
+        add_submenu_page('edit.php?post_type=event_listing', __('Rest API Settings', 'wpem-rest-api'), __('Rest API', 'wpem-rest-api'), 'manage_options', 'wpem-rest-api-settings', array($this->settings_page, 'wpem_output'));
     }
 
     /**

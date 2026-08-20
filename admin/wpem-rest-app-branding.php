@@ -20,7 +20,7 @@ class WPEM_Rest_APP_Branding
     /**
      * Page output.
      */
-    public static function page_output()
+    public static function wpem_page_output()
     {
         // Hide the save button.
         $GLOBALS['wpem_hide_save_button'] = true;
@@ -137,9 +137,9 @@ class WPEM_Rest_APP_Branding
         $warning_dark_color = !empty(get_option('wpem_warning_dark_color')) ? get_option('wpem_warning_dark_color') : '#FCD837';
         $danger_dark_color = !empty(get_option('wpem_danger_dark_color')) ? get_option('wpem_danger_dark_color') : '#FC4C20';
 
-        $wpem_colors = $this->generate_scheme_formatted_colorcodes($primary_color, $success_color, $info_color, $warning_color, $danger_color);
+        $wpem_colors = $this->wpem_generate_scheme_formatted_colorcodes($primary_color, $success_color, $info_color, $warning_color, $danger_color);
 
-        $wpem_dark_colors = $this->generate_scheme_formatted_colorcodes($primary_dark_color, $success_dark_color, $info_dark_color, $warning_dark_color, $danger_dark_color);
+        $wpem_dark_colors = $this->wpem_generate_scheme_formatted_colorcodes($primary_dark_color, $success_dark_color, $info_dark_color, $warning_dark_color, $danger_dark_color);
 
         if (!empty($wpem_colors)) {
             ksort($wpem_colors);
@@ -167,7 +167,7 @@ class WPEM_Rest_APP_Branding
     /**
      * This function is used to generate schema for color of app
      */
-    public function generate_scheme_formatted_colorcodes($primary_color = "#3366FF", $success_color = "#77DD37", $info_color = "#42BCFF", $warning_color = "#FCD837", $danger_color = "#FC4C20")
+    public function wpem_generate_scheme_formatted_colorcodes($primary_color = "#3366FF", $success_color = "#77DD37", $info_color = "#42BCFF", $warning_color = "#FCD837", $danger_color = "#FC4C20")
     {
 
         $rgb_primary_color = wpem_rest_api_hex_to_rgb($primary_color);

@@ -272,7 +272,7 @@ defined('ABSPATH') || exit;
 				</th>
 				<td class="forminp">
 					<input id="app_key" type="text" value="{{ data.app_key }}" size="55" readonly="readonly">
-					<button class="wpem-backend-theme-button" type="button" onClick="app_key_copy_fun()" style="cursor:pointer">Copy App Key</button>
+					<button class="wpem-backend-theme-button" type="button" onClick="wpem_app_key_copy_fun()" style="cursor:pointer">Copy App Key</button>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -281,7 +281,7 @@ defined('ABSPATH') || exit;
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_key" type="text" value="{{ data.consumer_key }}" size="55" readonly="readonly">
-					<button class="wpem-backend-theme-button" type="button" onClick="consumer_copy_fun()" style="cursor:pointer">Copy Consumer Key</button>
+					<button class="wpem-backend-theme-button" type="button" onClick="wpem_consumer_copy_fun()" style="cursor:pointer">Copy Consumer Key</button>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -290,7 +290,7 @@ defined('ABSPATH') || exit;
 				</th>
 				<td class="forminp">
 					<input id="key_consumer_secret" type="text" value="{{ data.consumer_secret }}" size="55" readonly="readonly">
-					<button class="wpem-backend-theme-button" type="button" onClick="secret_copy_fun()" style="cursor:pointer">Copy Consumer Secret</button>
+					<button class="wpem-backend-theme-button" type="button" onClick="wpem_secret_copy_fun()" style="cursor:pointer">Copy Consumer Secret</button>
 				</td>
 			</tr>
 			
@@ -300,19 +300,19 @@ defined('ABSPATH') || exit;
 </script>
 
 <script>
-	function app_key_copy_fun() {
+	function wpem_app_key_copy_fun() {
 		var app_key_copy = document.getElementById("app_key");
 		var btn_text_app = document.querySelector('#app_key + button');
 		navigator.clipboard.writeText(app_key_copy.value);
 		btn_text_app.innerHTML = 'copied';
 	}
-	function consumer_copy_fun() {
+	function wpem_consumer_copy_fun() {
 		var consumer_copy = document.getElementById("key_consumer_key");
 		var btn_text_key = document.querySelector('#key_consumer_key + button');
 		navigator.clipboard.writeText(consumer_copy.value);
 		btn_text_key.innerHTML = 'copied';
 	}
-	function secret_copy_fun() {
+	function wpem_secret_copy_fun() {
 		var secret_copy = document.getElementById("key_consumer_secret");
 		var btn_text_secret = document.querySelector('#key_consumer_secret + button');
 		navigator.clipboard.writeText(secret_copy.value);

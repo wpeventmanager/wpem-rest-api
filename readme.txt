@@ -5,7 +5,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: event manager, Event, events, event manager api , listings
 Requires at least: 6.7
 Tested up to: 7.0
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 
 Requires PHP: 8.0.0
 License: GPLv3
@@ -119,6 +119,15 @@ If you wish to be notified of new postings on your site you can use a plugin suc
 
 
 == Changelog ==
+
+= 1.4.3 [ 17th August 2026 ] =
+
+Fixed : WordPress Plugin Check warnings and errors.
+Fixed : Text domain issues across the plugin.
+Fixed : Naming convention issues by adding the wpem_ prefix to all classes and functions.
+Fixed : Various WordPress.org Plugin Review issues.
+Fixed : Various code standards and compatibility issues.
+Fixed : Various Code Improvements and Bug Fixes.
 
 = 1.4.2 [ 10th July 2026 ] =
 

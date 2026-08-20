@@ -50,14 +50,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     public function __construct()
     {
-        add_action("wpem_rest_insert_{$this->post_type}_object", array($this, 'clear_transients'));
-        add_action('rest_api_init', array($this, 'register_routes'), 10);
+        add_action("wpem_rest_insert_{$this->post_type}_object", array($this, 'wpem_clear_transients'));
+        add_action('rest_api_init', array($this, 'wpem_register_routes'), 10);
     }
 
     /**
      * Register the routes for events.
      */
-    public function register_routes()
+    public function wpem_register_routes()
     {
         register_rest_route(
             $this->namespace,
@@ -65,14 +65,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_items'),
-                    'permission_callback' => array($this, 'permission_check'),
-                    'args' => $this->get_collection_params(),
+                    'callback' => array($this, 'wpem_get_items'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
+                    'args' => $this->wpem_get_collection_params(),
                 ),
                 array(
                     'methods' => WP_REST_Server::CREATABLE,
-                    'callback' => array($this, 'create_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_create_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::CREATABLE),
                 ),
                 'schema' => array($this, 'get_public_item_schema'),
@@ -91,8 +91,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 ),
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(
                         'context' => $this->get_context_param(
                             array(
@@ -103,14 +103,14 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 ),
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'update_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_update_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
                 array(
                     'methods' => WP_REST_Server::DELETABLE,
-                    'callback' => array($this, 'delete_item'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_delete_item'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => array(
                         'force' => array(
                             'default' => false,
@@ -129,11 +129,11 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             array(
                 array(
                     'methods' => WP_REST_Server::EDITABLE,
-                    'callback' => array($this, 'batch_items'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_batch_items'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::EDITABLE),
                 ),
-                'schema' => array($this, 'get_public_batch_schema'),
+                'schema' => array($this, 'wpem_get_public_batch_schema'),
             )
         );
 
@@ -149,8 +149,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 ),
                 array(
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'get_event_fields'),
-                    'permission_callback' => array($this, 'permission_check'),
+                    'callback' => array($this, 'wpem_get_event_fields'),
+                    'permission_callback' => array($this, 'wpem_permission_check'),
                     'args' => $this->get_endpoint_args_for_item_schema(WP_REST_Server::READABLE),
                 )
             )
@@ -163,7 +163,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|boolean
      */
-    public function get_item_permissions_check($request)
+    public function wpem_get_item_permissions_check($request)
     {
         $post = get_post((int) $request['id']);
         if ($post && !wpem_rest_api_check_post_permissions($this->post_type, 'read', $post->ID)) {
@@ -179,13 +179,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @since  3.0.0
      * @return Post Data object
      */
-    protected function get_object($id)
+    protected function wpem_get_object($id)
     {
         $event = get_post($id);
         if ($event && $event->post_type === $this->post_type) {
             return $event;
         } else {
-            return parent::prepare_error_for_response(404);
+            return parent::wpem_prepare_error_for_response(404);
         }
     }
 
@@ -198,7 +198,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @since  3.0.0
      * @return WP_REST_Response
      */
-    public function prepare_object_for_response($object, $request)
+    public function wpem_prepare_object_for_response($object, $request)
     {
         $context = 'view';
         if (
@@ -209,13 +209,13 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             $context = sanitize_text_field($request['context']);
         }
 
-        $data = $this->get_event_data($object, $context);
+        $data = $this->wpem_get_event_data($object, $context);
 
         $data = $this->add_additional_fields_to_object($data, $request);
         $data = $this->filter_response_by_context($data, $context);
         $response = rest_ensure_response($data);
         if (is_user_logged_in()) {
-            $response->add_links($this->prepare_links($object, $request));
+            $response->add_links($this->wpem_prepare_links($object, $request));
         }
 
         /**
@@ -238,9 +238,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @since  1.0.0
      * @return array
      */
-    protected function prepare_objects_query($request)
+    protected function wpem_prepare_objects_query($request)
     {
-        $args = parent::prepare_objects_query($request);
+        $args = parent::wpem_prepare_objects_query($request);
         // Get current user ID
         $current_user_id = wpem_rest_get_current_user_id();
         // Set post_status.
@@ -301,7 +301,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    protected function get_taxonomy_terms($event, $taxonomy = 'event_listing_category')
+    protected function wpem_get_taxonomy_terms($event, $taxonomy = 'event_listing_category')
     {
         $terms = array();
         foreach (get_the_terms($event->ID, $taxonomy) as $term) {
@@ -321,7 +321,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    protected function get_images($event)
+    protected function wpem_get_images($event)
     {
         $images = array();
         $attachment_ids = array();
@@ -354,7 +354,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    protected function get_event_data($event, $context = 'view')
+    protected function wpem_get_event_data($event, $context = 'view')
     {
         $meta_data = get_post_meta($event->ID);
         $event_venue_id = 0;
@@ -398,7 +398,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'id' => $event->ID,
             'name' => $event->post_title,
             'slug' => $event->post_name,
-            'permalink' => get_permalink($event->ID),
+            'permalink' => wpem_get_permalink($event->ID),
             'date_created' => get_the_date('', $event),
             'date_modified' => get_the_modified_date('', $event),
             'status' => $event->post_status,
@@ -423,35 +423,35 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function create_item($request)
+    public function wpem_create_item($request)
     {
         global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
         $is_admin  = user_can( $current_user, 'manage_options' );
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
                 if ( !$is_admin ) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }else{
                 if($this->wpem_user_has_permission($current_user, 'read')) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }
         }else{
             if ( !$is_admin ) {
-                return self::prepare_error_for_response(403);
+                return self::wpem_prepare_error_for_response(403);
             }
         }
 
         if (!empty($request['id'])) {
             /* translators: %s: post type */
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
-        $object = $this->save_object($request, true);
+        $object = $this->wpem_save_object($request, true);
 
         if (is_wp_error($object)) {
             return $object;
@@ -472,7 +472,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
         $response = rest_ensure_response($response);
         $response->set_status(201);
         $response->header('Location', rest_url(sprintf('/%s/%s/%d', $this->namespace, $this->rest_base, $object->ID)));
@@ -486,36 +486,36 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_Error|WP_REST_Response
      */
-    public function update_item($request)
+    public function wpem_update_item($request)
     {
         global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
         $is_admin  = user_can( $current_user, 'manage_options' );
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
                 if ( !$is_admin ) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }else{
                 if($this->wpem_user_has_permission($current_user, 'read')) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }
         }else{
             if ( !$is_admin ) {
-                return self::prepare_error_for_response(403);
+                return self::wpem_prepare_error_for_response(403);
             }
         }
 
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
 
         if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(400);
+            return parent::wpem_prepare_error_for_response(400);
         }
 
-        $object = $this->save_object($request, false);
+        $object = $this->wpem_save_object($request, false);
 
         if (is_wp_error($object)) {
             return $object;
@@ -536,7 +536,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
         return rest_ensure_response($response);
     }
 
@@ -546,36 +546,36 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Full details about the request.
      * @return WP_REST_Response|WP_Error|Array
      */
-    public function delete_item($request)
+    public function wpem_delete_item($request)
     {
         global $wpdb;
         $current_user = absint(wpem_rest_get_current_user_id());
         $is_admin  = user_can( $current_user, 'manage_options' );
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $user_info = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wpem_rest_api_keys WHERE user_id = %d",$current_user));
         if ($user_info) {
             if((gmdate( 'Y-m-d', strtotime( $user_info->date_expires )) < gmdate( 'Y-m-d' ))) {
                 if ( !$is_admin ) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }else{
                 if($this->wpem_user_has_permission($current_user, 'read')) {
-                    return self::prepare_error_for_response(403);
+                    return self::wpem_prepare_error_for_response(403);
                 }
             }
         }else{
             if ( !$is_admin ) {
-                return self::prepare_error_for_response(403);
+                return self::wpem_prepare_error_for_response(403);
             }
         }
 
         $force = isset($request["force"]) && (bool) $request['force'];
 
-        $object = $this->get_object((int) $request['id']);
+        $object = $this->wpem_get_object((int) $request['id']);
         $result = false;
 
         if (!$object || 0 === $object->ID) {
-            return parent::prepare_error_for_response(404);
+            return parent::wpem_prepare_error_for_response(404);
         }
 
         $supports_trash = EMPTY_TRASH_DAYS > 0;
@@ -591,7 +591,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         $supports_trash = apply_filters("wpem_rest_{$this->post_type}_object_trashable", $supports_trash, $object);
 
         $request->set_param('context', 'edit');
-        $response = $this->prepare_object_for_response($object, $request);
+        $response = $this->wpem_prepare_object_for_response($object, $request);
 
         // If we're forcing, then delete permanently.
         if ($force) {
@@ -601,10 +601,10 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         } else {
             // If we don't support trashing for this type, error out.
             if (!$supports_trash) {
-                return parent::prepare_error_for_response(412);
+                return parent::wpem_prepare_error_for_response(412);
             } else {
                 if ($object->post_status === 'trash') {
-                    return self::prepare_error_for_response(410);
+                    return self::wpem_prepare_error_for_response(410);
                 }
                 wp_trash_post($object->ID);
                 $result = 1;
@@ -613,7 +613,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
 
         if (!$result) {
-            return parent::prepare_error_for_response(500);
+            return parent::wpem_prepare_error_for_response(500);
         }
 
         /**
@@ -624,7 +624,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
          * @param WP_REST_Request  $request  The request sent to the API.
          */
         do_action("wpem_rest_delete_{$this->post_type}_object", $object, $response, $request);
-        return self::prepare_error_for_response(200);
+        return self::wpem_prepare_error_for_response(200);
     }
 
     /**
@@ -634,10 +634,10 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @param  WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function prepare_item_for_response($post, $request)
+    public function wpem_prepare_item_for_response($post, $request)
     {
         $event = get_post($post);
-        $data = $this->get_event_data($event);
+        $data = $this->wpem_get_event_data($event);
 
         $context = 'view';
         if (
@@ -653,7 +653,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         // Wrap the data in a response object.
         $response = rest_ensure_response($data);
 
-        $response->add_links($this->prepare_links($event, $request));
+        $response->add_links($this->wpem_prepare_links($event, $request));
 
         /**
          * Filter the data for a response.
@@ -676,7 +676,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array                   Links for the given post.
      */
-    protected function prepare_links($object, $request)
+    protected function wpem_prepare_links($object, $request)
     {
         $links = array(
             'self' => array(
@@ -703,7 +703,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return WP_Error | Post
      */
-    protected function prepare_object_for_database($request, $creating = false)
+    protected function wpem_prepare_object_for_database($request, $creating = false)
     {
         $id = isset($request['id']) ? absint($request['id']) : 0;
 
@@ -830,7 +830,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @throws WC_REST_Exception REST API exceptions.
      * @return $event object
      */
-    protected function set_event_images($event, $images)
+    protected function wpem_set_event_images($event, $images)
     {
         $images = is_array($images) ? array_filter($images) : array();
 
@@ -845,7 +845,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
                     if (is_wp_error($upload)) {
                         if (!apply_filters('wpem_rest_suppress_image_upload_error', false, $upload, $event->get_id(), $images)) {
-                            return parent::prepare_error_for_response(400);
+                            return parent::wpem_prepare_error_for_response(400);
                         } else {
                             continue;
                         }
@@ -855,7 +855,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
                 if (!wp_attachment_is_image($attachment_id)) {
                     /* translators: %s: attachment id */
-                    return parent::prepare_error_for_response(400);
+                    return parent::wpem_prepare_error_for_response(400);
                 }
 
                 $gallery_positions[$attachment_id] = absint(isset($image['position']) ? $image['position'] : $index);
@@ -903,7 +903,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      * @param string $taxonomy Taxonomy name.
      * @return Event object
      */
-    protected function save_taxonomy_terms($event, $terms, $taxonomy = 'cat')
+    protected function wpem_save_taxonomy_terms($event, $terms, $taxonomy = 'cat')
     {
         $term_ids = wp_list_pluck($terms, 'id');
 
@@ -922,7 +922,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @param WC_Data $object Object data.
      */
-    public function clear_transients($object)
+    public function wpem_clear_transients($object)
     {
         //call wpem clear transient here
     }
@@ -932,7 +932,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    public function get_item_schema()
+    public function wpem_get_item_schema()
     {
         $weight_unit = get_option('wpem_weight_unit');
         $dimension_unit = get_option('wpem_dimension_unit');
@@ -1153,7 +1153,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 ),
             ),
         );
-        return $this->add_additional_fields_schema($schema);
+        return $this->wpem_add_additional_fields_schema($schema);
     }
 
     /**
@@ -1161,9 +1161,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    public function get_collection_params()
+    public function wpem_get_collection_params()
     {
-        $params = parent::get_collection_params();
+        $params = parent::wpem_get_collection_params();
 
         $params['orderby']['enum'] = array_merge($params['orderby']['enum'], array('menu_order'));
 
@@ -1207,7 +1207,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    public function check_event_permissions($request)
+    public function wpem_check_event_permissions($request)
     {
     }
 
@@ -1216,7 +1216,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    public function get_event_fields($request)
+    public function wpem_get_event_fields($request)
     {
         if (!class_exists('WPEM_Event_Manager_Form_Submit_Event')) {
 
@@ -1231,7 +1231,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         foreach ($fields as $group_key => $group_fields) {
             foreach ($group_fields as $key => $field) {
                 if ($field['type'] === 'term-select' || $field['type'] === 'term-multiselect') {
-                    $field['options'] = $this->get_event_texonomy($field['taxonomy']);
+                    $field['options'] = $this->wpem_get_event_texonomy($field['taxonomy']);
                 }
                 $event_fields[$group_key][$key] = $field;
             }
@@ -1244,7 +1244,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      *
      * @return array
      */
-    public function get_event_texonomy($texonomy = '')
+    public function wpem_get_event_texonomy($texonomy = '')
     {
         $terms = get_terms(
             array(
@@ -1262,16 +1262,16 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         }
         return $data;
     }
-    public function get_items($request)
+    public function wpem_get_items($request)
     {
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
         $user_id = intval($request['user_id']);
-        $auth_check = $this->permission_check($user_id);
+        $auth_check = $this->wpem_permission_check($user_id);
         if ($auth_check) {
-            return parent::get_items($request);
+            return parent::wpem_get_items($request);
         } else {
-            $query_args = $this->prepare_objects_query($request);
+            $query_args = $this->wpem_prepare_objects_query($request);
             $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d", $user_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
             $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];
@@ -1282,19 +1282,19 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 unset($query_args['author']);
             }
 
-            $query_results = parent::get_objects($query_args);
+            $query_results = parent::wpem_get_objects($query_args);
 
             $objects = array();
             foreach ($query_results['objects'] as $object) {
                 $object_id = isset($object->ID) ? $object->ID : $object->get_id();
-                $data = $this->prepare_object_for_response($object, $request);
+                $data = $this->wpem_prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
             }
 
             $page = isset($query_args['paged']) ? (int) $query_args['paged'] : 1;
             $total_pages = ceil($query_results['total'] / $query_args['posts_per_page']);
 
-            $response_data = self::prepare_error_for_response(200);
+            $response_data = self::wpem_prepare_error_for_response(200);
             $response_data['data'] = array(
                 'total_post_count' => isset($query_results['total']) ? $query_results['total'] : null,
                 'current_page' => $page,
