@@ -24,7 +24,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
     /**
      * No items found text.
      */
-    public function wpem_no_items()
+    public function no_items()
     {
         esc_html_e('No keys found.', 'wpem-rest-api');
     }
@@ -35,12 +35,12 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function wpem_column_cb($key)
+    public function column_cb($key)
     {
         return sprintf('<input type="checkbox" name="key[]" value="%1$s" />', $key['key_id']);
     }
 
-    public function wpem_column_default($item, $column_name)
+    public function column_default($item, $column_name)
     {
         return $item[$column_name];
     }
@@ -54,7 +54,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * Get list columns.
      * @return array
      */
-    public function wpem_get_columns()
+    public function get_columns()
     {
         return array(
             'cb' => '<input type="checkbox" />',
@@ -73,7 +73,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function wpem_column_title($key)
+    public function column_title($key)
     {
         $url = admin_url('edit.php?post_type=event_listing&page=wpem-rest-api-settings&tab=api-access&edit-key=' . $key['key_id']);
         $user_id = intval($key['user_id']);
@@ -132,7 +132,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function wpem_column_truncated_key($key)
+    public function column_truncated_key($key)
     {
         return '<code>&hellip;' . esc_html($key['truncated_key']) . '</code>';
     }
@@ -143,7 +143,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function wpem_column_user_id($key)
+    public function column_user_id($key)
     {
         $user = get_user_by('id', $key['user_id']);
         if (!$user) {
@@ -163,7 +163,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function wpem_column_event_id($key)
+    public function column_event_id($key)
     {
         if (!empty($key['event_id'])) {
             return '<a href="' . esc_url(admin_url('post.php?post=' . $key['event_id']) . '&action=edit') . '" />' . get_the_title($key['event_id']) . '</a>';
@@ -176,7 +176,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function wpem_column_permissions($key)
+    public function column_permissions($key)
     {
         $permission_key = $key['permissions'];
         $permissions = array(
@@ -198,7 +198,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      * @param  array $key Key data.
      * @return string
      */
-    public function wpem_column_last_access($key)
+    public function column_last_access($key)
     {
         if (!empty($key['last_access'])) {
             /* translators: 1: last access date 2: last access time */
@@ -213,7 +213,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      *
      * @return array
      */
-    public function wpem_get_bulk_actions()
+    public function get_bulk_actions()
     {
         if (!current_user_can('remove_users')) {
             return array();
@@ -233,7 +233,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
         $per_page = $this->get_items_per_page('10');
         $current_page = $this->get_pagenum();
 
-        $columns = $this->wpem_get_columns();
+        $columns = $this->get_columns();
         $hidden = $this->wpem_get_hidden_columns();
         $sortable = $this->get_sortable_columns();
 
@@ -314,5 +314,15 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
             )
         );
         echo '</p>';
+    }
+
+    /**
+     * Core WP_List_Table override. Delegates to wpem_prepare_items().
+     * Some WP core paths (e.g. screen options, AJAX) call prepare_items()
+     * directly rather than the plugin's custom wpem_prepare_items().
+     */
+    public function prepare_items()
+    {
+        $this->wpem_prepare_items();
     }
 }

@@ -224,7 +224,7 @@ class WPEM_REST_Venues_Controller extends WPEM_REST_CRUD_Controller
             'id'            => $venue->ID,
             'name'          => $venue->post_title,
             'slug'          => $venue->post_name,
-            'permalink'     => wpem_get_permalink($venue->ID),
+            'permalink'     => get_permalink($venue->ID),
             'date_created'  => get_the_date('', $venue),
             'date_modified' => get_the_modified_date('', $venue),
             'status'        => $venue->post_status,

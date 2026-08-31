@@ -398,7 +398,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'id' => $event->ID,
             'name' => $event->post_title,
             'slug' => $event->post_name,
-            'permalink' => wpem_get_permalink($event->ID),
+            'permalink' => get_permalink($event->ID),
             'date_created' => get_the_date('', $event),
             'date_modified' => get_the_modified_date('', $event),
             'status' => $event->post_status,
