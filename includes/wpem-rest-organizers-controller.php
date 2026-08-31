@@ -220,7 +220,7 @@ class WPEM_REST_Organizers_Controller extends WPEM_REST_CRUD_Controller
             'id'            => $organizer->ID,
             'name'          => $organizer->post_title,
             'slug'          => $organizer->post_name,
-            'permalink'     => wpem_get_permalink($organizer->ID),
+            'permalink'     => get_permalink($organizer->ID),
             'date_created'  => get_the_date('', $organizer),
             'date_modified' => get_the_modified_date('', $organizer),
             'status'        => $organizer->post_status,
