@@ -356,35 +356,48 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     protected function wpem_get_event_data($event, $context = 'view')
     {
-        $meta_data = get_post_meta($event->ID);
-        $event_venue_id = 0;
-        foreach ($meta_data as $key => $value) {
-            if ('_event_start_time' == $key || '_event_end_time' == $key) {
+        $meta_keys = array(
+            '_event_start_date',
+            '_event_start_time',
+            '_event_end_date',
+            '_event_end_time',
+            '_event_location',
+            'geolocation_lat',
+            'geolocation_long',
+            '_event_online',
+            '_event_organizer_ids',
+            '_event_venue_ids',
+            '_view_count',
+        );
+
+        $meta_data = array();
+
+        foreach ($meta_keys as $key) {
+            $value = get_post_meta($event->ID, $key, true);
+
+            if ($key === '_event_start_time' || $key === '_event_end_time') {
                 $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
-                $meta_data[$key] = esc_attr(date_i18n($time_format, strtotime(get_post_meta($event->ID, $key, true))));
-            } else
-                $meta_data[$key] = get_post_meta($event->ID, $key, true);
-            if ($key == '_event_online' && $meta_data[$key] == 'no') {
-                $event_venue_id = get_post_meta($event->ID, '_event_venue_ids', true);
-            }
 
-            if ($key == '_paid_tickets') {
-
-                $paid_tickets = [];
-
-                foreach ($value as $v) {
-                    $unserialized = maybe_unserialize($v);
-
-                    if (!empty($unserialized) && is_array($unserialized)) {
-                        $paid_tickets = array_merge($paid_tickets, $unserialized);
-                    }
+                if (!empty($value)) {
+                    $value = esc_attr(
+                        date_i18n($time_format, strtotime($value))
+                    );
                 }
-
-                // 🔥 fix indexes
-                $meta_data[$key] = array_values($paid_tickets);
-
             }
+
+            $meta_data[$key] = $value;
         }
+
+        // Venue
+        $event_venue_id = 0;
+
+        if ($meta_data['_event_online'] === 'no') {
+            $event_venue_id = $meta_data['_event_venue_ids'];
+        }
+
+        $venue_name = '';
+        $venue_qrcode = '';
+
         if ($event_venue_id) {
             if (is_array($event_venue_id))
                 $event_venue_id = $event_venue_id[0];
@@ -398,15 +411,15 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'id' => $event->ID,
             'name' => $event->post_title,
             'slug' => $event->post_name,
-            'permalink' => get_permalink($event->ID),
-            'date_created' => get_the_date('', $event),
-            'date_modified' => get_the_modified_date('', $event),
+            // 'permalink' => get_permalink($event->ID),
+            // 'date_created' => get_the_date('', $event),
+            // 'date_modified' => get_the_modified_date('', $event),
             'status' => $event->post_status,
-            'featured' => $event->_featured,
+            // 'featured' => $event->_featured,
             'description' => 'view' === $context ? wpautop(do_shortcode(get_the_content('', false, $event))) : get_the_content('', false, $event),
-            'event_categories' => taxonomy_exists('event_listing_category') ? get_the_terms($event->ID, 'event_listing_category') : '',
-            'event_types' => taxonomy_exists('event_listing_type') ? get_the_terms($event->ID, 'event_listing_type') : '',
-            'event_tags' => taxonomy_exists('event_listing_tag') ? get_the_terms($event->ID, 'event_listing_tag') : '',
+            // 'event_categories' => taxonomy_exists('event_listing_category') ? get_the_terms($event->ID, 'event_listing_category') : '',
+            // 'event_types' => taxonomy_exists('event_listing_type') ? get_the_terms($event->ID, 'event_listing_type') : '',
+            // 'event_tags' => taxonomy_exists('event_listing_tag') ? get_the_terms($event->ID, 'event_listing_tag') : '',
             'images' => wpem_addon_get_event_banner($event),
             'meta_data' => $meta_data,
         );
