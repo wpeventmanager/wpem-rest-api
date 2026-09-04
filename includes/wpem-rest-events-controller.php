@@ -364,6 +364,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             '_event_location',
             'geolocation_lat',
             'geolocation_long',
+            'geolocation_formatted_address',
             '_event_online',
             '_event_organizer_ids',
             '_event_venue_ids',
