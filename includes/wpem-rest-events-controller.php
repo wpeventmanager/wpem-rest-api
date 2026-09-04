@@ -250,6 +250,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             unset($args['post_status']);
         }
 
+        $args['meta_key'] = '_event_start_date'; $args['orderby'] = 'meta_value'; $args['order'] = 'DESC';
+
         // Taxonomy query to filter events by type, category,
         // tag
         $tax_query = array();
