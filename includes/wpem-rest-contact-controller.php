@@ -50,7 +50,26 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
                     'methods' => WP_REST_Server::READABLE,
                     'callback' => array($this, 'wpem_get_contacts'),
                     'permission_callback' => array($this, 'wpem_permission_check'),
-                    'args' => array(),
+                    'args' => array(
+                        'search' => array(
+                            'type'              => 'string',
+                            'required'          => false,
+                            'default'           => '',
+                            'sanitize_callback' => 'sanitize_text_field',
+                        ),
+                        'per_page' => array(
+                            'type'              => 'integer',
+                            'required'          => false,
+                            'default'           => 10,
+                            'sanitize_callback' => 'absint',
+                        ),
+                        'page' => array(
+                            'type'              => 'integer',
+                            'required'          => false,
+                            'default'           => 1,
+                            'sanitize_callback' => 'absint',
+                        ),
+                    ),
                 )
             )
         );
@@ -101,6 +120,19 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             $user_contacts = [];
         }
 
+        // Pagination / search params
+        $search   = $request->get_param('search');
+        $search   = is_string($search) ? trim($search) : '';
+        $per_page = (int) $request->get_param('per_page');
+        $page     = (int) $request->get_param('page');
+
+        if ($per_page <= 0) {
+            $per_page = 10;
+        }
+        if ($page <= 0) {
+            $page = 1;
+        }
+
         $contacts_data = [];
 
         foreach ($user_contacts as $contact_id) {
@@ -127,24 +159,48 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
                 $profession_slug = '';
             }
 
+            $first_name   = get_user_meta($user->ID, 'first_name', true);
+            $last_name    = get_user_meta($user->ID, 'last_name', true);
+            $company_name = get_user_meta($user->ID, '_company_name', true) ?: '';
+
+            // Apply search filter (case-insensitive, matches name/email/company)
+            if (!empty($search)) {
+                $haystack = strtolower($first_name . ' ' . $last_name . ' ' . $user->user_email . ' ' . $company_name);
+                if (strpos($haystack, strtolower($search)) === false) {
+                    continue;
+                }
+            }
+
             $contacts_data[] = [
                 'user_id' => $user->ID,
-                'first_name' => get_user_meta($user->ID, 'first_name', true),
-                'last_name' => get_user_meta($user->ID, 'last_name', true),
+                'first_name' => $first_name,
+                'last_name' => $last_name,
                 'email' => $user->user_email,
                 'profile_photo' => $photo,
                 'profession' => $profession_slug,
                 'experience' => get_user_meta($user->ID, '_experience', true) ?: '',
-                'company_name' => get_user_meta($user->ID, '_company_name', true) ?: '',
+                'company_name' => $company_name,
                 'country' => get_user_meta($user->ID, '_country', true) ?: '',
                 'city' => get_user_meta($user->ID, '_city', true) ?: '',
                 'about' => get_user_meta($user->ID, '_about', true) ?: '',
             ];
         }
 
+        // Totals based on filtered (search-applied) result set
+        $total_contacts = count($contacts_data);
+        $total_pages    = $total_contacts > 0 ? (int) ceil($total_contacts / $per_page) : 0;
+
+        // Slice for the requested page
+        $offset = ($page - 1) * $per_page;
+        $paged_contacts = array_slice($contacts_data, $offset, $per_page);
+
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
-            'contacts' => $contacts_data,
+            'total' => $total_contacts,
+            'per_page' => $per_page,
+            'current_page' => $page,
+            'total_pages' => $total_pages,
+            'contacts' => array_values($paged_contacts),
             'user_status' => wpem_get_user_login_status($user_id),
         ];
 
