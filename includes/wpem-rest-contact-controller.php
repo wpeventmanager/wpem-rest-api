@@ -159,8 +159,8 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
                 $profession_slug = '';
             }
 
-            $first_name   = get_user_meta($user->ID, 'first_name', true);
-            $last_name    = get_user_meta($user->ID, 'last_name', true);
+            $first_name   = get_user_meta($user->ID, 'first_name', true) ?: get_user_meta($user->ID, '_attendee_name', true) ?: '';
+            $last_name   = get_user_meta($user->ID, 'last_name', true) ?: get_user_meta($user->ID, '_attendee_last_name', true) ?: '';
             $company_name = get_user_meta($user->ID, '_company_name', true) ?: '';
 
             // Apply search filter (case-insensitive, matches name/email/company)
