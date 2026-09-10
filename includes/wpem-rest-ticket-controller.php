@@ -68,6 +68,10 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
     {
         global $wpdb;
         $user_id = wpem_rest_get_current_user_id();
+
+        // pass event_id params when you want only ticket data of specific event
+        $requested_event_id = absint( $request->get_param( 'event_id' ) );
+
         $args = array(
             'post_type'      => 'event_registration',
             'post_status'    => 'any',
@@ -77,8 +81,23 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
         );
         $query = new WP_Query( $args );
 
+        $per_page = (int) $request->get_param('per_page');
+        $page = (int) $request->get_param('page');
+        if ($per_page <= 0) {
+            $per_page = 10;
+        }
+        if ($page <= 0) {
+            $page = 1;
+        }
+
+        $event_search   = $request->get_param('event_search');
+        $event_search   = is_string($event_search) ? trim($event_search) : '';
+        $ticket_search   = $request->get_param('ticket_search');
+        $ticket_search   = is_string($ticket_search) ? trim($ticket_search) : '';
+
         $event_data       = array();
         $processed_orders = array();
+        $ticket_data = array();
 
         if ( $query->have_posts() ) {
             foreach ( $query->posts as $registration_id ) {
@@ -101,22 +120,37 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         continue;
                     }
 
+                    if ( $requested_event_id && absint( $event_id ) !== $requested_event_id ) {
+                        continue;
+                    }
+
                     $event_post = get_post( $event_id );
                     if ( ! $event_post || 'event_listing' !== $event_post->post_type ) {
                         continue;
                     }
 
-                    if ( ! isset( $event_data[ $event_id ] ) ) {
-                        $event_data[ $event_id ] = array(
-                            'event_id'      => $event_id,
-                            'event_title'   => get_the_title( $event_id ),
-                            'event_date'    => wpem_get_event_start_date( $event_id ),
-                            'event_time'    => wpem_get_event_start_time( $event_id ),
-                            'thumbnail'     => wpem_get_event_thumbnail( $event_id, 'thumbnail' ),
-                            'ticket_detail' => array(),
-                        );
-                    }
+                    // Only process event data when event_id not passed
+                    if ( ! $requested_event_id ) {
+                        if (!empty($event_search)) {
+                            $event_title = get_the_title( $event_id ) !== null ? get_the_title( $event_id ) : '';
 
+                            $haystack = strtolower($event_title);
+                            $search_term = strtolower($event_search);
+
+                            if (strpos($haystack, $search_term) === false) {
+                                continue;
+                            }
+                        }
+                            $event_data[ $event_id ] = array(
+                                'event_id'      => $event_id,
+                                'event_title'   => get_the_title( $event_id ),
+                                'event_date'    => wpem_get_event_start_date( $event_id ),
+                                'event_time'    => wpem_get_event_start_time( $event_id ),
+                                'thumbnail'     => wpem_get_event_thumbnail( $event_id, 'thumbnail' )
+                            );
+                        }
+
+                    // only process when event_id params passed
                     $ticket_ids = get_post_meta( $registration_id, '_ticket_id', true );
                     $ticket_id = ( is_array( $ticket_ids ) && ! empty( $ticket_ids ) ) ? absint( $ticket_ids[0] ) : 0;
                     $ticket_name = $ticket_id ? get_the_title( $ticket_id ) : '';
@@ -191,25 +225,40 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         $payment_status = 'unpaid';
                     }
 
-                    // get seat number
-                    $seatnumber = maybe_unserialize( get_post_meta( $registration_id, '_seats_details', true ) );
+                    if ( $requested_event_id ) {
+                        if (!empty($ticket_search)) {
+                            $s_order_id = isset($order_id) ? $order_id : '';
+                            $attendee_name = $first_name !== null ? $first_name : '';
+                            $attendee_email = $email !== null ? $email : '';
 
-                    $event_data[ $event_id ]['ticket_detail'][] = array(
-                        'registration_id' => absint( $registration_id ),
-                        'order_id'        => $order_id,
-                        'ticket_name'     => $ticket_name,
-                        'first_name'      => $first_name,
-                        'last_name'       => $last_name,
-                        'email'           => $email,
-                        'user_photo'      => $user_photo,
-                        'order_date'      => wp_date( 'Y-m-d', strtotime( $order_date ) ),
-                        'order_amount'    => $order_amount,
-                        'payment_method'  => $payment_method,
-                        'payment_status'  => $payment_status,
-                        'organizer_name'  => $organizer_name,
-                        'event_venue'      => $venue_name,
-                        'seat_number'      => is_array( $seatnumber ) ? $seatnumber[0] : $seatnumber,
-                    );
+                            $haystack = strtolower($s_order_id . ' ' . $attendee_name . '' . $attendee_email);
+                            $search_term = strtolower($ticket_search);
+
+                            if (strpos($haystack, $search_term) === false) {
+                                continue;
+                            }
+                        }
+
+                        // get seat number
+                        $seatnumber = maybe_unserialize( get_post_meta( $registration_id, '_seats_details', true ) );
+
+                        $ticket_data[] = array(
+                            'registration_id' => absint( $registration_id ),
+                            'order_id'        => $order_id,
+                            'ticket_name'     => $ticket_name,
+                            'first_name'      => $first_name,
+                            'last_name'       => $last_name,
+                            'email'           => $email,
+                            'user_photo'      => $user_photo,
+                            'order_date'      => wp_date( 'Y-m-d', strtotime( $order_date ) ),
+                            'order_amount'    => $order_amount,
+                            'payment_method'  => $payment_method,
+                            'payment_status'  => $payment_status,
+                            'organizer_name'  => $organizer_name,
+                            'event_venue'      => $venue_name,
+                            'seat_number'      => is_array( $seatnumber ) ? $seatnumber[0] : $seatnumber,
+                        );
+                    }
                 }
             }
 
@@ -218,10 +267,34 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $response_data = self::wpem_prepare_error_for_response( 200 );
+        if ( $requested_event_id ) {
+            $total_data = count($ticket_data);
+            $total_pages = $total_data > 0 ? (int) ceil($total_data / $per_page) : 0;
+            $offset = ($page - 1) * $per_page;
+            $paged_ticket_data = array_slice($ticket_data, $offset, $per_page);
         $response_data['data'] = array(
-            'event_data'  => $event_data,
+                'total' => $total_data,
+                'per_page' => $per_page,
+                'current_page' => $page,
+                'total_pages' => $total_pages,
+                'event_id' => $event_id,
+                'ticket_data' => array_values($paged_ticket_data),
+                'user_status' => wpem_get_user_login_status( $user_id ),
+            );
+        } else {
+            $total_data = count($event_data);
+            $total_pages = $total_data > 0 ? (int) ceil($total_data / $per_page) : 0;
+            $offset = ($page - 1) * $per_page;
+            $paged_event_data = array_slice($event_data, $offset, $per_page);
+            $response_data['data'] = array(
+                'total' => $total_data,
+                'per_page' => $per_page,
+                'current_page' => $page,
+                'total_pages' => $total_pages,
+                'event_data'  => array_values($paged_event_data),
             'user_status' => wpem_get_user_login_status( $user_id ),
         );
+        }
 
         return rest_ensure_response( $response_data );
     }
