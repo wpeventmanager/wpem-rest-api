@@ -179,20 +179,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ),
             )
         );
-
-        register_rest_route(
-            $this->namespace,
-            '/' . $this->rest_base . '/organizer',
-            array(
-                array(
-                    'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'wpem_get_meeting_list_for_organizer'),
-                    'permission_callback' => array($this, 'wpem_permission_check'),
-                    'args' => $this->wpem_get_collection_params(),
-                ),
-                'schema' => array($this, 'get_public_item_schema'),
-            )
-        );
     }
     
     /**
@@ -435,16 +421,16 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function wpem_get_items($request)
     {
         global $wpdb;
-        // Get current user ID
-        $user_id = wpem_rest_get_current_user_id();
-        $partner_id = (int) $request->get_param('partner_id');
-        $event_id = (int) $request->get_param('event_id');
-        $status = sanitize_text_field($request->get_param('status'));
-        $search = sanitize_text_field($request->get_param('search'));
-        $page = max(1, (int) $request->get_param('page'));
-        $per_page = max(1, min(100, (int) $request->get_param('per_page')));
-        $offset = ($page - 1) * $per_page;
-        $params = array();
+        $user_id      = wpem_rest_get_current_user_id();
+        $partner_id   = (int) $request->get_param('partner_id');
+        $event_id     = (int) $request->get_param('event_id');
+        $status       = sanitize_text_field($request->get_param('status'));
+        $search       = sanitize_text_field($request->get_param('search'));
+        $own_meeting  = (int) $request->get_param('own_meeting'); // NEW
+        $page         = max(1, (int) $request->get_param('page'));
+        $per_page     = max(1, min(100, (int) $request->get_param('per_page')));
+        $offset       = ($page - 1) * $per_page;
+        $params       = array();
 
         // --- Determine current user's role tier ---
         // Use user_can() against an explicit WP_User object rather than current_user_can(),
@@ -471,7 +457,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // Base WHERE clause
         if ( $is_admin ) {
-
             // Admin: filter by event_id if provided, otherwise all events.
             if ( $event_id ) {
                 $where_sql  = 'WHERE event_id = %d';
@@ -479,42 +464,67 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             } else {
                 $where_sql = 'WHERE 1=1';
             }
-
         } elseif ( $is_organizer ) {
+            if ($own_meeting === 1) {
+                // Organizer wants ONLY their own meetings (host/participant),
+                // regardless of which event it belongs to.
+                if ($event_id) {
+                    $where_sql = 'WHERE event_id = %d';
+                    $params[]  = $event_id;
+                } else {
+                    $where_sql = 'WHERE 1=1';
+                }
 
-            // Organizer: scope to their own published events only.
-            if ( $event_id ) {
-                // Requested a specific event — must belong to this organizer.
-                if ( ! in_array( $event_id, $organizer_event_ids, true ) ) {
-                    // Event doesn't belong to this organizer — return a clear error message.
-                    $organizer_name   = $current_user_obj ? $current_user_obj->display_name : '';
-                    $response_data    = self::wpem_prepare_error_for_response( 403 );
-                    $response_data['message'] = sprintf(
-                        /* translators: %s: organizer display name */
-                        __( 'This event is not published by you (%s).', 'wpem-rest-api' ),
-                        $organizer_name
-                    );
-                    return wp_send_json( $response_data );
+                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                $params[]   = $user_id;
+                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+
+                if ($partner_id) {
+                    $filter_sql .= ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                    $params[]    = $partner_id;
+                    $params[]    = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
                 }
-                $where_sql = 'WHERE event_id = %d';
-                $params[]  = $event_id;
+
             } else {
-                // No specific event — show meetings for ALL organizer's events.
-                if ( empty( $organizer_event_ids ) ) {
-                    $response_data = self::wpem_prepare_error_for_response( 200 );
-                    $response_data['data'] = array(
-                        'total_post_count' => 0,
-                        'current_page'     => $page,
-                        'last_page'        => 1,
-                        'total_pages'      => 1,
-                        $this->rest_base   => array(),
-                        'user_status'      => wpem_get_user_login_status( $user_id ),
-                    );
-                    return wp_send_json( $response_data );
+                // Default organizer behavior — scoped to their own published events.
+                if ($event_id) {
+                    if (! in_array($event_id, $organizer_event_ids, true)) {
+                        $organizer_name = $current_user_obj ? $current_user_obj->display_name : '';
+                        $response_data  = self::wpem_prepare_error_for_response(403);
+                        $response_data['message'] = sprintf(
+                            /* translators: %s: organizer display name */
+                            __('This event is not published by you (%s).', 'wpem-rest-api'),
+                            $organizer_name
+                        );
+                        return wp_send_json($response_data);
+                    }
+                    $where_sql = 'WHERE event_id = %d';
+                    $params[]  = $event_id;
+                } else {
+                    if (empty($organizer_event_ids)) {
+                        $response_data = self::wpem_prepare_error_for_response(200);
+                        $response_data['data'] = array(
+                            'total_post_count' => 0,
+                            'current_page'     => $page,
+                            'last_page'        => 1,
+                            'total_pages'      => 1,
+                            $this->rest_base   => array(),
+                            'user_status'      => wpem_get_user_login_status($user_id),
+                        );
+                        return wp_send_json($response_data);
+                    }
+                    $placeholders = implode(',', array_fill(0, count($organizer_event_ids), '%d'));
+                    $where_sql    = "WHERE event_id IN ($placeholders)";
+                    $params       = array_merge($params, $organizer_event_ids);
                 }
-                $placeholders = implode( ',', array_fill( 0, count( $organizer_event_ids ), '%d' ) );
-                $where_sql    = "WHERE event_id IN ($placeholders)";
-                $params       = array_merge( $params, $organizer_event_ids );
+
+                // Narrowing to a specific partner is safe here — organizer already
+                // has full read access to every meeting within their own events.
+                if ($partner_id) {
+                    $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                    $params[]   = $partner_id;
+                    $params[]   = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
+                }
             }
 
         } else {
@@ -526,47 +536,23 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             } else {
                 $where_sql = 'WHERE 1=1';
             }
-        }
 
-        // --- Per-role meeting visibility filter ---
-        $filter_sql = '';
-
-        if ( $is_admin ) {
-
-            // Admin sees every meeting — no extra filter.
-            $filter_sql = '';
-
-        } elseif ( $is_organizer ) {
-
-            // Organizer sees all meetings of their events (scoped by WHERE above) —
-            // no extra per-user participant filter needed.
-            if ( $partner_id ) {
-                // Optional: narrow down to a specific participant within organizer's events.
-                $filter_sql  = ' AND (
-                    user_id = %d
-                    OR participant_ids LIKE %s
-                )';
-                $params[] = $partner_id;
-                $params[] = '%' . $wpdb->esc_like( 'i:' . $partner_id ) . '%';
-            }
-
-        } else {
-
-            // Regular user: only their own meetings (host or participant).
-            if ( $partner_id ) {
-                $filter_sql  = ' AND (
-                    user_id = %d
-                    OR participant_ids LIKE %s
-                )';
-                $params[] = $partner_id;
-                $params[] = '%' . $wpdb->esc_like( 'i:' . $partner_id ) . '%';
-            } else {
-                $filter_sql  = ' AND (
-                    user_id = %d
-                    OR participant_ids LIKE %s
+            if ($partner_id) {
+                // FIX (IDOR): logged-in user must ALWAYS be part of the meeting.
+                // partner_id only narrows further to meetings shared with that partner.
+                $filter_sql = ' AND (
+                    ( user_id = %d OR participant_ids LIKE %s )
+                    AND
+                    ( user_id = %d OR participant_ids LIKE %s )
                 )';
                 $params[] = $user_id;
-                $params[] = '%' . $wpdb->esc_like( 'i:' . $user_id ) . '%';
+                $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+                $params[] = $partner_id;
+                $params[] = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
+            } else {
+                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                $params[]   = $user_id;
+                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
             }
         }
 
@@ -593,9 +579,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         
         $search_filter = '';
-
         if (!empty($search)) {
-        
             $search_filter = " AND EXISTS (
                 SELECT 1
                 FROM {$wpdb->postmeta} pm
@@ -603,7 +587,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 AND pm.meta_key = '_event_title'
                 AND pm.meta_value LIKE %s
             )";
-
             $params[] = '%' . $wpdb->esc_like($search) . '%';
         }
         // SQL queries
@@ -1548,151 +1531,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         return self::wpem_prepare_error_for_response(200);
     }
-
-    /**
-     * Retrieves a specific matchmaking meeting by ID.
-     * GET /matchmaking-meetings
-     *
-     * @param WP_REST_Request $request
-     * @return WP_REST_Response
-     * @since 1.2.0
-     */
-    public function wpem_get_meeting_list_for_organizer($request)
-    {
-        global $wpdb;
-        // Get current user ID
-        $user_id = wpem_rest_get_current_user_id();
-        $event_id = (int) $request->get_param('event_id');
-        $status = sanitize_text_field($request->get_param('status'));
-        $page = max(1, (int) $request->get_param('page'));
-        $per_page = max(1, min(100, (int) $request->get_param('per_page')));
-        $offset = ($page - 1) * $per_page;
-
-        $params = [];
-
-        // --- Determine role tier (same logic as wpem_get_items) ---
-        $current_user_obj = get_userdata( $user_id );
-        $is_admin         = $current_user_obj && user_can( $current_user_obj, 'manage_options' );
-
-        // --- Get events published by this user as author ---
-        $organizer_events = [];
-        if ( ! $is_admin ) {
-            $organizer_events = get_posts([
-                'post_type'      => 'event_listing',
-                'post_status'    => 'publish',
-                'author'         => $user_id,
-                'fields'         => 'ids',
-                'posts_per_page' => -1,
-            ]);
-        }
-        $is_organizer = ! $is_admin && ! empty( $organizer_events );
-
-        // --- Build WHERE clause based on role ---
-        if ( $is_admin ) {
-
-            // Admin: see all meetings, optionally filtered by event_id.
-            if ( $event_id ) {
-                $where_sql = "WHERE event_id = %d";
-                $params[]  = $event_id;
-            } else {
-                $where_sql = "WHERE 1=1";
-            }
-
-        } elseif ( $is_organizer ) {
-
-            if ( $event_id ) {
-                // Requested a specific event — must belong to this organizer.
-                if ( ! in_array( $event_id, $organizer_events, true ) ) {
-                    $organizer_name           = $current_user_obj ? $current_user_obj->display_name : '';
-                    $response_data            = self::wpem_prepare_error_for_response( 403 );
-                    $response_data['message'] = sprintf(
-                        /* translators: %s: organizer display name */
-                        __( 'This event is not published by you (%s).', 'wpem-rest-api' ),
-                        $organizer_name
-                    );
-                    return wp_send_json( $response_data );
-                }
-                $where_sql = "WHERE event_id = %d";
-                $params[]  = $event_id;
-            } else {
-                // No event_id — show meetings for ALL organizer's published events.
-                $placeholders = implode( ',', array_fill( 0, count( $organizer_events ), '%d' ) );
-                $where_sql    = "WHERE event_id IN ($placeholders)";
-                $params       = array_merge( $params, $organizer_events );
-            }
-
-        } else {
-
-            // Regular user (customer): show only their own meetings (host or participant).
-            if ( $event_id ) {
-                $where_sql = "WHERE event_id = %d";
-                $params[]  = $event_id;
-            } else {
-                $where_sql = "WHERE 1=1";
-            }
-            $where_sql .= " AND ( user_id = %d OR participant_ids LIKE %s )";
-            $params[]   = $user_id;
-            $params[]   = '%' . $wpdb->esc_like( 'i:' . $user_id ) . '%';
-        }
-
-        // Status filter
-        $current_date = current_time('Y-m-d');
-        $status_filter = '';
-        if ($status === 'cancelled') {
-            $status_filter = ' AND meeting_status = -1';
-        }
-        if ($status === 'pending') {
-            $status_filter = ' AND meeting_status = -2';
-        }
-        if ($status === 'accepted') {
-            $status_filter = ' AND meeting_status = 1';
-        }
-        if ($status === 'rejected') {
-            $status_filter = ' AND meeting_status = 0';
-        }
-        if ($status === 'upcoming') {
-            $status_filter = $wpdb->prepare(' AND meeting_date >= %s AND meeting_status != -1', $current_date);
-        }
-        if ($status === 'past') {
-            $status_filter = $wpdb->prepare(' AND meeting_date < %s AND meeting_status != -1', $current_date);
-        }
-
-        // --- SQL queries ---
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$status_filter}";
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-        $sql_rows = "SELECT * FROM {$this->table} {$where_sql}{$status_filter}
-                    ORDER BY meeting_date ASC, meeting_start_time ASC
-                    LIMIT %d OFFSET %d";
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $sql_count = $wpdb->prepare($sql_count, ...$params);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $total = (int) $wpdb->get_var($sql_count);
-
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $rows = $wpdb->get_results($sql_rows, ARRAY_A);
-
-        // Format rows
-        $items = [];
-        foreach ((array) $rows as $row) {
-            $items[] = $this->wpem_format_meeting_row($row);
-        }
-
-        $response_data = self::wpem_prepare_error_for_response(200);
-        $response_data['data'] = [
-            'total_post_count' => $total,
-            'current_page' => $page,
-            'last_page' => (int) max(1, ceil($total / $per_page)),
-            'total_pages' => (int) max(1, ceil($total / $per_page)),
-            $this->rest_base => $items,
-            'user_status' => wpem_get_user_login_status($user_id)
-        ];
-
-        return wp_send_json($response_data);
-    }
-
 }
 
 new WPEM_REST_Matchmaking_Meetings_Controller();
