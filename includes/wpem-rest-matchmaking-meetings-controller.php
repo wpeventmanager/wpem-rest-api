@@ -423,6 +423,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         global $wpdb;
         $user_id      = wpem_rest_get_current_user_id();
         $partner_id   = (int) $request->get_param('partner_id');
+        $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
         $event_id     = (int) $request->get_param('event_id');
         $status       = sanitize_text_field($request->get_param('status'));
         $search       = sanitize_text_field($request->get_param('search'));
@@ -439,10 +440,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $current_user_obj = get_userdata( $user_id );
         $is_admin         = $current_user_obj && user_can( $current_user_obj, 'manage_options' );
 
-        // Organizer detection: this plugin has no dedicated capability for organizers.
-        // The same pattern used in wpem_get_meeting_list_for_organizer() applies here —
-        // a user is treated as an organizer if they have at least one published event_listing
-        // where they are the post author.
         $organizer_event_ids = array();
         if ( ! $is_admin ) {
             $organizer_event_ids = get_posts( array(
@@ -577,6 +574,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($status === 'past') {
             $status_filter = $wpdb->prepare(' AND meeting_date < %s AND meeting_status != -1', $current_date);
         }
+        $date_filter = '';
+        if (!empty($meeting_date)) {
+            // $date_filter = $wpdb->prepare(' AND meeting_date = %s', $meeting_date);
+            $date_filter = $wpdb->prepare(' AND DATE(meeting_date) = %s', $meeting_date);
+        }
         
         $search_filter = '';
         if (!empty($search)) {
@@ -590,15 +592,16 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $params[] = '%' . $wpdb->esc_like($search) . '%';
         }
         // SQL queries
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$search_filter}";
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$date_filter} {$search_filter}";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_count = $wpdb->prepare($sql_count, ...$params);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total = (int) $wpdb->get_var($sql_count);
         
-        $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$search_filter} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
+        $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$date_filter} {$search_filter} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $rows = $wpdb->get_results($sql_rows, ARRAY_A);
 
