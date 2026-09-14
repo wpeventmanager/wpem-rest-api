@@ -598,7 +598,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total = (int) $wpdb->get_var($sql_count);
         
-        $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$date_filter} {$search_filter} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
+        $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$date_filter} {$search_filter} ORDER BY meeting_date DESC, meeting_start_time ASC LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
 
