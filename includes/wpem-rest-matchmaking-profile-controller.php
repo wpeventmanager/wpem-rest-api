@@ -1042,7 +1042,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 'end_date' => get_post_meta($event_id, '_event_end_date', true),
                 'location' => get_post_meta($event_id, '_event_location', true),
                 'banner' => $images,
-                'meta_data' => $meta_data,
+                'meta_data' => array(
+                    'geolocation_formatted_address' => $meta_data['geolocation_formatted_address'],
+                ),
             );
 
             // add venue inside event
