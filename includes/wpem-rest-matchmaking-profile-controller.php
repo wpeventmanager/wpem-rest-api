@@ -864,29 +864,29 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     ($user['display_name'] ?? '') . ' ' .
                     ($user['_profession'] ?? '') . ' ' .
                     ($user['_company_name'] ?? '') . ' ' .
-                    ($countries[$user['_country']] ?? $user['_country']) . ' ' .
+                    ($countries[$user['_country']] ?? $user['country']) . ' ' .
                     ($user['_city'] ?? '') . ' ' .
-                    implode(' ', (array) maybe_unserialize($user['_skills'])) . ' ' .
-                    implode(' ', (array) maybe_unserialize($user['_interests']))
+                    implode(' ', (array) maybe_unserialize($user['skills'])) . ' ' .
+                    implode(' ', (array) maybe_unserialize($user['interests']))
                 );
                 if (strpos($haystack, $search) === false)
                     continue;
             }
 
             // Profession
-            if (!empty($filters['profession']) && strtolower($filters['profession']) !== strtolower($user['_profession'] ?? '')) {
+            if (!empty($filters['profession']) && strtolower($filters['profession']) !== strtolower($user['profession'] ?? '')) {
                 continue;
             }
 
             // Company
-            if (!empty($filters['company_name']) && strtolower($filters['company_name']) !== strtolower($user['_company_name'] ?? '')) {
+            if (!empty($filters['company_name']) && strtolower($filters['company_name']) !== strtolower($user['company_name'] ?? '')) {
                 continue;
             }
 
             // Country
             if (!empty($filters['country'])) {
                 $selected_countries = array_map('strtolower', (array) $filters['country']);
-                $user_country = strtolower($user['_country'] ?? '');
+                $user_country = strtolower($user['country'] ?? '');
                 $user_country_name = strtolower($countries[$user_country] ?? $user_country);
 
                 if (!in_array($user_country, $selected_countries, true) && !in_array($user_country_name, $selected_countries, true)) {
@@ -895,13 +895,13 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
 
             // City
-            if (!empty($filters['city']) && strtolower($filters['city']) !== strtolower($user['_city'] ?? '')) {
+            if (!empty($filters['city']) && strtolower($filters['city']) !== strtolower($user['city'] ?? '')) {
                 continue;
             }
 
             // Experience
             if (!empty($filters['experience']) && is_array($filters['experience'])) {
-                $user_exp = (int) ($user['_experience'] ?? 0);
+                $user_exp = (int) ($user['experience'] ?? 0);
                 if ($user_exp < ($filters['experience']['min'] ?? 0) || $user_exp > ($filters['experience']['max'] ?? PHP_INT_MAX)) {
                     continue;
                 }
@@ -909,7 +909,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
             // Skills
             if (!empty($filters['skills'])) {
-                $user_skills = array_map('sanitize_title', (array) maybe_unserialize($user['_skills']));
+                $user_skills = array_map('sanitize_title', (array) maybe_unserialize($user['skills']));
                 if (empty(array_intersect($filters['skills'], $user_skills))) {
                     continue;
                 }
@@ -917,7 +917,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
             // Interests
             if (!empty($filters['interests'])) {
-                $user_interests = array_map('sanitize_title', (array) maybe_unserialize($user['_interests']));
+                $user_interests = array_map('sanitize_title', (array) maybe_unserialize($user['interests']));
                 if (empty(array_intersect($filters['interests'], $user_interests))) {
                     continue;
                 }
