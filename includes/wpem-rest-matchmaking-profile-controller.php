@@ -168,6 +168,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                         'interests' => array('required' => false, 'type' => 'array'),
                         'event_id' => array('required' => false, 'type' => 'integer'),
                         'search' => array('required' => false, 'type' => 'string'),
+                        // - 'exact'   => participant must match ALL of the current user's set skills/interests/profession
+                        // - 'partial' => participant must match AT LEAST ONE of them
+                        'your_matches' => array('required' => false, 'type' => 'string', 'enum' => array('exact', 'partial'),),
                         'per_page' => array('required' => false, 'type' => 'integer', 'default' => 5),
                         'page' => array('required' => false, 'type' => 'integer', 'default' => 1),
                     ),
@@ -720,131 +723,68 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     public function wpem_get_wpem_matchmaking_filter_users(WP_REST_Request $request)
     {
         $filters = $request->get_params();
-        $current_user = wpem_rest_get_current_user_id();
+        // Cast to int: wpem_rest_get_current_user_id() is not guaranteed to return an int
+        // (e.g. it can come back as a numeric string depending on the auth method used),
+        // and wpem_get_all_matchmaking_participants() excludes "yourself" from the results
+        // using a STRICT (===) comparison against integer user IDs. Without this cast, that
+        // self-exclusion silently fails and your own profile leaks into the results.
+        $current_user = (int) wpem_rest_get_current_user_id();
 
-        // Step 1: Get event IDs
-        $event_ids = [];
-        if (!empty($filters['event_id'])) {
-            $event_ids[] = absint($filters['event_id']);
-        } else {
-            $registration_post_ids = get_posts([
-                'post_type' => 'event_registration',
-                'post_status' => ['new', 'confirmed', 'archived'],
-                'author' => $current_user,
-                'numberposts' => -1,
-                'fields' => 'ids',
-                // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-                'meta_query' => [
-                    [
-                        'key' => '_create_matchmaking',
-                        'value' => '1',
-                        'compare' => '='
-                    ]
-                ],
-            ]);
-            foreach ($registration_post_ids as $reg_id) {
-                $parent_id = wp_get_post_parent_id($reg_id);
-                if ($parent_id) {
-                    $event_ids[] = $parent_id;
-                }
-            }
-            $event_ids = array_unique($event_ids);
-        }
-
-        if (empty($event_ids)) {
-            return self::wpem_prepare_error_for_response(404);
-        }
-
-        // Step 2: Collect attendees with matchmaking
         $countries = wpem_get_all_countries();
-        $filtered_users = [];
         $fields = get_wpem_user_matchmaking_profile_fields();
+        $filtered_users = [];
 
-        foreach ($event_ids as $eid) {
-            $users = wpem_get_all_matchmaking_participants($current_user, $eid);
+        $your_matches_mode = !empty($filters['your_matches']) ? strtolower(sanitize_text_field($filters['your_matches'])) : '';
+        $is_your_matches = in_array($your_matches_mode, array('exact', 'partial'), true);
+
+        if ($is_your_matches) {
+            // "Your Matches" mode: resolve the event scope EXACTLY like the [match_making]
+            // "Your Matches" tab does (wpem_get_match_making_filter_user's filters_type branch):
+            // 1) an explicit 'event_id' request param always wins (keeps existing API behaviour),
+            // 2) otherwise fall back to the event stored on the user's own matchmaking profile
+            //    (user meta '_wpem_matchmaking_profile'),
+            // 3) otherwise pass '' so wpem_get_all_matchmaking_participants() falls back to
+            //    ALL events the current user is registered for (its own default behaviour) —
+            //    note this is intentionally NOT limited to registrations with
+            //    '_create_matchmaking' = 1, same as the website.
+        if (!empty($filters['event_id'])) {
+                $event_id = absint($filters['event_id']);
+        } else {
+                $stored_filters = get_user_meta($current_user, '_wpem_matchmaking_profile', true);
+                $event_id = !empty($stored_filters['event_id']) ? sanitize_text_field($stored_filters['event_id']) : '';
+            }
+
+            $users = wpem_get_all_matchmaking_participants($current_user, $event_id);
 
             foreach ($users as $user) {
-                $uid = $user['user_id'];
-                $user_meta = get_user_meta($uid);
+                $uid = (int) $user['user_id'];
+                $filtered_users[$uid] = $this->wpem_build_matchmaking_profile($uid, $user, $fields);
+        }
 
-                // Base info
-                $profile = [
-                    'user_id' => $uid,
-                    'display_name' => $user['display_name'],
-                    'email' => $user['user_email'],
-                    'first_name' => $user_meta['first_name'][0] ?? '',
-                    'last_name' => $user_meta['last_name'][0] ?? '',
-                ];
+            if (empty($filtered_users)) {
+            return self::wpem_prepare_error_for_response(404);
+        }
+        } else {
+            // Default (no event_id / no your_matches) mirrors the [match_making] "All" tab
+            // (wpem_render_matchmaking_participants_list), which calls
+            // wpem_get_all_matchmaking_participants(get_current_user_id()) with NO event
+            // filter at all — i.e. ALL events the user is registered for, ANY status, with
+            // NO '_create_matchmaking' restriction. The previous version of this method built
+            // its own narrower event list (only registrations with '_create_matchmaking' = 1
+            // and status in new/confirmed/archived), which is why it returned fewer users
+            // than the website. An explicit 'event_id' request param still scopes to that
+            // single event, same as before.
+            $event_id = !empty($filters['event_id']) ? absint($filters['event_id']) : '';
 
-                // Dynamic fields
-                foreach ($fields as $field_key => $field_config) {
-                    $raw_value = isset($user_meta["_" . $field_key][0]) ? maybe_unserialize($user_meta["_" . $field_key][0]) : '';
-                    $type = $field_config['type'] ?? 'text';
-                    $value = '';
+            $users = wpem_get_all_matchmaking_participants($current_user, $event_id);
 
-                    switch ($type) {
-                        case 'text':
-                        case 'email':
-                        case 'number':
-                        case 'textarea':
-                        case 'select':
-                        case 'term-select':
-                            $value = sanitize_text_field($raw_value);
-                            break;
-
-                        case 'checkbox':
-                        case 'radio':
-                            $value = !empty($raw_value) ? 1 : 0;
-                            break;
-
-                        case 'multiselect':
-                        case 'checkbox_multi':
-                            $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
-                            $value = array_map('sanitize_text_field', $arr);
-                            break;
-
-                        case 'url':
-                        case 'file':
-                            if (is_array($raw_value)) {
-                                $raw_value = reset($raw_value);
-                            }
-                            $value = esc_url_raw($raw_value);
-                            break;
-
-                        case 'term-multiselect':
-                        case 'term-checkbox':
-                            $value = $raw_value;
-                            break;
-
-                        default:
-                            $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
-                            break;
-                    }
-                    if ($field_key === 'profession' && ($value === '0' || $value === 0)) {
-                        $value = '';
-                    }
-                    $profile[$field_key] = $value;
+            foreach ($users as $user) {
+                    $uid = (int) $user['user_id'];
+                    $filtered_users[$uid] = $this->wpem_build_matchmaking_profile($uid, $user, $fields);
                 }
 
-                // Photos / logos
-                $profile['profile_photo'] = get_wpem_user_profile_photo($uid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
-                $org_logo = get_user_meta($uid, '_organization_logo', true);
-                $org_logo = is_array($org_logo) ? reset($org_logo) : $org_logo;
-                $profile['organization_logo'] = $org_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
-
-                // Matchmaking / meeting meta
-                $profile['matchmaking_profile'] = (int) get_user_meta($uid, '_matchmaking_profile', true);
-                if (get_option('participant_activation') === 'manual')
-                    $profile['approve_profile_status'] = (int) get_user_meta($uid, '_approve_profile_status', true);
-                else {
-                    $profile_status = get_user_meta($uid, '_approve_profile_status', true);
-                    $profile['approve_profile_status'] = ($profile_status !== '' && $profile_status !== null) ? ((int) $profile_status === 0 ? 0 : 1) : 1;
-                }
-                $profile['wpem_meeting_request_mode'] = get_user_meta($uid, '_wpem_meeting_request_mode', true) ?: 'approval';
-                $meta = get_user_meta($uid, '_available_for_meeting', true);
-                $profile['available_for_meeting'] = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
-
-                $filtered_users[$uid] = $profile;
+            if (empty($filtered_users)) {
+                return self::wpem_prepare_error_for_response(404);
             }
         }
 
@@ -854,76 +794,149 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return self::wpem_prepare_error_for_response(404);
         }
 
-        // Step 3: Apply filters (search, profession, etc.) — keep your existing filter logic here
-        $final_users = [];
-        foreach ($users as $user) {
-            // Search (name, profession, company, country, city, skills, interests)
-            if (!empty($filters['search'])) {
-                $search = strtolower($filters['search']);
-                $haystack = strtolower(
-                    ($user['display_name'] ?? '') . ' ' .
-                    ($user['_profession'] ?? '') . ' ' .
-                    ($user['_company_name'] ?? '') . ' ' .
-                    ($countries[$user['_country']] ?? $user['country']) . ' ' .
-                    ($user['_city'] ?? '') . ' ' .
-                    implode(' ', (array) maybe_unserialize($user['skills'])) . ' ' .
-                    implode(' ', (array) maybe_unserialize($user['interests']))
-                );
-                if (strpos($haystack, $search) === false)
-                    continue;
+        // Step 3: Apply filters
+        // "Your Matches" mode ('your_matches' = 'exact' | 'partial') takes over filtering completely,
+        // exactly like the [match_making] "Your Matches" tab does: it ignores the free-text/taxonomy
+        // filters below and instead compares every candidate against the CURRENTLY AUTHENTICATED
+        // user's own saved skills/interests/profession.
+        $your_matches_mode = !empty($filters['your_matches']) ? strtolower(sanitize_text_field($filters['your_matches'])) : '';
+
+        if (in_array($your_matches_mode, array('exact', 'partial'), true)) {
+
+            // Current (authenticated) user's own matchmaking profile values
+            $own_skills = get_user_meta($current_user, '_skills', true);
+            $own_skills = is_array($own_skills) ? $own_skills : (array) maybe_unserialize($own_skills);
+            $own_skills_slugs = array_map('sanitize_title', $own_skills);
+
+            $own_interests = get_user_meta($current_user, '_interests', true);
+            $own_interests = is_array($own_interests) ? $own_interests : (array) maybe_unserialize($own_interests);
+            $own_interests_slugs = array_map('sanitize_title', $own_interests);
+
+            $own_profession = get_user_meta($current_user, '_profession', true);
+            if (is_array($own_profession)) {
+                $own_profession = implode('-', $own_profession);
+                            }
+            $own_profession_slug = sanitize_title($own_profession);
+
+            $final_users = [];
+            foreach ($users as $user) {
+                $user_skills_slugs = array_map('sanitize_title', (array) maybe_unserialize($user['skills'] ?? ''));
+                $user_interests_slugs = array_map('sanitize_title', (array) maybe_unserialize($user['interests'] ?? ''));
+
+                $user_profession_raw = $user['profession'] ?? '';
+                if (is_array($user_profession_raw)) {
+                    $user_profession_raw = implode('-', $user_profession_raw);
+                }
+                $user_profession_slug = sanitize_title($user_profession_raw);
+
+                if ($your_matches_mode === 'exact') {
+                    // Exact match: participant must match ALL of the current user's
+                    // set skills AND interests AND profession.
+                    $match = true;
+
+                    if (!empty($own_skills_slugs)) {
+                        $skills_match = count(array_intersect($own_skills_slugs, $user_skills_slugs)) === count($own_skills_slugs);
+                        if (!$skills_match) {
+                            $match = false;
+                        }
+                    }
+
+                    if (!empty($own_interests_slugs)) {
+                        $interests_match = count(array_intersect($own_interests_slugs, $user_interests_slugs)) === count($own_interests_slugs);
+                        if (!$interests_match) {
+                            $match = false;
+                        }
+                    }
+
+                    if (!empty($own_profession_slug) && $user_profession_slug !== $own_profession_slug) {
+                        $match = false;
+                    }
+                } else {
+                    // Partial match: participant must match AT LEAST ONE of
+                    // profession OR skills OR interests.
+                    $has_profession_match = empty($own_profession_slug) || ($user_profession_slug === $own_profession_slug);
+                    $has_skill_match = empty($own_skills_slugs) || !empty(array_intersect($own_skills_slugs, $user_skills_slugs));
+                    $has_interest_match = empty($own_interests_slugs) || !empty(array_intersect($own_interests_slugs, $user_interests_slugs));
+
+                    $match = $has_profession_match || $has_skill_match || $has_interest_match;
+                }
+
+                if ($match) {
+                    $final_users[] = $user;
+        }
             }
+        } else {
+            // Default filtering (search, profession, company_name, country, city, experience, skills, interests)
+            $final_users = [];
+            foreach ($users as $user) {
+                // Search (name, profession, company, country, city, skills, interests)
+                if (!empty($filters['search'])) {
+                    $search = strtolower($filters['search']);
+                    $haystack = strtolower(
+                        ($user['display_name'] ?? '') . ' ' .
+                        ($user['_profession'] ?? '') . ' ' .
+                        ($user['_company_name'] ?? '') . ' ' .
+                        ($countries[$user['_country']] ?? $user['country']) . ' ' .
+                        ($user['_city'] ?? '') . ' ' .
+                        implode(' ', (array) maybe_unserialize($user['skills'])) . ' ' .
+                        implode(' ', (array) maybe_unserialize($user['interests']))
+                    );
+                    if (strpos($haystack, $search) === false)
+                        continue;
+                }
 
-            // Profession
-            if (!empty($filters['profession']) && strtolower($filters['profession']) !== strtolower($user['profession'] ?? '')) {
-                continue;
-            }
-
-            // Company
-            if (!empty($filters['company_name']) && strtolower($filters['company_name']) !== strtolower($user['company_name'] ?? '')) {
-                continue;
-            }
-
-            // Country
-            if (!empty($filters['country'])) {
-                $selected_countries = array_map('strtolower', (array) $filters['country']);
-                $user_country = strtolower($user['country'] ?? '');
-                $user_country_name = strtolower($countries[$user_country] ?? $user_country);
-
-                if (!in_array($user_country, $selected_countries, true) && !in_array($user_country_name, $selected_countries, true)) {
+                // Profession
+                if (!empty($filters['profession']) && strtolower($filters['profession']) !== strtolower($user['profession'] ?? '')) {
                     continue;
                 }
-            }
 
-            // City
-            if (!empty($filters['city']) && strtolower($filters['city']) !== strtolower($user['city'] ?? '')) {
-                continue;
-            }
-
-            // Experience
-            if (!empty($filters['experience']) && is_array($filters['experience'])) {
-                $user_exp = (int) ($user['experience'] ?? 0);
-                if ($user_exp < ($filters['experience']['min'] ?? 0) || $user_exp > ($filters['experience']['max'] ?? PHP_INT_MAX)) {
+                // Company
+                if (!empty($filters['company_name']) && strtolower($filters['company_name']) !== strtolower($user['company_name'] ?? '')) {
                     continue;
                 }
-            }
 
-            // Skills
-            if (!empty($filters['skills'])) {
-                $user_skills = array_map('sanitize_title', (array) maybe_unserialize($user['skills']));
-                if (empty(array_intersect($filters['skills'], $user_skills))) {
+                // Country
+                if (!empty($filters['country'])) {
+                    $selected_countries = array_map('strtolower', (array) $filters['country']);
+                    $user_country = strtolower($user['country'] ?? '');
+                    $user_country_name = strtolower($countries[$user_country] ?? $user_country);
+
+                    if (!in_array($user_country, $selected_countries, true) && !in_array($user_country_name, $selected_countries, true)) {
+                        continue;
+                    }
+                }
+
+                // City
+                if (!empty($filters['city']) && strtolower($filters['city']) !== strtolower($user['city'] ?? '')) {
                     continue;
                 }
-            }
 
-            // Interests
-            if (!empty($filters['interests'])) {
-                $user_interests = array_map('sanitize_title', (array) maybe_unserialize($user['interests']));
-                if (empty(array_intersect($filters['interests'], $user_interests))) {
-                    continue;
+                // Experience
+                if (!empty($filters['experience']) && is_array($filters['experience'])) {
+                    $user_exp = (int) ($user['experience'] ?? 0);
+                    if ($user_exp < ($filters['experience']['min'] ?? 0) || $user_exp > ($filters['experience']['max'] ?? PHP_INT_MAX)) {
+                        continue;
+                    }
                 }
-            }
 
-            $final_users[] = $user;
+                // Skills
+                if (!empty($filters['skills'])) {
+                    $user_skills = array_map('sanitize_title', (array) maybe_unserialize($user['skills']));
+                    if (empty(array_intersect($filters['skills'], $user_skills))) {
+                        continue;
+                    }
+                }
+
+                // Interests
+                if (!empty($filters['interests'])) {
+                    $user_interests = array_map('sanitize_title', (array) maybe_unserialize($user['interests']));
+                    if (empty(array_intersect($filters['interests'], $user_interests))) {
+                        continue;
+                    }
+                }
+
+                $final_users[] = $user;
+            }
         }
 
         if (empty($final_users)) {
@@ -946,6 +959,100 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         ];
 
         return wp_send_json($response);
+    }
+
+    /**
+     * Builds the response-ready matchmaking profile array for a single participant.
+     * Extracted from wpem_get_wpem_matchmaking_filter_users() so it can be reused by
+     * both the default search flow and the "your_matches" flow.
+     *
+     * @param int   $uid    User ID.
+     * @param array $user   Raw participant row from wpem_get_all_matchmaking_participants().
+     * @param array $fields Dynamic matchmaking profile field definitions.
+     * @return array
+     */
+    private function wpem_build_matchmaking_profile($uid, $user, $fields)
+    {
+        $user_meta = get_user_meta($uid);
+
+        // Base info
+        $profile = [
+            'user_id' => $uid,
+            'display_name' => $user['display_name'],
+            'email' => $user['user_email'],
+            'first_name' => $user_meta['first_name'][0] ?? '',
+            'last_name' => $user_meta['last_name'][0] ?? '',
+        ];
+
+        // Dynamic fields
+        foreach ($fields as $field_key => $field_config) {
+            $raw_value = isset($user_meta["_" . $field_key][0]) ? maybe_unserialize($user_meta["_" . $field_key][0]) : '';
+            $type = $field_config['type'] ?? 'text';
+            $value = '';
+
+            switch ($type) {
+                case 'text':
+                case 'email':
+                case 'number':
+                case 'textarea':
+                case 'select':
+                case 'term-select':
+                    $value = sanitize_text_field($raw_value);
+                    break;
+
+                case 'checkbox':
+                case 'radio':
+                    $value = !empty($raw_value) ? 1 : 0;
+                    break;
+
+                case 'multiselect':
+                case 'checkbox_multi':
+                    $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
+                    $value = array_map('sanitize_text_field', $arr);
+                    break;
+
+                case 'url':
+                case 'file':
+                    if (is_array($raw_value)) {
+                        $raw_value = reset($raw_value);
+                    }
+                    $value = esc_url_raw($raw_value);
+                    break;
+
+                case 'term-multiselect':
+                case 'term-checkbox':
+                    $value = $raw_value;
+                    break;
+
+                default:
+                    $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
+                    break;
+            }
+            if ($field_key === 'profession' && ($value === '0' || $value === 0)) {
+                $value = '';
+            }
+            $profile[$field_key] = $value;
+        }
+
+        // Photos / logos
+        $profile['profile_photo'] = get_wpem_user_profile_photo($uid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+        $org_logo = get_user_meta($uid, '_organization_logo', true);
+        $org_logo = is_array($org_logo) ? reset($org_logo) : $org_logo;
+        $profile['organization_logo'] = $org_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+
+        // Matchmaking / meeting meta
+        $profile['matchmaking_profile'] = (int) get_user_meta($uid, '_matchmaking_profile', true);
+        if (get_option('participant_activation') === 'manual')
+            $profile['approve_profile_status'] = (int) get_user_meta($uid, '_approve_profile_status', true);
+        else {
+            $profile_status = get_user_meta($uid, '_approve_profile_status', true);
+            $profile['approve_profile_status'] = ($profile_status !== '' && $profile_status !== null) ? ((int) $profile_status === 0 ? 0 : 1) : 1;
+        }
+        $profile['wpem_meeting_request_mode'] = get_user_meta($uid, '_wpem_meeting_request_mode', true) ?: 'approval';
+        $meta = get_user_meta($uid, '_available_for_meeting', true);
+        $profile['available_for_meeting'] = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
+
+        return $profile;
     }
 
     /**
