@@ -285,6 +285,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'message' => __('Already Checkin.', 'wpem-rest-api')
             ),
             array(
+                'code' => 419,
+                'status' => 'Error',
+                'message' => __('Already Checkout.', 'wpem-rest-api')
+            ),
+            array(
                 'code' => 416,
                 'status' => 'Error',
                 'message' => __('You can Checkin only for confirmed ticket.', 'wpem-rest-api')
