@@ -161,11 +161,26 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     'args' => array(
                         'profession' => array('required' => false, 'type' => 'string'),
                         'company_name' => array('required' => false, 'type' => 'string'),
-                        'country' => array('required' => false, 'type' => 'array'),
+                        'country' => array(
+                            'required' => false,
+                            'type' => array('array', 'string'),
+                            'sanitize_callback' => array($this, 'wpem_sanitize_array_or_csv'),
+                            'validate_callback' => '__return_true',
+                        ),
                         'city' => array('required' => false, 'type' => 'string'),
                         'experience' => array('required' => false),
-                        'skills' => array('required' => false, 'type' => 'array'),
-                        'interests' => array('required' => false, 'type' => 'array'),
+                        'skills' => array(
+                            'required' => false,
+                            'type' => array('array', 'string'),
+                            'sanitize_callback' => array($this, 'wpem_sanitize_array_or_csv'),
+                            'validate_callback' => '__return_true',
+                        ),
+                        'interests' => array(
+                            'required' => false,
+                            'type' => array('array', 'string'),
+                            'sanitize_callback' => array($this, 'wpem_sanitize_array_or_csv'),
+                            'validate_callback' => '__return_true',
+                        ),
                         'event_id' => array('required' => false, 'type' => 'integer'),
                         'search' => array('required' => false, 'type' => 'string'),
                         // - 'exact'   => participant must match ALL of the current user's set skills/interests/profession
@@ -190,6 +205,34 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 )
             )
         );
+    }
+
+    /**
+     * Sanitize callback for query params that accept multiple values.
+     * Normalizes both accepted input styles into a plain, trimmed array:
+     *   - repeated bracket params: country[]=india&country[]=germany
+     *   - a single comma-separated string: country=india,germany,new-jersey
+     *
+     * @param mixed $value Raw param value from the request.
+     * @return array
+     */
+    public function wpem_sanitize_array_or_csv($value)
+    {
+        if (is_array($value)) {
+            $items = $value;
+        } elseif (is_string($value) && $value !== '') {
+            $items = explode(',', $value);
+        } else {
+            return array();
+        }
+
+        $items = array_map(function ($item) {
+            return sanitize_text_field(trim((string) $item));
+        }, $items);
+
+        return array_values(array_filter($items, function ($item) {
+            return $item !== '';
+        }));
     }
     
     /**
