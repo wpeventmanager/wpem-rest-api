@@ -193,6 +193,24 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             )
         );
 
+        // POST - Toggle a matchmaking participant bookmark.
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base . '/bookmark',
+            array(
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => array($this, 'wpem_toggle_matchmaking_bookmark'),
+                'permission_callback' => array($this, 'wpem_permission_check'),
+                'args' => array(
+                    'participant_user_id' => array(
+                        'required' => true,
+                        'type' => 'integer',
+                        'minimum' => 1,
+                    ),
+                ),
+            )
+        );
+
         // Alias endpoint for legacy path and POST method
         register_rest_route(
             $this->namespace,
@@ -251,6 +269,48 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return $auth_check; // Standardized error already sent
         }
         return true;
+    }
+
+    /**
+     * Toggle a matchmaking participant in the authenticated user's bookmarks.
+     *
+     * @param WP_REST_Request $request Request containing participant_user_id.
+     * @return array
+     */
+    public function wpem_toggle_matchmaking_bookmark(WP_REST_Request $request)
+    {
+        $current_user_id = absint(wpem_rest_get_current_user_id());
+        $participant_user_id = absint($request->get_param('participant_user_id'));
+
+        if (!$participant_user_id || !get_userdata($participant_user_id)) {
+            return self::wpem_prepare_error_for_response(404);
+        }
+
+        if ($current_user_id === $participant_user_id) {
+            return self::wpem_prepare_error_for_response(508);
+        }
+
+        $bookmarked_users = array_map(
+            'absint',
+            (array) get_user_meta($current_user_id, '_matchmaking_bookmarked_users', true)
+        );
+        $bookmark_index = array_search($participant_user_id, $bookmarked_users, true);
+
+        if ($bookmark_index !== false) {
+            unset($bookmarked_users[$bookmark_index]);
+            $status = 0;
+        } else {
+            $bookmarked_users[] = $participant_user_id;
+            $status = 1;
+        }
+
+        $bookmarked_users = array_values($bookmarked_users);
+        update_user_meta($current_user_id, '_matchmaking_bookmarked_users', $bookmarked_users);
+
+        $response = self::wpem_prepare_error_for_response(200);
+        $response['message'] = $status === 1 ? 'User bookmarked successfully.' : 'User removed from bookmarks.';
+
+        return $response;
     }
 
     public function wpem_get_user_profile_permission_check( $request ) {
@@ -991,6 +1051,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $per_page = isset($filters['per_page']) ? max(1, (int) $filters['per_page']) : 5;
         $offset = ($page - 1) * $per_page;
         $paged_users = array_slice($final_users, $offset, $per_page);
+        $bookmarked_user_ids = array_map(
+            'absint',
+            (array) get_user_meta($current_user, '_matchmaking_bookmarked_users', true)
+        );
+        foreach ($paged_users as &$paged_user) {
+            $paged_user['is_bookmarked'] = in_array((int) $paged_user['user_id'], $bookmarked_user_ids, true);
+        }
+        unset($paged_user);
 
         $response = self::wpem_prepare_error_for_response(200);
         $response['data'] = [

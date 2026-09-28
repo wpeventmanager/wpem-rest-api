@@ -344,6 +344,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'status' => 'REST API Disabled',
                 'message' => __('REST API feature is disabled.', 'wpem-rest-api')
             ),
+            array(
+                'code'    => 508,
+                'status'  => 'Self Bookmark Not Allowed',
+                'message' => __('You cannot bookmark your own profile.', 'wpem-rest-api')
+            ),
         ));
         return $error_info;
     }
