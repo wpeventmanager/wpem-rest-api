@@ -339,6 +339,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'status' => 'Authentication Failed',
                 'message' => __('User not exist.', 'wpem-rest-api')
             ),
+            array(
+                'code' => 507,
+                'status' => 'REST API Disabled',
+                'message' => __('REST API feature is disabled.', 'wpem-rest-api')
+            ),
         ));
         return $error_info;
     }

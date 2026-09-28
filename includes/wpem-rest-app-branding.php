@@ -72,9 +72,10 @@ class WPEM_REST_APP_Branding_Controller extends WPEM_REST_CRUD_Controller
 
             $wpem_app_branding_settings['app_name'] = get_option('wpem_rest_api_app_name');
             $wpem_app_branding_settings['app_logo'] = get_option('wpem_rest_api_app_logo');
-            $wpem_app_branding_settings['app_splash_screen_image'] = get_option('wpem_rest_api_app_splash_screen_image');
+            // $wpem_app_branding_settings['app_splash_screen_image'] = get_option('wpem_rest_api_app_splash_screen_image'); Not in use
             $wpem_app_branding_settings['color_scheme'] = get_option('wpem_app_branding_settings');
             $wpem_app_branding_settings['dark_color_scheme'] = get_option('wpem_app_branding_dark_settings');
+            $wpem_app_branding_settings['enable_wpem_rest_api'] = get_option('enable_wpem_rest_api');
             $response_data = self::wpem_prepare_error_for_response(200);
             $response_data['data'] = array(
                 'wpem_app_branding_settings' => $wpem_app_branding_settings,
