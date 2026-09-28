@@ -183,6 +183,11 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                         ),
                         'event_id' => array('required' => false, 'type' => 'integer'),
                         'search' => array('required' => false, 'type' => 'string'),
+                        'is_bookmarked' => array(
+                            'required' => false,
+                            'type' => 'boolean',
+                            'sanitize_callback' => 'rest_sanitize_boolean',
+                        ),
                         // - 'exact'   => participant must match ALL of the current user's set skills/interests/profession
                         // - 'partial' => participant must match AT LEAST ONE of them
                         'your_matches' => array('required' => false, 'type' => 'string', 'enum' => array('exact', 'partial'),),
@@ -1042,6 +1047,18 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
         }
 
+        $bookmarked_user_ids = array_map(
+            'absint',
+            (array) get_user_meta($current_user, '_matchmaking_bookmarked_users', true)
+        );
+        if (array_key_exists('is_bookmarked', $filters)) {
+            $bookmark_filter = rest_sanitize_boolean($filters['is_bookmarked']);
+            $final_users = array_values(array_filter($final_users, function ($user) use ($bookmarked_user_ids, $bookmark_filter) {
+                $is_bookmarked = in_array((int) $user['user_id'], $bookmarked_user_ids, true);
+                return $is_bookmarked === $bookmark_filter;
+            }));
+        }
+
         if (empty($final_users)) {
             return self::wpem_prepare_error_for_response(404);
         }
@@ -1051,10 +1068,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $per_page = isset($filters['per_page']) ? max(1, (int) $filters['per_page']) : 5;
         $offset = ($page - 1) * $per_page;
         $paged_users = array_slice($final_users, $offset, $per_page);
-        $bookmarked_user_ids = array_map(
-            'absint',
-            (array) get_user_meta($current_user, '_matchmaking_bookmarked_users', true)
-        );
         foreach ($paged_users as &$paged_user) {
             $paged_user['is_bookmarked'] = in_array((int) $paged_user['user_id'], $bookmarked_user_ids, true);
         }
