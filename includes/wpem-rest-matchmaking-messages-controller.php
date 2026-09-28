@@ -438,6 +438,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $results = [];
         foreach ($paginated_ids as $partner_id) {
             $table = esc_sql($this->table);
+            $partner_user = get_userdata($partner_id);
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $last_message_row = $wpdb->get_row($wpdb->prepare("SELECT message, created_at FROM {$table} WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id));
 
@@ -454,6 +455,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
             $results[] = [
                 'user_id' => (int) $partner_id,
+                'user_status' => $partner_user ? 1 : 0,
                 'first_name' => get_user_meta($partner_id, 'first_name', true),
                 'last_name' => get_user_meta($partner_id, 'last_name', true),
                 'display_name' => $display_name,
