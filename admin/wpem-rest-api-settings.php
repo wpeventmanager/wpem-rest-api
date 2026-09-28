@@ -116,7 +116,7 @@ class WPEM_Rest_API_Settings
 	{
 		$this->wpem_init_settings();
 
-		foreach ($this->settings as $settings) {
+		foreach ($this->settings as $tab => $settings) {
 			if (isset($settings['sections']))
 				foreach ($settings['sections'] as $section_key => $section) {
 
@@ -128,9 +128,9 @@ class WPEM_Rest_API_Settings
 							// Use array-safe sanitizer for multi-select-checkbox fields;
 							// sanitize_text_field() on an array returns "" and silently wipes the value.
 							if (isset($option['type']) && $option['type'] === 'multi-select-checkbox') {
-								register_setting($this->settings_group, $option['name'], ['sanitize_callback' => array($this, 'wpem_sanitize_multiselect')]);
+								register_setting($this->settings_group . '_' . $tab, $option['name'], ['sanitize_callback' => array($this, 'wpem_sanitize_multiselect')]);
 							} else {
-								register_setting($this->settings_group, $option['name'], ['sanitize_callback' => 'sanitize_text_field']);
+								register_setting($this->settings_group . '_' . $tab, $option['name'], ['sanitize_callback' => 'sanitize_text_field']);
 							}
 						}
 				}
@@ -165,6 +165,7 @@ class WPEM_Rest_API_Settings
 		wp_enqueue_script('wpem-rest-api-admin-js');
 
 		$current_tab = isset($_REQUEST['tab']) ? sanitize_text_field(wp_unslash($_REQUEST['tab'])) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- used for tab navigation only.
+		$settings_group = $this->settings_group . '_' . $current_tab;
 
 		$action = '';
 		if (in_array($current_tab, ['general', 'settings'])) {
@@ -179,7 +180,7 @@ class WPEM_Rest_API_Settings
 				<div class="wpem-wrap">
 					<form method="post" name="wpem-rest-settings-form" <?php echo esc_attr($action); ?>>
 
-						<?php settings_fields($this->settings_group); ?>
+						<?php settings_fields($settings_group); ?>
 						<div class="wpem-admin-left-sidebar">
 							<ul class="wpem-admin-left-menu">
 								<?php foreach ($this->settings as $key => $section) { ?>
