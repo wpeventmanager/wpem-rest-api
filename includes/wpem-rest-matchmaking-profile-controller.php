@@ -161,6 +161,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     'args' => array(
                         'profession' => array('required' => false, 'type' => 'string'),
                         'company_name' => array('required' => false, 'type' => 'string'),
+                        // Accept either 'country[]=a&country[]=b' OR the shorter
+                        // 'country=a,b,c' comma-separated form. wpem_sanitize_array_or_csv()
+                        // normalizes both into a plain array before the callback runs.
                         'country' => array(
                             'required' => false,
                             'type' => array('array', 'string'),
@@ -188,6 +191,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                             'type' => 'boolean',
                             'sanitize_callback' => 'rest_sanitize_boolean',
                         ),
+                        // match the currently authenticated user's own skills/interests/profession
                         // - 'exact'   => participant must match ALL of the current user's set skills/interests/profession
                         // - 'partial' => participant must match AT LEAST ONE of them
                         'your_matches' => array('required' => false, 'type' => 'string', 'enum' => array('exact', 'partial'),),
@@ -709,6 +713,18 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     {
         $user_id = wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
+
+        // Validate that at least one valid parameter is provided. 
+        $valid_params = array( 'enable_matchmaking', 'message_notification', 'meeting_request_mode', 'timezone_settings', 'event_participation', );
+        $has_valid_data = false;
+        foreach ($valid_params as $param) {
+            if (!is_null($request->get_param($param))) {
+                $has_valid_data = true; break;
+            }
+        }
+        if (!$has_valid_data) {
+            return new WP_Error( 'invalid_data', 'Please Enter Valid Data.', array('status' => 400) );
+        }
 
         // Update user meta values
         if (!is_null($request->get_param('enable_matchmaking'))) {
