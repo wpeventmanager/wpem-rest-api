@@ -727,39 +727,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         /**
-         * check participant availability
+         * check participant availability (slots + overlapping meetings)
          */
-        $check_user_ids = array_unique(array_merge([$user_id], $participants));
-        foreach ($check_user_ids as $check_user_id) {
-
-            // Host meetings
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $host_conflict = $wpdb->get_var($wpdb->prepare( "SELECT id FROM {$this->table} WHERE meeting_date = %s AND user_id = %d AND ( (meeting_start_time < %s AND meeting_end_time > %s) ) LIMIT 1", $meeting_date, $check_user_id, $end_time, $start_time));
-
-            if ($host_conflict) {
-                return new WP_REST_Response([
-                    'code'    => 409,
-                    'status'  => 'ERROR',
-                    'message' => __('participant not available on this time', 'wpem-rest-api'),
-                ], 409);
-            }
-
-            // Participant meetings
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $participant_conflicts = $wpdb->get_results($wpdb->prepare("SELECT id, participant_ids FROM {$this->table} WHERE meeting_date = %s AND ((meeting_start_time < %s AND meeting_end_time > %s))", $meeting_date, $end_time, $start_time), ARRAY_A);
-
-            if (!empty($participant_conflicts)) {
-                foreach ($participant_conflicts as $row) {
-                    $participant_ids = maybe_unserialize($row['participant_ids']);
-                    if (is_array($participant_ids) && array_key_exists($check_user_id, $participant_ids)) {
-                        return new WP_REST_Response([
-                            'code'    => 409,
-                            'status'  => 'ERROR',
-                            'message' => __('participant not available on this time', 'wpem-rest-api'),
-                        ], 409);
-                    }
-                }
-            }
+        if ( ! $this->wpem_check_meeting_time_availability( $user_id, $participants, $meeting_date, $start_time, $end_time ) ) {
+            return new WP_REST_Response([
+                'code'    => 409,
+                'status'  => 'ERROR',
+                'message' => __('Participant not available on this time, check availability of participants first.', 'wpem-rest-api'),
+            ], 409);
         }
 
         /**
@@ -853,6 +828,83 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'message' => 'Meeting created successfully.',
             'data'    => $this->wpem_format_meeting_row($row),
         ], 200);
+    }
+
+    /**
+     * Check that every participant is available on the given date and slot.
+     *
+     * A participant is unavailable when:
+     *  - they switched off "available for meeting" (_available_for_meeting = 0), or
+     *  - the requested slot is not in their availability slots for that date, or
+     *  - the requested slot is already booked.
+     */
+    public function wpem_check_meeting_time_availability( $host_id, $participants, $meeting_date, $start_time, $end_time, $exclude_meeting_id = 0 )
+    {
+        global $wpdb;
+        $requested = gmdate( 'H:i', strtotime( $start_time ) );
+
+        // 1. Availability slots (participants only)
+        foreach ( (array) $participants as $uid ) {
+            $uid = (int) $uid;
+            if ( ! $uid ) {
+                continue;
+            }
+
+            $flag = get_user_meta( $uid, '_available_for_meeting', true );
+            if ( $flag !== '' && $flag !== null && (int) $flag === 0 ) {
+                return false;
+            }
+
+            $user_slots = function_exists( 'wpem_get_participants_available_meeting_slots' )
+                ? wpem_get_participants_available_meeting_slots( array( $uid ), $meeting_date )
+                : array();
+
+            $found = false;
+            if ( is_array( $user_slots ) ) {
+                foreach ( $user_slots as $user_slot ) {
+                    if ( empty( $user_slot['time'] ) ) {
+                        continue;
+                    }
+                    if ( gmdate( 'H:i', strtotime( $user_slot['time'] ) ) === $requested ) {
+                        $found = empty( $user_slot['is_booked'] );
+                        break;
+                    }
+                }
+            }
+
+            if ( ! $found ) {
+                return false;
+            }
+        }
+
+        // 2. Overlapping meetings (host + participants)
+        $check_user_ids = array_map( 'intval', array_unique( array_merge( array( $host_id ), (array) $participants ) ) );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $overlaps = $wpdb->get_results( $wpdb->prepare(
+            "SELECT user_id, participant_ids FROM {$this->table}
+            WHERE id != %d AND meeting_date = %s
+            AND meeting_start_time < %s AND meeting_end_time > %s",
+            $exclude_meeting_id, $meeting_date, $end_time, $start_time
+        ), ARRAY_A );
+
+        foreach ( (array) $overlaps as $row ) {
+            // Someone is the host of an overlapping meeting
+            if ( in_array( (int) $row['user_id'], $check_user_ids, true ) ) {
+                return false;
+            }
+            // Someone is a participant of an overlapping meeting
+            $pids = maybe_unserialize( $row['participant_ids'] );
+            if ( is_array( $pids ) ) {
+                foreach ( $check_user_ids as $cid ) {
+                    if ( array_key_exists( $cid, $pids ) ) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
