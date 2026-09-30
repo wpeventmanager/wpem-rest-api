@@ -1256,19 +1256,34 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
             // get venue QR code
             $meta_data = get_post_meta($event_post->ID);
-            $venue_name = '';
-            $venue_qrcode = '';
+
+            $event_venue_ids = array();
             $is_online = get_post_meta($event_id, '_event_online', true);
-            if ($is_online == 'no') {
-                $event_venue_id = get_post_meta($event_id, '_event_venue_ids', true);
-                if (is_array($event_venue_id)) {
-                    $event_venue_id = $event_venue_id[0];
+            if ($is_online === 'no') {
+                $event_venue_ids = get_post_meta($event_id, '_event_venue_ids', true);
+            }
+
+            $venues = array();
+
+            if (!empty($event_venue_ids)) {
+                if (!is_array($event_venue_ids)) {
+                    $event_venue_ids = array($event_venue_ids);
                 }
-                if ($event_venue_id) {
+
+                foreach ($event_venue_ids as $event_venue_id) {
                     $venue = get_post($event_venue_id);
                     if ($venue) {
-                        $venue_name = $venue->post_title;
                         $venue_qrcode = get_post_meta($event_venue_id, '_venue_qrcode', true);
+
+                        $venue_data = array(
+                            'id'   => $venue->ID,
+                            'name' => $venue->post_title,
+                        );
+
+                        if (!empty($venue_qrcode)) {
+                            $venue_data['QRCode'] = $venue_qrcode;
+                        }
+                        $venues[] = $venue_data;
                     }
                 }
             }
@@ -1298,11 +1313,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             );
 
             // add venue inside event
-            if (!empty($venue_qrcode)) {
-                $event_data['venue'] = array(
-                    'name'     => $venue_name,
-                    'QRCode'   => $venue_qrcode,
-                );
+            if (!empty($venues)) {
+                $event_data['venue'] = $venues;
             }
             $events[] = $event_data;
         }
