@@ -685,6 +685,16 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             ], 400);
         }
 
+        $current_date = current_time('Y-m-d');
+        $current_time = current_time('H:i:s');
+        if($current_date > $meeting_date || ($meeting_date === $current_date && $current_time > $slot)) {
+            return new WP_REST_Response([
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Choose meeting date and time properly.',
+            ], 400);
+        }
+
         /**
          * Time
          */
