@@ -797,6 +797,15 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $meeting_id = $wpdb->insert_id;
 
         /**
+         * Assign table only when at least one participant has accepted
+         * (automatic-mode participants are accepted at creation time).
+         * Otherwise the table is assigned later, on first acceptance.
+         */
+        if ( $available_table_id && $this->wpem_has_accepted_participant( $participant_status_array ) ) {
+            $this->wpem_book_meeting_table( $meeting_id, $available_table_id, $meeting_date, $start_time, $end_time );
+        }
+
+        /**
          * send mail
          */
         WP_Event_Manager_Registrations_MatchMaking::send_matchmaking_meeting_emails(
@@ -831,6 +840,111 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     }
 
     /**
+     * True when at least one participant has accepted (status 1).
+     *
+     * @param array $participants_map [user_id => status]
+     * @return bool
+     */
+    protected function wpem_has_accepted_participant( $participants_map )
+    {
+        foreach ( (array) $participants_map as $status ) {
+            if ( (int) $status === 1 ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Does the meetings table have a table_id column?
+     *
+     * @return bool
+     */
+    protected function wpem_meeting_table_id_column_exists()
+    {
+        global $wpdb;
+        static $exists = null;
+        if ( null === $exists ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $exists = (bool) $wpdb->get_var( "SHOW COLUMNS FROM {$this->table} LIKE 'table_id'" );
+        }
+        return $exists;
+    }
+
+    /**
+     * Table currently booked for a meeting (0 when none).
+     *
+     * @param int $meeting_id
+     * @return int
+     */
+    protected function wpem_get_meeting_table_id( $meeting_id )
+    {
+        global $wpdb;
+        $bookings = esc_sql( WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        return (int) $wpdb->get_var( $wpdb->prepare( "SELECT table_id FROM {$bookings} WHERE meeting_id = %d ORDER BY id DESC LIMIT 1", (int) $meeting_id ) );
+    }
+
+    /**
+     * Release the table booked for a meeting so it can be used by another meeting
+     * on the same date/time.
+     *
+     * @param int $meeting_id
+     */
+    protected function wpem_release_meeting_table( $meeting_id )
+    {
+        global $wpdb;
+        $meeting_id = (int) $meeting_id;
+        $bookings   = esc_sql( WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->delete( $bookings, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
+
+        if ( $this->wpem_meeting_table_id_column_exists() ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update( $this->table, array( 'table_id' => 0 ), array( 'id' => $meeting_id ), array( '%d' ), array( '%d' ) );
+        }
+    }
+
+    /**
+     * Book a table for a meeting (replaces any previous booking of that meeting).
+     *
+     * @param int    $meeting_id
+     * @param int    $table_id
+     * @param string $date  Y-m-d
+     * @param string $start H:i[:s]
+     * @param string $end   H:i[:s]
+     */
+    protected function wpem_book_meeting_table( $meeting_id, $table_id, $date, $start, $end )
+    {
+        global $wpdb;
+        $meeting_id = (int) $meeting_id;
+        $table_id   = (int) $table_id;
+        $bookings   = esc_sql( WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->delete( $bookings, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $wpdb->insert(
+            $bookings,
+            array(
+                'meeting_id'  => $meeting_id,
+                'table_id'    => $table_id,
+                'booked_date' => $date,
+                'start_time'  => gmdate( 'H:i', strtotime( $start ) ),
+                'end_time'    => gmdate( 'H:i', strtotime( $end ) ),
+            ),
+            array( '%d', '%d', '%s', '%s', '%s' )
+        );
+
+        if ( $this->wpem_meeting_table_id_column_exists() ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update( $this->table, array( 'table_id' => $table_id ), array( 'id' => $meeting_id ), array( '%d' ), array( '%d' ) );
+        }
+    }
+
+    /**
      * Check that every participant is available on the given date and slot.
      *
      * A participant is unavailable when:
@@ -841,7 +955,22 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function wpem_check_meeting_time_availability( $host_id, $participants, $meeting_date, $start_time, $end_time, $exclude_meeting_id = 0 )
     {
         global $wpdb;
+
         $requested = gmdate( 'H:i', strtotime( $start_time ) );
+
+        // When updating, the meeting's own current slot must not count as "booked".
+        $own_pids     = array();
+        $own_same_slot = false;
+        if ( $exclude_meeting_id ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $own = $wpdb->get_row( $wpdb->prepare( "SELECT meeting_date, meeting_start_time, participant_ids FROM {$this->table} WHERE id = %d", $exclude_meeting_id ), ARRAY_A );
+            if ( $own ) {
+                $own_same_slot = ( gmdate( 'Y-m-d', strtotime( $own['meeting_date'] ) ) === gmdate( 'Y-m-d', strtotime( $meeting_date ) ) )
+                    && ( gmdate( 'H:i', strtotime( $own['meeting_start_time'] ) ) === $requested );
+                $own_map  = maybe_unserialize( $own['participant_ids'] );
+                $own_pids = is_array( $own_map ) ? array_map( 'intval', array_keys( $own_map ) ) : array();
+            }
+        }
 
         // 1. Availability slots (participants only)
         foreach ( (array) $participants as $uid ) {
@@ -866,7 +995,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                         continue;
                     }
                     if ( gmdate( 'H:i', strtotime( $user_slot['time'] ) ) === $requested ) {
-                        $found = empty( $user_slot['is_booked'] );
+                        $booked_by_own_meeting = $own_same_slot && in_array( $uid, $own_pids, true );
+                        $found = empty( $user_slot['is_booked'] ) || $booked_by_own_meeting;
                         break;
                     }
                 }
@@ -884,6 +1014,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $overlaps = $wpdb->get_results( $wpdb->prepare(
             "SELECT user_id, participant_ids FROM {$this->table}
             WHERE id != %d AND meeting_date = %s
+            AND meeting_status != -1
             AND meeting_start_time < %s AND meeting_end_time > %s",
             $exclude_meeting_id, $meeting_date, $end_time, $start_time
         ), ARRAY_A );
@@ -986,21 +1117,56 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                     if ( $pid <= 0 || $pid === $host_id ) {
                         continue;
                     }
-                    // Preserve existing status when participant already exists.
-                    $participants_map[ $pid ] = isset( $existing_pmap[ $pid ] )
-                        ? $existing_pmap[ $pid ]
-                        : -1;
+                    // Preserve existing status; new participants follow their request mode (same as create).
+                    if ( isset( $existing_pmap[ $pid ] ) ) {
+                        $participants_map[ $pid ] = $existing_pmap[ $pid ];
+                    } else {
+                        $mode = get_user_meta( $pid, '_wpem_meeting_request_mode', true );
+                        $participants_map[ $pid ] = ( strtolower( (string) $mode ) === 'automatic' ) ? 1 : -1;
+                    }
                 }
             }
         }
 
         // Determine whether time-sensitive checks are needed.
-        $schedule_changed = (
-            $new_date  !== $row['meeting_date']
-            || $new_start !== $row['meeting_start_time']
-            || $new_end   !== $row['meeting_end_time']
-            || $participants_changed
+        $date_time_changed = (
+            gmdate( 'Y-m-d', strtotime( $new_date ) ) !== gmdate( 'Y-m-d', strtotime( $row['meeting_date'] ) )
+            || gmdate( 'H:i', strtotime( $new_start ) ) !== gmdate( 'H:i', strtotime( $row['meeting_start_time'] ) )
+            || gmdate( 'H:i', strtotime( $new_end ) )   !== gmdate( 'H:i', strtotime( $row['meeting_end_time'] ) )
         );
+        $schedule_changed = ( $date_time_changed || $participants_changed );
+
+        // ----------------------------------------------------------------
+        // 1b. Basic validations (same as create meeting).
+        // ----------------------------------------------------------------
+        if ( $participants_changed && empty( $participants_map ) ) {
+            return new WP_REST_Response( array(
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Invalid participants.',
+            ), 400 );
+        }
+
+        if ( false === strtotime( $new_date ) || false === strtotime( $new_start ) || false === strtotime( $new_end ) ) {
+            return new WP_REST_Response( array(
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Invalid date or time.',
+            ), 400 );
+        }
+
+        // Future date/time is required only when the date/time is being changed.
+        if ( $date_time_changed ) {
+            $current_date = current_time( 'Y-m-d' );
+            $current_time = current_time( 'H:i:s' );
+            if ( $current_date > $new_date || ( $new_date === $current_date && $current_time > $new_start ) ) {
+                return new WP_REST_Response( array(
+                    'code'    => 400,
+                    'status'  => 'ERROR',
+                    'message' => 'Please select future date and time.',
+                ), 400 );
+            }
+        }
 
         // ----------------------------------------------------------------
         // 2. Only run availability/capacity checks when schedule changes.
@@ -1041,69 +1207,17 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ), 400 );
             }
 
-            // -- 2b. Participant availability check ------------------------
-            $check_user_ids = array_unique( array_merge( array( $host_id ), $participant_ids ) );
-
-            foreach ( $check_user_ids as $check_user_id ) {
-
-                // Host-as-meeting-owner conflict (exclude the meeting being updated).
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-                $host_conflict = $wpdb->get_var(
-                    $wpdb->prepare(
-                        "SELECT id FROM {$this->table}
-                         WHERE id != %d
-                           AND meeting_date = %s
-                           AND user_id = %d
-                           AND meeting_start_time < %s
-                           AND meeting_end_time > %s
-                         LIMIT 1",
-                        $meeting_id,
-                        $new_date,
-                        $check_user_id,
-                        $new_end,
-                        $new_start
-                    )
-                );
-
-                if ( $host_conflict ) {
-                    return new WP_REST_Response( array(
-                        'code'    => 409,
-                        'status'  => 'ERROR',
-                        'message' => __( 'participant not available on this time', 'wpem-rest-api' ),
-                    ), 409 );
-                }
-
-                // Participant-in-other-meeting conflict (exclude the meeting being updated).
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-                $participant_conflicts = $wpdb->get_results(
-                    $wpdb->prepare(
-                        "SELECT id, participant_ids FROM {$this->table}
-                         WHERE id != %d
-                           AND meeting_date = %s
-                           AND meeting_start_time < %s
-                           AND meeting_end_time > %s",
-                        $meeting_id,
-                        $new_date,
-                        $new_end,
-                        $new_start
-                    ),
-                    ARRAY_A
-                );
-
-                if ( ! empty( $participant_conflicts ) ) {
-                    foreach ( $participant_conflicts as $conflict_row ) {
-                        $conflict_pids = maybe_unserialize( $conflict_row['participant_ids'] );
-                        if ( is_array( $conflict_pids ) && array_key_exists( $check_user_id, $conflict_pids ) ) {
-                            return new WP_REST_Response( array(
-                                'code'    => 409,
-                                'status'  => 'ERROR',
-                                'message' => __( 'participant not available on this time', 'wpem-rest-api' ),
-                            ), 409 );
-                        }
-                    }
-                }
-            }
             // phpcs:enable
+
+            // -- 2b. Participant availability check (slots + overlapping meetings) ---
+            // Excludes this meeting itself; cancelled meetings never block.
+            if ( ! $this->wpem_check_meeting_time_availability( $host_id, $participant_ids, $new_date, $new_start, $new_end, $meeting_id ) ) {
+                return new WP_REST_Response( array(
+                    'code'    => 409,
+                    'status'  => 'ERROR',
+                    'message' => __( 'Participant not available on this time, check availability of participants first.', 'wpem-rest-api' ),
+                ), 409 );
+            }
 
             // -- 2c. Table availability check -----------------------------
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1149,25 +1263,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 }
             }
 
-            // -- 2d. Release old table booking and create a new one -------
-            if ( ! is_null( $new_table_id ) ) {
-                // Remove previous booking(s) for this meeting.
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-                $wpdb->delete( $table_bookings_table, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
-
-                // Insert new booking.
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-                $wpdb->insert(
-                    $table_bookings_table,
-                    array(
-                        'meeting_id'  => $meeting_id,
-                        'table_id'    => $new_table_id,
-                        'booked_date' => $new_date,
-                        'start_time'  => gmdate( 'H:i', strtotime( $new_start ) ),
-                        'end_time'    => gmdate( 'H:i', strtotime( $new_end ) ),
-                    ),
-                    array( '%d', '%d', '%s', '%s', '%s' )
-                );
+            // -- 2d. Assign table only if at least one participant accepted ---
+            // No acceptance yet => make sure no table is held for this meeting.
+            if ( $this->wpem_has_accepted_participant( $participants_map ) ) {
+                if ( ! is_null( $new_table_id ) ) {
+                    $this->wpem_book_meeting_table( $meeting_id, $new_table_id, $new_date, $new_start, $new_end );
+                }
+            } else {
+                $this->wpem_release_meeting_table( $meeting_id );
             }
 
         } // end if $schedule_changed
@@ -1275,7 +1378,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $meeting_status = in_array(1, $participant_data, true) ? 1 : 0;
 
         // --- Table auto-allocation on first acceptance (mirrors web-side logic) ---
-        $table_id = (int) $row['table_id'];
+        $table_id = $this->wpem_get_meeting_table_id( $meeting_id );
+
+        // No participant accepted (anymore) => the meeting must not hold a table.
+        if ( ! $this->wpem_has_accepted_participant( $participant_data ) ) {
+            $this->wpem_release_meeting_table( $meeting_id );
+            $table_id = 0;
+        }
 
         if ( (int) $status === 1 && empty( $table_id ) ) {
             // host + all participants
@@ -1305,7 +1414,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         );
         $update_formats = array( '%s', '%d' );
 
-        if ( ! empty( $table_id ) ) {
+        if ( ! empty( $table_id ) && $this->wpem_meeting_table_id_column_exists() ) {
             $update_data['table_id'] = $table_id;
             $update_formats[]        = '%d';
         }
@@ -1373,6 +1482,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return self::wpem_prepare_error_for_response(500);
         }
 
+        // Release the assigned table so it can be booked by another meeting
+        $this->wpem_release_meeting_table($meeting_id);
+
         // Fetch meeting
         $table = esc_sql($this->table);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1418,6 +1530,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if (!$deleted) {
             return self::wpem_prepare_error_for_response(500);
         }
+
+        // Release the assigned table so it can be booked by another meeting
+        $this->wpem_release_meeting_table($meeting_id);
 
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array('id' => $meeting_id);
