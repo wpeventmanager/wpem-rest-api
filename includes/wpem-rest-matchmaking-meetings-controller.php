@@ -691,7 +691,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return new WP_REST_Response([
                 'code'    => 400,
                 'status'  => 'ERROR',
-                'message' => 'Choose meeting date and time properly.',
+                'message' => 'Please select future date and time.',
             ], 400);
         }
 
