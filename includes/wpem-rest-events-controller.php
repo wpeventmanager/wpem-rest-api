@@ -392,43 +392,47 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Venue
-        $event_venue_id = 0;
+        $event_venue_ids = array();
 
         if ($meta_data['_event_online'] === 'no') {
-            $event_venue_id = $meta_data['_event_venue_ids'];
+            $event_venue_ids = $meta_data['_event_venue_ids'];
         }
 
-        $venue_name = '';
-        $venue_qrcode = '';
+        $venues = array();
 
-        if ($event_venue_id) {
-            if (is_array($event_venue_id))
-                $event_venue_id = $event_venue_id[0];
-            $venue = get_post($event_venue_id);
-            if ($venue) {
-                $venue_name = $venue->post_title;
-                $venue_qrcode = get_post_meta($event_venue_id, '_venue_qrcode', true);
+        if (!empty($event_venue_ids)) {
+            if (!is_array($event_venue_ids)) {
+                $event_venue_ids = array($event_venue_ids);
+            }
+
+            foreach ($event_venue_ids as $event_venue_id) {
+                $venue = get_post($event_venue_id);
+                if ($venue) {
+                    $venue_qrcode = get_post_meta($event_venue_id, '_venue_qrcode', true);
+
+                    $venue_data = array(
+                        'id'   => $venue->ID,
+                        'name' => $venue->post_title,
+                    );
+
+                    if (!empty($venue_qrcode)) {
+                        $venue_data['QRCode'] = $venue_qrcode;
+                    }
+                    $venues[] = $venue_data;
+                }
             }
         }
         $data = array(
             'id' => $event->ID,
             'name' => $event->post_title,
             'slug' => $event->post_name,
-            // 'permalink' => get_permalink($event->ID),
-            // 'date_created' => get_the_date('', $event),
-            // 'date_modified' => get_the_modified_date('', $event),
             'status' => $event->post_status,
-            // 'featured' => $event->_featured,
             'description' => 'view' === $context ? wpautop(do_shortcode(get_the_content('', false, $event))) : get_the_content('', false, $event),
-            // 'event_categories' => taxonomy_exists('event_listing_category') ? get_the_terms($event->ID, 'event_listing_category') : '',
-            // 'event_types' => taxonomy_exists('event_listing_type') ? get_the_terms($event->ID, 'event_listing_type') : '',
-            // 'event_tags' => taxonomy_exists('event_listing_tag') ? get_the_terms($event->ID, 'event_listing_tag') : '',
             'images' => wpem_addon_get_event_banner($event),
             'meta_data' => $meta_data,
         );
-        if (isset($venue_qrcode) && !empty($venue_qrcode)) {
-            $data['venue']['name'] = $venue_name;
-            $data['venue']['QRCode'] = $venue_qrcode;
+        if (!empty($venues)) {
+            $data['venue'] = $venues;
         }
         return apply_filters("wpem_rest_get_{$this->post_type}_data", $data, $event, $context);
     }
