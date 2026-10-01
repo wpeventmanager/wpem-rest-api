@@ -874,9 +874,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             //    ALL events the current user is registered for (its own default behaviour) —
             //    note this is intentionally NOT limited to registrations with
             //    '_create_matchmaking' = 1, same as the website.
-        if (!empty($filters['event_id'])) {
+            if (!empty($filters['event_id'])) {
                 $event_id = absint($filters['event_id']);
-        } else {
+            } else {
                 $stored_filters = get_user_meta($current_user, '_wpem_matchmaking_profile', true);
                 $event_id = !empty($stored_filters['event_id']) ? sanitize_text_field($stored_filters['event_id']) : '';
             }
@@ -886,11 +886,11 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             foreach ($users as $user) {
                 $uid = (int) $user['user_id'];
                 $filtered_users[$uid] = $this->wpem_build_matchmaking_profile($uid, $user, $fields);
-        }
+            }
 
             if (empty($filtered_users)) {
-            return self::wpem_prepare_error_for_response(404);
-        }
+                return self::wpem_prepare_error_for_response(404);
+            }
         } else {
             // Default (no event_id / no your_matches) mirrors the [match_making] "All" tab
             // (wpem_render_matchmaking_participants_list), which calls
@@ -906,9 +906,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $users = wpem_get_all_matchmaking_participants($current_user, $event_id);
 
             foreach ($users as $user) {
-                    $uid = (int) $user['user_id'];
-                    $filtered_users[$uid] = $this->wpem_build_matchmaking_profile($uid, $user, $fields);
-                }
+                $uid = (int) $user['user_id'];
+                $filtered_users[$uid] = $this->wpem_build_matchmaking_profile($uid, $user, $fields);
+            }
 
             if (empty($filtered_users)) {
                 return self::wpem_prepare_error_for_response(404);
@@ -942,7 +942,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $own_profession = get_user_meta($current_user, '_profession', true);
             if (is_array($own_profession)) {
                 $own_profession = implode('-', $own_profession);
-                            }
+            }
             $own_profession_slug = sanitize_title($own_profession);
 
             $final_users = [];
@@ -990,7 +990,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
                 if ($match) {
                     $final_users[] = $user;
-        }
+                }
             }
         } else {
             // Default filtering (search, profession, company_name, country, city, experience, skills, interests)
@@ -1010,6 +1010,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     );
                     if (strpos($haystack, $search) === false)
                         continue;
+
                 }
 
                 // Profession
