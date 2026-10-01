@@ -88,7 +88,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             'scheduling_mode' => get_option('wpem_meeting_scheduling_mode'),
             'attendee_limit' => get_option('wpem_meeting_attendee_limit'),
             'meeting_expiration' => get_option('wpem_meeting_expiration'),
-            'enable_matchmaking' => get_option('enable_matchmaking'),
+            'enable_matchmaking_site_feature' => get_option('enable_matchmaking'),
             'participant_activation' => get_option('participant_activation'),
         ];
 
