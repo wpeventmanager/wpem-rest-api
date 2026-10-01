@@ -843,6 +843,31 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
+     * Check whether the user has matchmaking enabled for the given event.
+     * Reads the same meta as /matchmaking-profile-settings (GET).
+     */
+    public function wpem_is_matchmaking_enabled_for_event($user_id, $event_id)
+    {
+        $registrations = get_posts(array(
+            'post_type'      => 'event_registration',
+            'post_status'    => 'any',
+            'posts_per_page' => 1,
+            'author'         => (int) $user_id,
+            'post_parent'    => (int) $event_id,
+            'fields'         => 'ids',
+            'meta_query'     => array(
+                array(
+                    'key'     => '_create_matchmaking',
+                    'value'   => '1',
+                    'compare' => '=',
+                ),
+            ),
+        ));
+
+        return !empty($registrations);
+    }
+
+    /**
      * Filter matchmaking users (combined logic from wpem_matchmaking_filter_users)
      * Route: POST /wp-json/wpem/matchmaking-profile/filter
      * @since 1.1.4
@@ -856,6 +881,21 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // using a STRICT (===) comparison against integer user IDs. Without this cast, that
         // self-exclusion silently fails and your own profile leaks into the results.
         $current_user = (int) wpem_rest_get_current_user_id();
+
+        if (!empty($filters['event_id'])) {
+            $requested_event_id = absint($filters['event_id']);
+
+            if (!$this->wpem_is_matchmaking_enabled_for_event($current_user, $requested_event_id)) {
+                return new WP_REST_Response(
+                    array(
+                        'code'    => 404,
+                        'status'  => 'Not found',
+                        'message' => 'Matchmaking is not enabled for this event.',
+                    ),
+                    404
+                );
+            }
+        }
 
         $countries = wpem_get_all_countries();
         $fields = get_wpem_user_matchmaking_profile_fields();
