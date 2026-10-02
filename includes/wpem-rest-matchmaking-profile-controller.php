@@ -718,6 +718,20 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $valid_params = array( 'enable_matchmaking', 'message_notification', 'meeting_request_mode', 'timezone_settings', 'event_participation', );
         $params = $request->get_params();
         foreach ($params as $param => $value) {
+            // custom_timezone is allowed only when timezone_settings is custom.
+            if ($param === 'custom_timezone') {
+                if ($request->get_param('timezone_settings') !== 'custom') {
+                    return new WP_REST_Response(
+                        array(
+                            'code'    => 400,
+                            'status'  => 'invalid data',
+                            'message' => 'Not Require custom_timezon key.',
+                        ),
+                        400
+                    );
+                }
+                continue;
+            }
             if (!in_array($param, $valid_params, true)) {
                 return new WP_REST_Response(
                     array(
