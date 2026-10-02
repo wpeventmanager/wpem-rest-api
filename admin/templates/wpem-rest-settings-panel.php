@@ -158,6 +158,12 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                                     <button class="button button-small wp_event_manager_upload_file_button wpem_rest_api_upload_file_button" data-uploader_button_text="<?php echo esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
                                         <?php echo esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
                                     </button>
+                                    <button type="button" class="button button-small wpem_rest_api_remove_file_button" <?php echo empty( $value ) ? 'style="display:none;"' : ''; ?>>
+                                        <?php echo esc_html_e( 'Remove', 'wpem-rest-api' ); ?>
+                                    </button>
+                                </span>
+                                <span class="wpem-rest-api-file-preview" style="display:<?php echo empty( $value ) ? 'none' : 'block'; ?>; margin-top:10px;">
+                                    <img src="<?php echo esc_url( $value ); ?>" alt="" style="max-width:150px; max-height:150px; padding:3px; background:#fff; border:1px solid #ddd;" />
                                 </span>
                                 <?php
                             }
