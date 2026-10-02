@@ -716,22 +716,65 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
         // Validate that at least one valid parameter is provided. 
         $valid_params = array( 'enable_matchmaking', 'message_notification', 'meeting_request_mode', 'timezone_settings', 'event_participation', );
+        $params = $request->get_params();
+        foreach ($params as $param => $value) {
+            if (!in_array($param, $valid_params, true)) {
+                return new WP_REST_Response(
+                    array(
+                        'code'    => 400,
+                        'status'  => 'invalid data',
+                        'message' => 'Please Enter Valid Data.',
+                    ),
+                    400
+                );
+            }
+        }
         $has_valid_data = false;
         foreach ($valid_params as $param) {
             if (!is_null($request->get_param($param))) {
-                $has_valid_data = true; break;
+                $has_valid_data = true;
+                break;
             }
         }
         if (!$has_valid_data) {
-            return new WP_Error( 'invalid_data', 'Please Enter Valid Data.', array('status' => 400) );
+            return new WP_REST_Response(
+                array(
+                    'code'    => 400,
+                    'status'  => 'invalid data',
+                    'message' => 'Please Enter Valid Data.',
+                ),
+                400
+            );
         }
 
         // Update user meta values
         if (!is_null($request->get_param('enable_matchmaking'))) {
-            update_user_meta($user_id, '_matchmaking_profile', (int) $request->get_param('enable_matchmaking'));
+            $enable_matchmaking = $request->get_param('enable_matchmaking');
+            if (!in_array($enable_matchmaking, array(0, 1, '0', '1'), true)) {
+                return new WP_REST_Response(
+                    array(
+                        'code'    => 400,
+                        'status'  => 'invalid data',
+                        'message' => 'Please Enter Valid Value.',
+                    ),
+                    400
+                );
+            }
+            update_user_meta($user_id, '_matchmaking_profile', (int) $enable_matchmaking);
         }
         if (!is_null($request->get_param('message_notification'))) {
-            update_user_meta($user_id, '_message_notification', (int) $request->get_param('message_notification'));
+            $message_notification = $request->get_param('message_notification');
+            if (!in_array($message_notification, array(0, 1, '0', '1'), true)) {
+                return new WP_REST_Response(
+                    array(
+                        'code'    => 400,
+                        'status'  => 'invalid data',
+                        'message' => 'Please Enter Valid Data.',
+                    ),
+                    400
+                );
+            }
+            update_user_meta($user_id, '_message_notification', (int) $message_notification);
         }
         if (!is_null($request->get_param('meeting_request_mode'))) {
             update_user_meta($user_id, '_wpem_meeting_request_mode', sanitize_text_field($request->get_param('meeting_request_mode')));
