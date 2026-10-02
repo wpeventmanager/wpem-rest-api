@@ -155,7 +155,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                                 }  ?>
                                 <span class="file_url">
                                     <input type="text" name="<?php echo esc_attr( $option['name'] ); ?>" id="<?php echo esc_attr( $option['name'] ); ?>" placeholder="<?php echo esc_attr( $option['cb_label'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
-                                    <button class="button button-small wp_event_manager_upload_file_button" data-uploader_button_text="<?php echo esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
+                                    <button class="button button-small wp_event_manager_upload_file_button wpem_rest_api_upload_file_button" data-uploader_button_text="<?php echo esc_html_e( 'Use file', 'wpem-rest-api'); ?>">
                                         <?php echo esc_html_e( 'Upload', 'wpem-rest-api' ); ?>
                                     </button>
                                 </span>

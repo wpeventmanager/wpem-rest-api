@@ -41,8 +41,9 @@ var WPEMRestAPIAdmin = (function () {
                     jQuery('#select-events-row').hide();
                 }
             }
-            jQuery('.wp_event_manager_upload_file_button').on('click', function(e){
-                e.preventDefault();
+            jQuery('.wpem_rest_api_upload_file_button').off('click').on('click', function(e){
+               e.preventDefault();
+                e.stopPropagation();
                 var button = jQuery(this);
                 var input = button.closest('.file_url').find('#wpem_rest_api_app_logo');
                 console.log(input);
