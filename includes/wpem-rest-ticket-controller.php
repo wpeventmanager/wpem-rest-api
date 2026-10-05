@@ -279,7 +279,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                 'total_pages' => $total_pages,
                 'event_id' => $event_id,
                 'ticket_data' => array_values($paged_ticket_data),
-                'user_status' => wpem_get_user_login_status( $user_id ),
+                // 'user_status' => wpem_get_user_login_status( $user_id ),
             );
         } else {
             $total_data = count($event_data);
@@ -292,7 +292,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                 'current_page' => $page,
                 'total_pages' => $total_pages,
                 'event_data'  => array_values($paged_event_data),
-            'user_status' => wpem_get_user_login_status( $user_id ),
+            // 'user_status' => wpem_get_user_login_status( $user_id ),
         );
         }
 

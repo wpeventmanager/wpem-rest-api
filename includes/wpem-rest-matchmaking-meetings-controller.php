@@ -506,7 +506,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                             'last_page'        => 1,
                             'total_pages'      => 1,
                             $this->rest_base   => array(),
-                            'user_status'      => wpem_get_user_login_status($user_id),
+                            // 'user_status'      => wpem_get_user_login_status($user_id),
                         );
                         return wp_send_json($response_data);
                     }
@@ -618,7 +618,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'last_page' => (int) max(1, ceil($total / $per_page)),
             'total_pages' => (int) max(1, ceil($total / $per_page)),
             $this->rest_base => $items,
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         );
         return wp_send_json($response_data);
     }
@@ -642,7 +642,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $this->wpem_format_meeting_row($row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -1323,7 +1323,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             // Nothing actually changed — return current data.
             $response_data         = self::wpem_prepare_error_for_response( 200 );
             $response_data['data'] = $this->wpem_format_meeting_row( $row );
-            $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
+            // $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
             return wp_send_json( $response_data );
         }
 
@@ -1343,7 +1343,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         $response_data         = self::wpem_prepare_error_for_response( 200 );
         $response_data['data'] = $this->wpem_format_meeting_row( $row );
-        $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
+        // $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
         return wp_send_json( $response_data );
     }
 
@@ -1444,7 +1444,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $this->wpem_format_meeting_row($row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -1512,7 +1512,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $meeting);
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $this->wpem_format_meeting_row($fresh_row ? $fresh_row : $row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -1545,7 +1545,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array('id' => $meeting_id);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -1661,7 +1661,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $response_data['data'] = array(
                 'available_for_meeting' => $meeting_available,
                 'slots' => $slots,
-                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+                // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         } else {
@@ -1691,7 +1691,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $response_data = self::wpem_prepare_error_for_response(200);
             $response_data['data'] = array(
                 'slots' => $slots,
-                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+                // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }

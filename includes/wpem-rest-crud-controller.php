@@ -188,7 +188,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array(
             $this->rest_base => $response,
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         );
         return wp_send_json($response_data);
     }
@@ -458,7 +458,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
                 'last_page' => max(1, $total_pages),
                 'total_pages' => $total_pages,
                 $this->rest_base => $objects,
-                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+                // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }

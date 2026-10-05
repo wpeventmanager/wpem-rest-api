@@ -94,7 +94,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
 
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $settings;
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -128,7 +128,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array(
             'terms' => $term_list,
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id()),
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id()),
         );
         return wp_send_json($response_data);
     }

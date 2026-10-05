@@ -478,7 +478,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             'per_page' => $per_page,
             'last_page' => $last_page,
             'users' => $results,
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
     }
@@ -545,7 +545,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             'message' => $text_message ?: null,
             'image' => $image_url ?: null,
             'created_at' => current_time('mysql'),
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
     }
@@ -585,7 +585,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $response_data['data'] = [
             'id' => $message_id,
             'user_id' => $user_id,
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
     }

@@ -201,7 +201,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             'current_page' => $page,
             'total_pages' => $total_pages,
             'contacts' => array_values($paged_contacts),
-            'user_status' => wpem_get_user_login_status($user_id),
+            // 'user_status' => wpem_get_user_login_status($user_id),
         ];
 
         return rest_ensure_response($response_data);
@@ -328,7 +328,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
         $response_data['data'] = array(
             'contact_id' => $contact_id,
             'message'    => 'Contact deleted successfully.',
-            'user_status' => wpem_get_user_login_status($user_id),
+            // 'user_status' => wpem_get_user_login_status($user_id),
         );
 
         return rest_ensure_response($response_data);
