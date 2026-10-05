@@ -188,6 +188,11 @@ defined('ABSPATH') || exit;
 							'order' => 'ASC',
 						));
 						?>
+						<?php if (empty($events)) { ?>
+							<p class="description" style="margin-top:0;">
+								<?php esc_html_e('No events available. Please create and publish an event first.', 'wpem-rest-api'); ?>
+							</p>
+						<?php } else { ?>
 						<select id="select_events" name="select_events[]" class="event-manager-select-chosen" multiple
 							data-placeholder="<?php esc_attr_e('Choose events&hellip;', 'wpem-rest-api'); ?>">
 							<?php foreach ($events as $event): ?>
@@ -199,6 +204,7 @@ defined('ABSPATH') || exit;
 						<p class="description">
 							<?php esc_html_e('Select one or more events to associate with this key.', 'wpem-rest-api'); ?>
 						</p>
+						<?php } ?>
 					</td>
 				</tr>
 
