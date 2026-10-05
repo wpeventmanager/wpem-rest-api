@@ -902,7 +902,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         if ( $this->wpem_meeting_table_id_column_exists() ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $wpdb->update( $this->table, array( 'table_id' => 0 ), array( 'id' => $meeting_id ), array( '%d' ), array( '%d' ) );
+            $wpdb->query( $wpdb->prepare( "UPDATE {$this->table} SET table_id = NULL WHERE id = %d", $meeting_id ) );
         }
     }
 
@@ -958,20 +958,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         $requested = gmdate( 'H:i', strtotime( $start_time ) );
 
-        // When updating, the meeting's own current slot must not count as "booked".
-        $own_pids     = array();
-        $own_same_slot = false;
-        if ( $exclude_meeting_id ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            $own = $wpdb->get_row( $wpdb->prepare( "SELECT meeting_date, meeting_start_time, participant_ids FROM {$this->table} WHERE id = %d", $exclude_meeting_id ), ARRAY_A );
-            if ( $own ) {
-                $own_same_slot = ( gmdate( 'Y-m-d', strtotime( $own['meeting_date'] ) ) === gmdate( 'Y-m-d', strtotime( $meeting_date ) ) )
-                    && ( gmdate( 'H:i', strtotime( $own['meeting_start_time'] ) ) === $requested );
-                $own_map  = maybe_unserialize( $own['participant_ids'] );
-                $own_pids = is_array( $own_map ) ? array_map( 'intval', array_keys( $own_map ) ) : array();
-            }
-        }
-
         // 1. Availability slots (participants only)
         foreach ( (array) $participants as $uid ) {
             $uid = (int) $uid;
@@ -988,6 +974,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ? wpem_get_participants_available_meeting_slots( array( $uid ), $meeting_date )
                 : array();
 
+            // Only check that the slot EXISTS in the user's availability.
+            // "is_booked" is intentionally ignored here, because the helper may
+            // flag slots as booked even when the user rejected that meeting.
+            // Real conflicts are handled (status-aware) in step 2 below.
             $found = false;
             if ( is_array( $user_slots ) ) {
                 foreach ( $user_slots as $user_slot ) {
@@ -995,8 +985,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                         continue;
                     }
                     if ( gmdate( 'H:i', strtotime( $user_slot['time'] ) ) === $requested ) {
-                        $booked_by_own_meeting = $own_same_slot && in_array( $uid, $own_pids, true );
-                        $found = empty( $user_slot['is_booked'] ) || $booked_by_own_meeting;
+                        $found = true;
                         break;
                     }
                 }
@@ -1007,8 +996,9 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             }
         }
 
-        // 2. Overlapping meetings (host + participants)
+        // 2. Overlapping ACTIVE meetings (host + participants)
         $check_user_ids = array_map( 'intval', array_unique( array_merge( array( $host_id ), (array) $participants ) ) );
+        $participant_only_ids = array_map( 'intval', (array) $participants );
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $overlaps = $wpdb->get_results( $wpdb->prepare(
@@ -1020,17 +1010,31 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         ), ARRAY_A );
 
         foreach ( (array) $overlaps as $row ) {
-            // Someone is the host of an overlapping meeting
+            $pids = maybe_unserialize( $row['participant_ids'] );
+            $pids = is_array( $pids ) ? $pids : array();
+
+            // A meeting where every participant rejected (status 0) is dead -> ignore it.
+            $has_active_participant = false;
+            foreach ( $pids as $status ) {
+                if ( (int) $status !== 0 ) {
+                    $has_active_participant = true;
+                    break;
+                }
+            }
+            if ( ! $has_active_participant ) {
+                continue;
+            }
+
+            // Someone is the host of an overlapping active meeting
             if ( in_array( (int) $row['user_id'], $check_user_ids, true ) ) {
                 return false;
             }
+
             // Someone is a participant of an overlapping meeting
-            $pids = maybe_unserialize( $row['participant_ids'] );
-            if ( is_array( $pids ) ) {
+            // (only counts if they did NOT reject it)
                 foreach ( $check_user_ids as $cid ) {
-                    if ( array_key_exists( $cid, $pids ) ) {
+                if ( array_key_exists( $cid, $pids ) && (int) $pids[ $cid ] !== 0 ) {
                         return false;
-                    }
                 }
             }
         }
@@ -1329,6 +1333,11 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return self::wpem_prepare_error_for_response( 500 );
         }
 
+        // If the meeting was cancelled via this endpoint, free its table too.
+        if ( isset( $fields['meeting_status'] ) && (int) $fields['meeting_status'] === -1 ) {
+            $this->wpem_release_meeting_table( $meeting_id );
+        }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $meeting_id ), ARRAY_A );
 
@@ -1486,13 +1495,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $this->wpem_release_meeting_table($meeting_id);
 
         // Fetch meeting
-        $table = esc_sql($this->table);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $meeting = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $meeting_id));
-        //send mail to all participants        
-        if ( class_exists( 'WP_Event_Manager_Registrations_MatchMaking' ) ) {
+
+        $fresh_row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
+        $meeting   = $fresh_row ? (object) $fresh_row : null;
+
+        // 4. Send cancel mail to participants
+        if ( $meeting && class_exists( 'WP_Event_Manager_Registrations_MatchMaking' ) ) {
             $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
-        
             $registration_instance->wpem_send_cancel_meeting_email(
                 $user_id,
                 $participant_ids,
@@ -1502,7 +1511,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
         // $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $meeting);
         $response_data = self::wpem_prepare_error_for_response(200);
-        $response_data['data'] = $this->wpem_format_meeting_row($row);
+        $response_data['data'] = $this->wpem_format_meeting_row($fresh_row ? $fresh_row : $row);
         $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
