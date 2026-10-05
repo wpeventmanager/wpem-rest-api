@@ -722,7 +722,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 						'username' => $user_login,
 						'roles' => (array) $user->roles,
 						'wpem_print_badge_mode' => (int) $print_badge_mode,
-						'is_matchmaking_profile_enabled' => $is_matchmaking,
+						'is_user_matchmaking_profile_enabled' => $is_matchmaking,
 						'is_matchmaking_site_feature_enabled' => $enable_matchmaking,
 						'mobile_menu' => $mobile_menu_status,
 					)
