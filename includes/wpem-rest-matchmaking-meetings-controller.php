@@ -746,7 +746,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $available_table_id = null;
         if ($event_room_count > 0) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $available_table_id = $wpdb->get_var($wpdb->prepare( "SELECT t.id FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d AND t.table_capacity >= %d AND t.id NOT IN ( SELECT b.table_id FROM {$table_bookings_table} b WHERE b.booked_date = %s AND b.start_time < %s AND b.end_time > %s ) ORDER BY t.id ASC LIMIT 1", $event_id, $total_persons_requested, $meeting_date, $end_time, $start_time));
+            $available_table_id = $wpdb->get_var($wpdb->prepare( "SELECT t.id FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d AND t.table_capacity >= %d AND t.id NOT IN ( SELECT b.table_id FROM {$table_bookings_table} b WHERE b.booked_date = %s AND b.start_time < %s AND b.end_time > %s ) ORDER BY t.table_capacity ASC, t.id ASC LIMIT 1", $event_id, $total_persons_requested, $meeting_date, $end_time, $start_time));
 
             if (!$available_table_id) {
                 return new WP_REST_Response([
@@ -1246,7 +1246,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                                  AND b.end_time    > %s
                                  AND b.meeting_id != %d
                            )
-                         ORDER BY t.id ASC
+                         ORDER BY t.table_capacity ASC, t.id ASC
                          LIMIT 1",
                         $event_id,
                         $total_persons,
