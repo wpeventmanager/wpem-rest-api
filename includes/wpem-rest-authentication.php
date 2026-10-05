@@ -693,7 +693,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				$user_id = $user->ID;
 
 				$token = $this->wpem_generate_jwt_token($user->ID, $password);
-				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true);
+				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true) ? 1 : 0;
 				$enable_matchmaking = get_option('enable_matchmaking', false) ? 1 : 0;
 
 				$all_mobile_pages = array('dashboard', 'attendees', 'guest_list', 'orders', 'arrivals');
@@ -720,9 +720,10 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 						'first_name' => $first_name,
 						'last_name' => $last_name,
 						'username' => $user_login,
+						'roles' => (array) $user->roles,
 						'wpem_print_badge_mode' => (int) $print_badge_mode,
-						'matchmaking_profile' => $is_matchmaking,
-						'enable_matchmaking' => $enable_matchmaking,
+						'is_matchmaking_profile_enabled' => $is_matchmaking,
+						'is_matchmaking_site_feature_enabled' => $enable_matchmaking,
 						'mobile_menu' => $mobile_menu_status,
 					)
 				);
