@@ -129,7 +129,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                         'required' => false,
                         'type' => 'integer',
                     ),
-                    'enable_matchmaking' => array(
+                    'is_user_matchmaking_profile_enabled' => array(
                         'required' => false,
                         'type' => 'integer',
                     ),
@@ -487,8 +487,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $profile['organization_logo_status'] = false;
         }
 
-        if (!isset($profile['matchmaking_profile']))
-            $profile['matchmaking_profile'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int) get_user_meta($user_id, '_matchmaking_profile', true) : 0;
+        if (!isset($profile['is_user_matchmaking_profile_enabled']))
+            $profile['is_user_matchmaking_profile_enabled'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int) get_user_meta($user_id, '_matchmaking_profile', true) : 0;
         if (!isset($profile['approve_profile_status']))
             $profile['approve_profile_status'] = get_user_meta($user_id, '_approve_profile_status', true) ? (int) get_user_meta($user_id, '_approve_profile_status', true) : 0;
         if (!isset($profile['wpem_meeting_request_mode']))
@@ -685,7 +685,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $user_event_participation = array_values(array_unique($user_event_participation, SORT_REGULAR));
         $timezone_settings = get_user_meta($user_id, '_timezone_settings', true) ? get_user_meta($user_id, '_timezone_settings', true) : 'default';
         $settings = array(
-            'enable_matchmaking' => (int) get_user_meta($user_id, '_matchmaking_profile', true),
+            'is_user_matchmaking_profile_enabled' => (int) get_user_meta($user_id, '_matchmaking_profile', true),
             'message_notification' => (int) get_user_meta($user_id, '_message_notification', true),
             'event_participation' => $user_event_participation,
             'meeting_request_mode' => get_user_meta($user_id, '_wpem_meeting_request_mode', true) ?: 'approval',
@@ -715,7 +715,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $user = get_user_by('id', $user_id);
 
         // Validate that at least one valid parameter is provided. 
-        $valid_params = array( 'enable_matchmaking', 'message_notification', 'meeting_request_mode', 'timezone_settings', 'event_participation', );
+        $valid_params = array( 'is_user_matchmaking_profile_enabled', 'message_notification', 'meeting_request_mode', 'timezone_settings', 'event_participation', );
         $params = $request->get_params();
         foreach ($params as $param => $value) {
             // custom_timezone is allowed only when timezone_settings is custom.
@@ -762,8 +762,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Update user meta values
-        if (!is_null($request->get_param('enable_matchmaking'))) {
-            $enable_matchmaking = $request->get_param('enable_matchmaking');
+        if (!is_null($request->get_param('is_user_matchmaking_profile_enabled'))) {
+            $enable_matchmaking = $request->get_param('is_user_matchmaking_profile_enabled');
             if (!in_array($enable_matchmaking, array(0, 1, '0', '1'), true)) {
                 return new WP_REST_Response(
                     array(
