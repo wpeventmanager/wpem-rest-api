@@ -900,31 +900,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
-     * Check whether the user has matchmaking enabled for the given event.
-     * Reads the same meta as /matchmaking-profile-settings (GET).
-     */
-    public function wpem_is_matchmaking_enabled_for_event($user_id, $event_id)
-    {
-        $registrations = get_posts(array(
-            'post_type'      => 'event_registration',
-            'post_status'    => 'any',
-            'posts_per_page' => 1,
-            'author'         => (int) $user_id,
-            'post_parent'    => (int) $event_id,
-            'fields'         => 'ids',
-            'meta_query'     => array(
-                array(
-                    'key'     => '_create_matchmaking',
-                    'value'   => '1',
-                    'compare' => '=',
-                ),
-            ),
-        ));
-
-        return !empty($registrations);
-    }
-
-    /**
      * Filter matchmaking users (combined logic from wpem_matchmaking_filter_users)
      * Route: POST /wp-json/wpem/matchmaking-profile/filter
      * @since 1.1.4
@@ -942,7 +917,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if (!empty($filters['event_id'])) {
             $requested_event_id = absint($filters['event_id']);
 
-            if (!$this->wpem_is_matchmaking_enabled_for_event($current_user, $requested_event_id)) {
+            if (!$this->wpem_user_has_matchmaking_for_event($current_user, $requested_event_id)) {
                 return new WP_REST_Response(
                     array(
                         'code'    => 404,
@@ -1001,6 +976,15 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $event_id = !empty($filters['event_id']) ? absint($filters['event_id']) : '';
 
             $users = wpem_get_all_matchmaking_participants($current_user, $event_id);
+
+            // When an event is requested, keep only participants who have matchmaking
+            // enabled (_create_matchmaking = 1) for THAT event - same rule as the website
+            // event filter (wpem_get_match_making_filter_user), via the shared helper.
+            if (!empty($event_id)) {
+                $users = array_values(array_filter($users, function ($u) use ($event_id) {
+                    return wpem_user_has_matchmaking_for_event($u['user_id'], $event_id);
+                }));
+            }
 
             foreach ($users as $user) {
                 $uid = (int) $user['user_id'];
