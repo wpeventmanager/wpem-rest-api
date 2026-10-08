@@ -659,30 +659,40 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // Build user event participation settings
         $user_event_participation = array();
 
-        // Get all registrations for this user
-        $user_registrations = get_posts(array(
-            'post_type' => 'event_registration',
-            'posts_per_page' => -1,
-            'post_status' => 'any',
-            'author' => $user_id,
-            'fields' => 'ids',
-        ));
+        // Get registrations made with the user's own e-mail address (not post_author).
+        // Cancelled / trashed registrations are ignored.
+        $user_registrations = $this->wpem_get_user_registration_ids_by_email($user_id);
 
         foreach ($user_registrations as $registration_id) {
             $parent_event_id = (int) get_post_field('post_parent', $registration_id);
             if (!$parent_event_id) {
                 continue;
             }
+
+            // Skip events that no longer exist.
+            $parent_status = get_post_status($parent_event_id);
+            if (!$parent_status || 'trash' === $parent_status) {
+                continue;
+            }
+
             $create_matchmaking = (int) get_post_meta($registration_id, '_create_matchmaking', true);
-            $user_event_participation[] = array(
+
+            // One entry per event; enabled if any of its registrations is enabled.
+            if (isset($user_event_participation[$parent_event_id])) {
+                if ($create_matchmaking) {
+                    $user_event_participation[$parent_event_id]['create_matchmaking'] = 1;
+                }
+                continue;
+            }
+
+            $user_event_participation[$parent_event_id] = array(
                 'event_id' => $parent_event_id,
                 'event_title' => get_the_title($parent_event_id),
                 'event_banner' => get_the_post_thumbnail_url($parent_event_id, 'thumbnail'),
                 'create_matchmaking' => $create_matchmaking,
             );
         }
-        // Remove duplicates by event_id if necessary
-        $user_event_participation = array_values(array_unique($user_event_participation, SORT_REGULAR));
+        $user_event_participation = array_values($user_event_participation);
         $timezone_settings = get_user_meta($user_id, '_timezone_settings', true) ? get_user_meta($user_id, '_timezone_settings', true) : 'default';
         $settings = array(
             'is_user_matchmaking_profile_enabled' => (int) get_user_meta($user_id, '_matchmaking_profile', true),
@@ -819,14 +829,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 $eid = (int) $event['event_id'];
                 $value = isset($event['create_matchmaking']) ? (int) $event['create_matchmaking'] : 0;
 
-                $registration_post_ids = get_posts(array(
-                    'post_type' => 'event_registration',
-                    'posts_per_page' => -1,
-                    'post_status' => 'any',
-                    'author' => $user_id,
-                    'post_parent' => $eid,
-                    'fields' => 'ids',
-                ));
+                // Only registrations made with the user's own e-mail address (not post_author)
+                $registration_post_ids = $this->wpem_get_user_registration_ids_by_email($user_id, $eid);
 
                 foreach ($registration_post_ids as $registration_post_id) {
                     update_post_meta($registration_post_id, '_create_matchmaking', $value);
@@ -1281,22 +1285,63 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
+     * Get the registrations that belong to a user *by e-mail address*.
+     *
+     * A registration is the user's own only when its attendee e-mail (_attendee_email)
+     * equals the user's account e-mail. post_author is NOT used, because the author may
+     * be the logged-in person who registered somebody else with a different e-mail.
+     * Cancelled / trashed registrations are ignored.
+     * Same rule as the Registrations add-on (wpem_get_user_registration_ids_by_email).
+     *
+     * @param int $user_id  User ID.
+     * @param int $event_id Optional. Limit to one event (registration post_parent).
+     * @return int[] Registration post IDs.
+     */
+    private function wpem_get_user_registration_ids_by_email($user_id, $event_id = 0)
+    {
+        $user = get_userdata((int) $user_id);
+        if (!$user || empty($user->user_email)) {
+            return array();
+        }
+
+        $statuses = function_exists('wpem_get_event_registration_statuses')
+            ? array_keys(wpem_get_event_registration_statuses())
+            : array('new', 'confirmed', 'waiting', 'archived', 'cancelled');
+        $statuses = array_values(array_diff($statuses, array('cancelled', 'trash')));
+
+        $args = array(
+            'post_type'      => 'event_registration',
+            'post_status'    => $statuses,
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => array(
+                array(
+                    'key'     => '_attendee_email',
+                    'value'   => $user->user_email,
+                    'compare' => '=',
+                ),
+            ),
+        );
+
+        if ($event_id) {
+            $args['post_parent'] = (int) $event_id;
+        }
+
+        return get_posts($args);
+    }
+
+    /**
      * This function is used to get event list for which current loggedin user has registered
+     * (only registrations made with the user's own e-mail address)
      * @since 1.3.0
      */
     public function wpem_get_wpem_matchmaking_user_events($request)
     {
         $user_id = wpem_rest_get_current_user_id();
 
-        // Get all registrations authored by user (lightweight query)
-        $registrations = get_posts(array(
-            'post_type' => 'event_registration',
-            'post_status' => 'any',
-            'posts_per_page' => -1,
-            'fields' => 'ids',
-            'author' => $user_id,
-            'no_found_rows' => true,
-        ));
+        // Registrations made with the user's own e-mail address (not post_author)
+        $registrations = $this->wpem_get_user_registration_ids_by_email($user_id);
 
         // Collect unique parent event IDs
         $event_ids = array();
