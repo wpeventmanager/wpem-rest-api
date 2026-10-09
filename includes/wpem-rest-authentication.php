@@ -735,11 +735,20 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 					if (is_array($organization_logo)) {
 						$organization_logo = reset($organization_logo); // get first value in the array
 					}
-					$organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					if (empty($organization_logo) && defined('EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL')) {
+						$organization_logo = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					} else {
+						$organization_logo = $organization_logo ?: '';
+					}
 					$meta = get_user_meta($user_id, '_available_for_meeting', true);
 					$meeting_available = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
 
-					$photo = function_exists('get_wpem_user_profile_photo') ? get_wpem_user_profile_photo($user_id) : EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					$photo = '';
+					if (function_exists('get_wpem_user_profile_photo')) {
+						$photo = get_wpem_user_profile_photo($user_id);
+					} elseif (defined('EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL')) {
+						$photo = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					}
 					// --- Skills ---
 					$skills_slugs = [];
 					$skills_arr = maybe_unserialize(isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : []);

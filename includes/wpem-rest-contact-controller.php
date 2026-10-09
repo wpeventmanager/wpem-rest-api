@@ -147,7 +147,14 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
                 continue;
             }
 
-            $photo = get_wpem_user_profile_photo($user->ID) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+            $photo = '';
+            if (function_exists(get_wpem_user_profile_photo())) {
+                $photo = get_wpem_user_profile_photo($user->ID);
+            }
+            if(empty($photo) && defined('EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL')) {
+                $photo = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+            }
+
             $profession = get_user_meta($user->ID, '_profession', true) ?: '';
             if (!empty($profession)) {
                 $term = get_term_by('name', $profession, 'event_registration_professions');
