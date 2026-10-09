@@ -148,7 +148,7 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
             }
 
             $photo = '';
-            if (function_exists(get_wpem_user_profile_photo())) {
+            if (function_exists('get_wpem_user_profile_photo')) {
                 $photo = get_wpem_user_profile_photo($user->ID);
             }
             if(empty($photo) && defined('EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL')) {
