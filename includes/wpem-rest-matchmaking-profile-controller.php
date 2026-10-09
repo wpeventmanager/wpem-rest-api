@@ -921,7 +921,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if (!empty($filters['event_id'])) {
             $requested_event_id = absint($filters['event_id']);
 
-            if (!$this->wpem_user_has_matchmaking_for_event($current_user, $requested_event_id)) {
+            if (!wpem_user_has_matchmaking_for_event($current_user, $requested_event_id)) {
                 return new WP_REST_Response(
                     array(
                         'code'    => 404,
