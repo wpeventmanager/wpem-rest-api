@@ -424,6 +424,11 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 }
             }
         }
+
+        $colors_plugin_active = is_plugin_active( 'wp-event-manager-colors/wp-event-manager-colors.php' );
+        $cancelled_event_color = $colors_plugin_active ? get_option( 'event_manager_event_cancelled_color', '#ffe5e5' ) : '#ffe5e5';
+        $featured_event_color = $colors_plugin_active ? get_option( 'event_manager_event_featured_color', '#ffffe4' ) : '#ffffe4';
+
         $data = array(
             'id' => $event->ID,
             'name' => $event->post_title,
@@ -432,6 +437,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'description' => 'view' === $context ? wpautop(do_shortcode(get_the_content('', false, $event))) : get_the_content('', false, $event),
             'images' => wpem_addon_get_event_banner($event),
             'meta_data' => $meta_data,
+            'cancelled_event_color' => $cancelled_event_color,
+            'featured_event_color' => $featured_event_color,
         );
         if (!empty($venues)) {
             $data['venue'] = $venues;
