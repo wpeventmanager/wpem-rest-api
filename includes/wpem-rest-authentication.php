@@ -683,7 +683,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
 		if(!(int) get_option('enable_wpem_rest_api')){
-					return parent::wpem_prepare_error_for_response(507);
+			return parent::wpem_prepare_error_for_response(507);
 		}
 		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
