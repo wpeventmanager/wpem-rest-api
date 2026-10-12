@@ -119,7 +119,7 @@ $tab_settings =  isset( $this->settings[$tab] ) ? $this->settings[$tab] : array(
                         $default_name = 'WP Event Manager';
                         $current_name = get_option( 'wpem_rest_api_app_name', $default_name );
                         if (empty($current_name)) {
-                            update_option( 'wpem_rest_api_app_name', 'wpem-rest-api' );
+                            update_option( 'wpem_rest_api_app_name', $default_name );
                             $current_name = $default_name;
                         }; ?>
                         <input id="setting-<?php echo esc_attr( $option['name'] ); ?>" class="regular-text" type="text" name="<?php echo esc_attr( $option['name'] ); ?>" value="<?php echo esc_attr( $current_name ); ?>" <?php echo implode( ' ', map_deep($attributes, 'wp_kses_post' )); ?> <?php echo esc_attr( $placeholder ); ?> />
