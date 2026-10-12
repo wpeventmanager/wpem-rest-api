@@ -1426,6 +1426,10 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 $geo_location = $event_location;
             }
 
+            $colors_plugin_active = is_plugin_active( 'wp-event-manager-colors/wp-event-manager-colors.php' );
+            $cancelled_event_color = $colors_plugin_active ? get_option( 'event_manager_event_cancelled_color', '#ffe5e5' ) : '#ffe5e5';
+            $featured_event_color = $colors_plugin_active ? get_option( 'event_manager_event_featured_color', '#ffffe4' ) : '#ffffe4';
+
             $event_data = array(
                 'event_id' => $event_id,
                 'title' => $event_post->post_title,
@@ -1435,7 +1439,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 'location' => get_post_meta($event_id, '_event_location', true),
                 'banner' => $images,
                 '_cancelled' => get_post_meta($event_id, '_cancelled', true),
+                'cancelled_event_color' => $cancelled_event_color,
                 '_featured' => get_post_meta($event_id, '_featured', true),
+                'featured_event_color' => $featured_event_color,
                 'meta_data' => array(
                     'geolocation_formatted_address' => $meta_data['geolocation_formatted_address'],
                 ),
