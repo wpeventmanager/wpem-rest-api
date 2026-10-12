@@ -371,6 +371,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             '_event_organizer_ids',
             '_event_venue_ids',
             '_view_count',
+            '_cancelled',
+            '_featured',
         );
 
         $meta_data = array();
