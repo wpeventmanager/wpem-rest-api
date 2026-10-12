@@ -387,7 +387,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 $date_timestamp = strtotime( $value );
                 if ( false !== $date_timestamp ) {
                     // $value = date_i18n( $date_format, $timestamp );
-                    $value = date_i18n( $date_format . ' ' . $time_format, $date_timestamp );
+                    $value = date_i18n( $date_format, $date_timestamp );
                 }
             }
 
