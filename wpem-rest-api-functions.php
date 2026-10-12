@@ -382,6 +382,7 @@ if (!function_exists('wpem_rest_api_get_ecosystem_info')) {
             'wpem-guests' => 'WP Event Manager Guests',
             'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule',
             'wpem-name-badges' => 'WP Event Manager - Name Badges',
+            'wp-event-manager-bookmarks' => 'WPEM - Bookmarks',
         ));
 
         // Get ecosystem data
