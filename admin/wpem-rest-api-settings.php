@@ -44,7 +44,7 @@ class WPEM_Rest_API_Settings
 								'name' => 'enable_wpem_rest_api',
 								'std' => '1',
 								'label' => __('Enable Rest API', 'wpem-rest-api'),
-								'cb_label' => __('Disable to remove the API functionality from your event website.', 'wpem-rest-api'),
+								'cb_label' => __('Check to enable API functionality on your event website.', 'wpem-rest-api'),
 								'desc' => '',
 								'type' => 'checkbox',
 								'attributes' => array(),
