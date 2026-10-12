@@ -1430,18 +1430,34 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $cancelled_event_color = $colors_plugin_active ? get_option( 'event_manager_event_cancelled_color', '#ffe5e5' ) : '#ffe5e5';
             $featured_event_color = $colors_plugin_active ? get_option( 'event_manager_event_featured_color', '#ffffe4' ) : '#ffffe4';
 
+            $date_time_separator = get_option( 'event_manager_date_time_format_separator', '@' );
+
+            $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+            $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+            $startdate_timestamp = strtotime( get_post_meta($event_id, '_event_start_date', true) );
+            $enddate_timestamp = strtotime( get_post_meta($event_id, '_event_end_date', true) );
+            $starttime_timestamp = strtotime( get_post_meta($event_id, '_event_start_time', true) );
+            $endtime_timestamp = strtotime( get_post_meta($event_id, '_event_end_time', true) );
+            $event_start_date = date_i18n( $date_format, $startdate_timestamp );
+            $event_end_date = date_i18n( $date_format, $enddate_timestamp );
+            $event_start_time = date_i18n( $time_format, $starttime_timestamp );
+            $event_end_time = date_i18n( $time_format, $endtime_timestamp );
+
             $event_data = array(
                 'event_id' => $event_id,
                 'title' => $event_post->post_title,
                 'status' => $event_post->post_status,
-                'start_date' => get_post_meta($event_id, '_event_start_date', true),
-                'end_date' => get_post_meta($event_id, '_event_end_date', true),
+                'start_date' => $event_start_date,
+                'start_time' => $event_start_time,
+                'end_date' => $event_end_date,
+                'end_time' => $event_end_time,
                 'location' => get_post_meta($event_id, '_event_location', true),
                 'banner' => $images,
                 '_cancelled' => get_post_meta($event_id, '_cancelled', true),
                 'cancelled_event_color' => $cancelled_event_color,
                 '_featured' => get_post_meta($event_id, '_featured', true),
                 'featured_event_color' => $featured_event_color,
+                'date_time_separator' => $date_time_separator,
                 'meta_data' => array(
                     'geolocation_formatted_address' => $meta_data['geolocation_formatted_address'],
                 ),

@@ -377,12 +377,21 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
 
         $meta_data = array();
 
+        $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+        $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+
         foreach ($meta_keys as $key) {
             $value = get_post_meta($event->ID, $key, true);
 
-            if ($key === '_event_start_time' || $key === '_event_end_time') {
-                $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+            if ( in_array( $key, array( '_event_start_date', '_event_end_date' ), true ) && ! empty( $value ) ) {
+                $date_timestamp = strtotime( $value );
+                if ( false !== $date_timestamp ) {
+                    // $value = date_i18n( $date_format, $timestamp );
+                    $value = date_i18n( $date_format, $date_timestamp );
+                }
+            }
 
+            if ($key === '_event_start_time' || $key === '_event_end_time') {
                 if (!empty($value)) {
                     $value = esc_attr(
                         date_i18n($time_format, strtotime($value))
@@ -429,6 +438,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         $cancelled_event_color = $colors_plugin_active ? get_option( 'event_manager_event_cancelled_color', '#ffe5e5' ) : '#ffe5e5';
         $featured_event_color = $colors_plugin_active ? get_option( 'event_manager_event_featured_color', '#ffffe4' ) : '#ffffe4';
 
+        $date_time_separator = get_option( 'event_manager_date_time_format_separator', '@' );
+
         $data = array(
             'id' => $event->ID,
             'name' => $event->post_title,
@@ -437,6 +448,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'description' => 'view' === $context ? wpautop(do_shortcode(get_the_content('', false, $event))) : get_the_content('', false, $event),
             'images' => wpem_addon_get_event_banner($event),
             'meta_data' => $meta_data,
+            'date_time_separator' => $date_time_separator,
             'cancelled_event_color' => $cancelled_event_color,
             'featured_event_color' => $featured_event_color,
         );
