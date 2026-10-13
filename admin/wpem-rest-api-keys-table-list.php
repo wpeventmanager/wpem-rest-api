@@ -165,10 +165,46 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      */
     public function column_event_id($key)
     {
-        if (!empty($key['event_id'])) {
-            return '<a href="' . esc_url(admin_url('post.php?post=' . $key['event_id']) . '&action=edit') . '" />' . get_the_title($key['event_id']) . '</a>';
+        if ('loggedin' === ($key['event_show_by'] ?? '')) {
+            return '<strong>' . esc_html__('Logged-in user events', 'wpem-rest-api') . '</strong>';
         }
-        return;
+
+        $event_ids = array();
+        if ('selected' === ($key['event_show_by'] ?? '') && !empty($key['selected_events'])) {
+            $selected_events = maybe_unserialize($key['selected_events']);
+            $event_ids = array_filter(array_unique(array_map('absint', (array) $selected_events)));
+        }
+
+        // Retain display of event_id for keys created before selected-event access was added.
+        if (empty($event_ids) && !empty($key['event_id'])) {
+            $event_ids = array(absint($key['event_id']));
+        }
+
+        $events = array();
+        foreach ($event_ids as $event_id) {
+            if (!$event_id) {
+                continue;
+            }
+
+            $event = get_post($event_id);
+            if (empty($event) || 'event_listing' !== $event->post_type) {
+                continue;
+            }
+
+            $title = get_the_title($event);
+            if (empty($title)) {
+                $title = sprintf(__('Event #%d', 'wpem-rest-api'), $event_id);
+            }
+
+            $edit_url = get_edit_post_link($event_id);
+            if ($edit_url) {
+                $events[] = '<a href="' . esc_url($edit_url) . '">' . esc_html($title) . '</a>';
+            } else {
+                $events[] = esc_html($title);
+            }
+        }
+
+        return implode(', ', $events);
     }
     /**
      * Return permissions column.
@@ -269,7 +305,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
 
         // Get the API keys.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search} ORDER BY key_id DESC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
+        $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, event_show_by, selected_events, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search} ORDER BY key_id DESC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $count = (int) $wpdb->get_var("SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1 AND 1 = 0");
         $this->_column_headers = array($columns, $hidden, $sortable);
