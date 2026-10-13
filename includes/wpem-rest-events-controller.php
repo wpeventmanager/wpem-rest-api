@@ -292,6 +292,22 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 unset($args['author']);
             }
         }
+
+        // --- Registered events filter (?registered=true) ---
+        // Limit events to the ones the authenticated (JWT) user has registered for.
+        $registered_only = isset($request['registered']) ? rest_sanitize_boolean($request['registered']) : false;
+        if ($registered_only) {
+            $registered_user_id = is_numeric($current_user_id) ? absint($current_user_id) : 0;
+            $registered_event_ids = $registered_user_id ? $this->wpem_get_registered_event_ids($registered_user_id) : array();
+
+            // Keep any restriction already applied (selected events / include param).
+            if (!empty($args['post__in']) && is_array($args['post__in'])) {
+                $registered_event_ids = array_values(array_intersect(array_map('intval', $args['post__in']), $registered_event_ids));
+            }
+
+            // Empty post__in makes WP_Query return ALL events, so force no result with 0.
+            $args['post__in'] = !empty($registered_event_ids) ? $registered_event_ids : array(0);
+        }
         return $args;
     }
 
@@ -1240,6 +1256,12 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'sanitize_callback' => 'wp_parse_id_list',
             'validate_callback' => 'rest_validate_request_arg',
         );
+        $params['registered'] = array(
+            'description' => __('Limit result set to events registered by current user.', 'wpem-rest-api'),
+            'type' => 'boolean',
+            'sanitize_callback' => 'wc_string_to_bool',
+            'validate_callback' => 'rest_validate_request_arg',
+        );
         return $params;
     }
 
@@ -1303,6 +1325,53 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         }
         return $data;
     }
+
+    /**
+     * Get unique event IDs (registration post_parent) a user has registered for.
+     * Registrations are matched by the user's email (_attendee_email), cancelled/trashed are ignored.
+     *
+     * @param int $user_id WP user ID.
+     * @return int[]
+     */
+    private function wpem_get_registered_event_ids($user_id)
+    {
+        $user = get_userdata((int) $user_id);
+        if (!$user || empty($user->user_email)) {
+            return array();
+        }
+
+        $statuses = function_exists('wpem_get_event_registration_statuses')
+            ? array_keys(wpem_get_event_registration_statuses())
+            : array('new', 'confirmed', 'waiting', 'archived', 'cancelled');
+        $statuses = array_values(array_diff($statuses, array('cancelled', 'trash')));
+
+        $registration_ids = get_posts(array(
+            'post_type'      => 'event_registration',
+            'post_status'    => $statuses,
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => array(
+                array(
+                    'key'     => '_attendee_email',
+                    'value'   => $user->user_email,
+                    'compare' => '=',
+                ),
+            ),
+        ));
+
+        $event_ids = array();
+        foreach ((array) $registration_ids as $registration_id) {
+            // Registration's post_parent is the event ID.
+            $event_id = (int) wp_get_post_parent_id((int) $registration_id);
+            if ($event_id > 0) {
+                $event_ids[] = $event_id;
+            }
+        }
+
+        return array_values(array_unique($event_ids));
+    }
+
     public function wpem_get_items($request)
     {
         global $wpdb;
