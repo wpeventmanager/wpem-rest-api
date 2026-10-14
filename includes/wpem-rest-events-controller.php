@@ -282,32 +282,50 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         if ($current_user_id) {
             global $wpdb;
             $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d", $current_user_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events, date_expires FROM {$table_name} WHERE user_id = %d", $current_user_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
             $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];
 
-            if ($event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
+            // Admin with an expired API key is not restricted by the key's selected events
+            // (same rule as the login response, which returns event_show_by = 'loggedin' for this case).
+            $is_expired_admin = false;
+            if (!empty($settings_row) && user_can($current_user_id, 'manage_options')) {
+                $is_expired_admin = gmdate('Y-m-d', strtotime($settings_row['date_expires'])) < gmdate('Y-m-d');
+            }
+
+            if (!$is_expired_admin && $event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
                 $args['post__in'] = array_map('intval', $selected_events);
                 $args['orderby'] = 'post__in';
                 unset($args['author']);
             }
         }
 
-        // --- Registered events filter (?registered=true) ---
-        // Limit events to the ones the authenticated (JWT) user has registered for.
-        $registered_only = isset($request['registered']) ? rest_sanitize_boolean($request['registered']) : false;
-        if ($registered_only) {
-            $registered_user_id = is_numeric($current_user_id) ? absint($current_user_id) : 0;
-            $registered_event_ids = $registered_user_id ? $this->wpem_get_registered_event_ids($registered_user_id) : array();
+        // --- Registrations filter: only events that have registrations ---
+        // Works on top of the selected-events logic above (post__in is intersected, not replaced).
+        if (!empty($request['registrations'])) {
+            global $wpdb;
+            // Registrations (event_registration) store their event ID in post_parent.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $registered_event_ids = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT DISTINCT post_parent FROM {$wpdb->posts} WHERE post_type = %s AND post_parent > 0 AND post_status NOT IN ('trash', 'auto-draft')",
+                    'event_registration'
+                )
+            );
+            $registered_event_ids = array_map('intval', (array) $registered_event_ids);
 
-            // Keep any restriction already applied (selected events / include param).
+            // If post__in is already set (selected events / include), keep only the common IDs.
             if (!empty($args['post__in']) && is_array($args['post__in'])) {
-                $registered_event_ids = array_values(array_intersect(array_map('intval', $args['post__in']), $registered_event_ids));
+                $registered_event_ids = array_intersect($registered_event_ids, array_map('intval', $args['post__in']));
             }
 
-            // Empty post__in makes WP_Query return ALL events, so force no result with 0.
-            $args['post__in'] = !empty($registered_event_ids) ? $registered_event_ids : array(0);
+            // Empty post__in returns all events, so use [0] to return nothing.
+            $args['post__in'] = !empty($registered_event_ids) ? array_values($registered_event_ids) : array(0);
+            $args['meta_key'] = '_event_start_date';
+            $args['orderby'] = 'meta_value';
+            $args['order'] = 'DESC';
         }
+
         return $args;
     }
 
@@ -1256,8 +1274,8 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'sanitize_callback' => 'wp_parse_id_list',
             'validate_callback' => 'rest_validate_request_arg',
         );
-        $params['registered'] = array(
-            'description' => __('Limit result set to events registered by current user.', 'wpem-rest-api'),
+        $params['registrations'] = array(
+            'description' => __('Limit result set to events that have registrations.', 'wpem-rest-api'),
             'type' => 'boolean',
             'sanitize_callback' => 'wc_string_to_bool',
             'validate_callback' => 'rest_validate_request_arg',
@@ -1324,52 +1342,6 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             }
         }
         return $data;
-    }
-
-    /**
-     * Get unique event IDs (registration post_parent) a user has registered for.
-     * Registrations are matched by the user's email (_attendee_email), cancelled/trashed are ignored.
-     *
-     * @param int $user_id WP user ID.
-     * @return int[]
-     */
-    private function wpem_get_registered_event_ids($user_id)
-    {
-        $user = get_userdata((int) $user_id);
-        if (!$user || empty($user->user_email)) {
-            return array();
-        }
-
-        $statuses = function_exists('wpem_get_event_registration_statuses')
-            ? array_keys(wpem_get_event_registration_statuses())
-            : array('new', 'confirmed', 'waiting', 'archived', 'cancelled');
-        $statuses = array_values(array_diff($statuses, array('cancelled', 'trash')));
-
-        $registration_ids = get_posts(array(
-            'post_type'      => 'event_registration',
-            'post_status'    => $statuses,
-            'posts_per_page' => -1,
-            'fields'         => 'ids',
-            'no_found_rows'  => true,
-            'meta_query'     => array(
-                array(
-                    'key'     => '_attendee_email',
-                    'value'   => $user->user_email,
-                    'compare' => '=',
-                ),
-            ),
-        ));
-
-        $event_ids = array();
-        foreach ((array) $registration_ids as $registration_id) {
-            // Registration's post_parent is the event ID.
-            $event_id = (int) wp_get_post_parent_id((int) $registration_id);
-            if ($event_id > 0) {
-                $event_ids[] = $event_id;
-            }
-        }
-
-        return array_values(array_unique($event_ids));
     }
 
     public function wpem_get_items($request)
