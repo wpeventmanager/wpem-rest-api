@@ -78,6 +78,8 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 */
 	public function wpem_rest_authenticate($user_id)
 	{
+		global $wpdb;
+		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 		// Do not authenticate twice and check if is a request to our endpoint in the WP REST API.
 		if (!empty($user_id) || !$this->wpem_is_request_to_rest_api()) {
 			return $user_id;
@@ -88,7 +90,14 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		if ($user_id) {
 			return $user_id;
 		}
-
+		if(wpem_rest_get_current_user_id()){
+			$auth_user_data = $wpdb->get_row($wpdb->prepare("SELECT `consumer_key`, `consumer_secret` FROM {$table_name} WHERE user_id = %s", wpem_rest_get_current_user_id()));
+			if($auth_user_data){
+				$consumer_key = $auth_user_data->consumer_key;
+				$consumer_secret = $auth_user_data->consumer_secret;
+				$this->user = $this->wpem_get_user_data_by_consumer_key($consumer_key);
+			}
+		}
 		return $this->wpem_perform_oauth_authentication();
 	}
 
