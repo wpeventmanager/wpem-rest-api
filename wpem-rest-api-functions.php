@@ -530,7 +530,7 @@ if (!function_exists('wpem_rest_api_check_license_expire_date')) {
  * so activation status / version / licence status never stay stale.
  */
 if (!function_exists('wpem_rest_api_clear_ecosystem_cache')) {
-    function wpem_rest_api_clear_ecosystem_cache()
+    function wpem_rest_api_clear_ecosystem_cache($plugin = '')
     {
         $watched_plugins = array(
             'wp-event-manager-sell-tickets',
@@ -538,7 +538,12 @@ if (!function_exists('wpem_rest_api_clear_ecosystem_cache')) {
             'wpem-guests',
             'wpem-speaker-schedule',
             'wpem-name-badges',
+            'wp-event-manager-bookmarks',
         );
+
+        if ( ! is_string( $plugin ) || '' === $plugin ) {
+            return;
+        }
 
         // "folder/file.php" => "folder"
         $slug = (false !== strpos($plugin, '/')) ? dirname($plugin) : $plugin;
