@@ -395,8 +395,11 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
     
     /**
-     * GET /attendee-profile
-     * Retrieve matchmaking profile(s). If attendeeId provided, returns single profile; otherwise returns all.
+     * GET /matchmaking-profile
+     * Retrieve the matchmaking profile of a user, grouped by the "Tab Group"
+     * configured in Event Registrations > Registration Form.
+     *
+     *  - other_fields                   : every remaining value that is NOT a registration form field
      *
      * @param WP_REST_Request $request
      * @return WP_REST_Response|Array
@@ -410,8 +413,82 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $user_meta = get_user_meta($user_id);
-        // Base info
-        $profile = array(
+        $form_fields = $this->wpem_get_profile_form_fields();
+
+        // Tabs (about / organization / settings) - same source the admin "Tab Group" dropdown uses.
+        $sections = array(
+            'about' => array(),
+            'organization' => array(),
+            'settings' => array(),
+        );
+        if (function_exists('wpem_get_matchmaking_profile_tabs')) {
+            foreach (array_keys((array) wpem_get_matchmaking_profile_tabs()) as $tab_key) {
+                if (!isset($sections[$tab_key])) {
+                    $sections[$tab_key] = array();
+                }
+            }
+        }
+
+        // Group registration form fields by tab group.
+        $order = 0;
+        foreach ($form_fields as $field_key => $config) {
+            if (!is_array($config)) {
+                continue;
+            }
+            $field_key = (string) $field_key;
+
+            // Empty / unknown tab group falls back to "about" (same as the admin dropdown shows).
+            $tab = isset($config['tabgroup']) ? (string) $config['tabgroup'] : '';
+            if ($tab === '' || !isset($sections[$tab])) {
+                $tab = 'about';
+            }
+
+            $priority = (isset($config['priority']) && is_numeric($config['priority'])) ? (int) $config['priority'] : $order;
+
+            $sections[$tab][] = array(
+                'label' => isset($config['label']) ? (string) $config['label'] : '',
+                'type' => !empty($config['type']) ? (string) $config['type'] : 'text',
+                'description' => $this->wpem_blank_to_null(isset($config['description']) ? $config['description'] : ''),
+                'placeholder' => $this->wpem_blank_to_null(isset($config['placeholder']) ? $config['placeholder'] : ''),
+                'metakey' => '_' . $field_key,
+                'value' => $this->wpem_get_profile_field_value($user_id, $user, $field_key, $config, $user_meta),
+                'priority' => $priority,
+                'validation' => $this->wpem_get_profile_field_validation($config),
+                '_order' => $order,
+            );
+            $order++;
+        }
+
+        // Sort every tab by the priority saved in the registration form (ties keep form order).
+        $data = array();
+        foreach ($sections as $tab => $items) {
+            usort($items, function ($a, $b) {
+                if ($a['priority'] === $b['priority']) {
+                    return $a['_order'] - $b['_order'];
+                }
+                return $a['priority'] - $b['priority'];
+            });
+            foreach ($items as $i => $item) {
+                unset($items[$i]['_order']);
+            }
+            if ('organization' === $tab) {
+                $has_value = false;
+                foreach ($items as $item) {
+                    if (!($item['value'] === null || $item['value'] === array())) {
+                        $has_value = true;
+                        break;
+                    }
+                }
+                if (!$has_value) {
+                    $data['organization'] = null; // nothing filled in the organization tab
+                    continue;
+                }
+            }
+            $data[('settings' === $tab) ? 'setting' : $tab] = array('fields' => array_values($items));
+        }
+
+        // Everything that is not a registration form field.
+        $other = array(
             'user_id' => $user_id,
             'display_name' => $user->display_name,
             'email' => $user->user_email,
@@ -419,96 +496,198 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             'last_name' => $user->last_name,
         );
 
-        // Fetch dynamic fields
-        $fields = get_wpem_user_matchmaking_profile_fields();
-        foreach ($fields as $field_key => $field_config) {
-            $raw_value = isset($user_meta["_" . $field_key][0]) ? maybe_unserialize($user_meta["_" . $field_key][0]) : '';
+        // Photo / logo are normally form fields; only expose them here when the admin removed them from the form.
+        if (!isset($form_fields['profile_photo'])) {
+            $other['profile_photo'] = $this->wpem_get_profile_photo_value($user_id);
+        }
+        if (!isset($form_fields['organization_logo'])) {
+            $other['organization_logo'] = $this->wpem_get_organization_logo_value($user_id);
+        }
 
-            $value = null;
-            $type = isset($field_config['type']) ? $field_config['type'] : 'text';
-            switch ($type) {
-                case 'text':
-                case 'email':
-                case 'number':
-                case 'textarea':
-                    $value = sanitize_text_field($raw_value);
-                    break;
-                case 'select':
-                case 'term-select':
-                    $value = sanitize_text_field($raw_value);
-                    break;
+        $other['profile_photo_status'] = get_user_meta($user_id, '_profile_photo', true) ? true : false;
+        $other['organization_logo_status'] = get_user_meta($user_id, '_organization_logo', true) ? true : false;
 
-                case 'checkbox':
-                case 'radio':
-                    $value = !empty($raw_value) ? 1 : 0;
-                    break;
+        if (!isset($form_fields['is_user_matchmaking_profile_enabled'])) {
+            $other['is_user_matchmaking_profile_enabled'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int) get_user_meta($user_id, '_matchmaking_profile', true) : 0;
+        }
+        if (!isset($form_fields['approve_profile_status'])) {
+            $other['approve_profile_status'] = get_user_meta($user_id, '_approve_profile_status', true) ? (int) get_user_meta($user_id, '_approve_profile_status', true) : 0;
+        }
+        if (!isset($form_fields['wpem_meeting_request_mode'])) {
+            $other['wpem_meeting_request_mode'] = get_user_meta($user_id, '_wpem_meeting_request_mode', true) ? get_user_meta($user_id, '_wpem_meeting_request_mode', true) : 'approval';
+        }
+        if (!isset($form_fields['available_for_meeting'])) {
+            $meta = get_user_meta($user_id, '_available_for_meeting', true);
+            $other['available_for_meeting'] = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
+        }
 
-                case 'multiselect':
-                case 'checkbox_multi':
-                    $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
-                    $value = array_map('sanitize_text_field', $arr);
-                    break;
+        $other['organization_default_logo'] = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 
-                case 'url':
-                case 'file':
-                    if (is_array($raw_value)) {
-                        $raw_value = reset($raw_value); // handle WP file upload meta
-                    }
-                    $value = esc_url_raw($raw_value);
-                    break;
+        $data['other_fields'] = $other;
 
-                case 'term-multiselect':
-                case 'term-checkbox':
-                    $value = $raw_value;
-                    break;
+        // Build response
+        $response = self::wpem_prepare_error_for_response(200);
+        $response['data'] = $data;
+        return wp_send_json($response);
+    }
 
-                default:
-                    $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
-                    break;
+    /**
+     * Registration form fields exactly as the admin "Registration Form" screen shows them.
+     *
+     * get_wpem_user_matchmaking_profile_fields() merges saved fields into the defaults with
+     * array_replace_recursive(), which cannot remove an entry from the default "rules" array
+     * (e.g. admin un-selects "From Name" but it still comes back). The admin screen uses a
+     * shallow per-field merge, so the same is done here.
+     *
+     * @return array
+     */
+    private function wpem_get_profile_form_fields()
+    {
+        $defaults = wpem_get_registration_default_form_fields();
+        $saved = get_option('event_registration_form_fields', array());
+        $defaults = is_array($defaults) ? $defaults : array();
+        $saved = is_array($saved) ? $saved : array();
+
+        $fields = array();
+        foreach ($defaults as $key => $default_config) {
+            if (isset($saved[$key]) && is_array($saved[$key])) {
+                $fields[$key] = array_merge($default_config, $saved[$key]);
+        } else {
+                $fields[$key] = $default_config;
             }
-
-            $profile[$field_key] = $value;
+        }
+        // Custom fields added by the admin (not part of the defaults).
+        foreach ($saved as $key => $saved_config) {
+            if (!isset($fields[$key]) && is_array($saved_config)) {
+                $fields[$key] = $saved_config;
+            }
         }
 
-        // Add profile photo separately
-        $profile['profile_photo'] = get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+        return $fields;
+    }
 
-        // profile photo status
-        if (get_user_meta($user_id, '_profile_photo', true)) {
-            $profile['profile_photo_status'] = true;
-        } else {
-            $profile['profile_photo_status'] = false;
+    /**
+     * Blank (empty string / null / empty array) => null, everything else untouched.
+     */
+    private function wpem_blank_to_null($value)
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+            return $value === '' ? null : $value;
         }
-
-        // organization logo status
-        if (get_user_meta($user_id, '_organization_logo', true)) {
-            $profile['organization_logo_status'] = true;
-        } else {
-            $profile['organization_logo_status'] = false;
+        if (is_array($value) && empty($value)) {
+            return null;
         }
+        return $value === null ? null : $value;
+    }
 
-        if (!isset($profile['is_user_matchmaking_profile_enabled']))
-            $profile['is_user_matchmaking_profile_enabled'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int) get_user_meta($user_id, '_matchmaking_profile', true) : 0;
-        if (!isset($profile['approve_profile_status']))
-            $profile['approve_profile_status'] = get_user_meta($user_id, '_approve_profile_status', true) ? (int) get_user_meta($user_id, '_approve_profile_status', true) : 0;
-        if (!isset($profile['wpem_meeting_request_mode']))
-            $profile['wpem_meeting_request_mode'] = get_user_meta($user_id, '_wpem_meeting_request_mode', true) ? get_user_meta($user_id, '_wpem_meeting_request_mode', true) : 'approval';
-        $meta = get_user_meta($user_id, '_available_for_meeting', true);
-        $meeting_available = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
-        $profile['available_for_meeting'] = (int) $meeting_available;
+    /**
+     * Validation rules of a field, in registration-form format ("required" first).
+     * Slugs use hyphens (from_name => from-name).
+     *
+     * @param array $config Field config.
+     * @return array
+     */
+    private function wpem_get_profile_field_validation($config)
+    {
+        $rules = array();
+        if (!empty($config['required'])) {
+            $rules[] = 'required';
+        }
+        if (!empty($config['rules'])) {
+            foreach ((array) $config['rules'] as $rule) {
+                if (is_scalar($rule) && (string) $rule !== '') {
+                    $rules[] = str_replace('_', '-', strtolower((string) $rule));
+                }
+            }
+        }
+        return array_values(array_unique($rules));
+    }
 
-        // Add organization logo separately
+    private function wpem_get_profile_photo_value($user_id)
+    {
+        return get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+    }
+
+    private function wpem_get_organization_logo_value($user_id)
+    {
         $organization_logo = get_user_meta($user_id, '_organization_logo', true);
         $organization_logo = maybe_unserialize($organization_logo);
         if (is_array($organization_logo)) {
             $organization_logo = reset($organization_logo);
         }
-        $profile['organization_logo'] = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+        if (empty($organization_logo) || !is_string($organization_logo)) {
+            return null;
+        }
+        if (basename(wp_parse_url($organization_logo, PHP_URL_PATH) ?: $organization_logo) === 'organisation-icon.jpg') {
+            return null;
+        }
+        return $organization_logo;
+    }
 
-        // Build response
-        $response = self::wpem_prepare_error_for_response(200);
-        $response['data'] = $profile;
-        return wp_send_json($response);
+    /**
+     * Stored value of one registration form field for a user (null when blank).
+     */
+    private function wpem_get_profile_field_value($user_id, $user, $field_key, $config, $user_meta)
+    {
+        // Photo / logo keep their placeholder image fallback (same as before).
+        if ('profile_photo' === $field_key) {
+            return $this->wpem_get_profile_photo_value($user_id);
+        }
+        if ('organization_logo' === $field_key) {
+            return $this->wpem_get_organization_logo_value($user_id);
+        }
+
+        $meta_key = '_' . $field_key;
+        $raw_value = isset($user_meta[$meta_key][0]) ? maybe_unserialize($user_meta[$meta_key][0]) : '';
+
+        // Attendee name / email are not saved as user meta - fall back to the WP user data.
+        if (($raw_value === '' || $raw_value === null)) {
+            if ('attendee_name' === $field_key) {
+                $raw_value = $user->first_name;
+            } elseif ('attendee_last_name' === $field_key) {
+                $raw_value = $user->last_name;
+            } elseif ('attendee_email' === $field_key) {
+                $raw_value = $user->user_email;
+            }
+        }
+
+        $type = !empty($config['type']) ? $config['type'] : 'text';
+        switch ($type) {
+            case 'checkbox':
+            case 'radio':
+                return !empty($raw_value) ? 1 : 0;
+
+            case 'multiselect':
+            case 'checkbox_multi':
+            case 'term-multiselect':
+            case 'term-checkbox':
+                $arr = is_array($raw_value) ? $raw_value : (($raw_value === '' || $raw_value === null) ? array() : array($raw_value));
+                $value = array_values(array_filter(array_map('sanitize_text_field', array_filter($arr, 'is_scalar')), function ($v) {
+                    return $v !== '';
+                }));
+                if (empty($value)) {
+                    // term-multiselect values are stored as an array, so blank => [] (not null).
+                    return ('term-multiselect' === $type) ? array() : null;
+                }
+                return $value;
+
+            case 'url':
+            case 'file':
+                if (is_array($raw_value)) {
+                    $raw_value = reset($raw_value); // handle WP file upload meta
+                }
+                $value = is_scalar($raw_value) ? esc_url_raw($raw_value) : '';
+                return $value === '' ? null : $value;
+
+            case 'textarea':
+                $value = is_scalar($raw_value) ? sanitize_textarea_field($raw_value) : '';
+                return $value === '' ? null : $value;
+
+            default: // text, email, number, select, term-select, date, ...
+                $value = is_scalar($raw_value) ? sanitize_text_field($raw_value) : '';
+                return $value === '' ? null : $value;
+        }
     }
 
     /**
