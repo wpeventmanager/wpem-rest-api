@@ -279,35 +279,26 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
             $offset = 0;
         }
 
-        $search = '';
+        $where = 'WHERE 1 = 1';
+        $search_args = array();
 
         if (!empty($_REQUEST['s'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended 
-            $term = wp_kses_post(wp_unslash($_REQUEST['s'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- input var okay, CSRF ok.
+            $term = sanitize_text_field(wp_unslash($_REQUEST['s'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- input var okay, CSRF ok.
             $like = '%' . $wpdb->esc_like($term) . '%';
-            $cache_key = 'wpem_user_search_' . md5($like);
-
-            // Try cache first
-            $user_ids = wp_cache_get($cache_key);
-            // Find users matching by display name, username, or email.
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
-            $user_ids = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->users} WHERE display_name LIKE %s OR user_login LIKE %s OR user_email LIKE %s", $like, $like, $like));
-
-            // Store in cache (group optional but good practice)
-            wp_cache_set($cache_key, $user_ids, 'wpem', 300); // 5 min cache
-
-            // Only search by user (username/display name/email). If no users match, return no results.
-            if (!empty($user_ids)) {
-                $search = 'AND user_id IN (' . implode(',', array_map('absint', $user_ids)) . ') ';
-            } else {
-                $search = 'AND 1 = 0 ';
-            }
+            $where .= " AND (user_id IN (SELECT ID FROM {$wpdb->users} WHERE display_name LIKE %s OR user_login LIKE %s OR user_email LIKE %s) OR app_key LIKE %s)";
+            $search_args = array($like, $like, $like, $like);
         }
 
         // Get the API keys.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, event_show_by, selected_events, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search} ORDER BY key_id DESC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
+        $query_args = array_merge($search_args, array($per_page, $offset));
+        $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, event_show_by, selected_events, description, permissions, truncated_key, last_access FROM {$table_name} {$where} ORDER BY key_id DESC LIMIT %d OFFSET %d", $query_args), ARRAY_A);
+        $count_query = "SELECT COUNT(key_id) FROM {$table_name} {$where}";
+        if (!empty($search_args)) {
+            $count_query = $wpdb->prepare($count_query, $search_args);
+        }
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $count = (int) $wpdb->get_var("SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1 AND 1 = 0");
+        $count = (int) $wpdb->get_var($count_query);
         $this->_column_headers = array($columns, $hidden, $sortable);
         $this->items = $keys;
 

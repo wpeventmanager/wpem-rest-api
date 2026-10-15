@@ -123,7 +123,7 @@ class WPEM_Rest_API_Keys
         if (absint($count) && $count > 0) {
             $wpem_keys_table_list->wpem_prepare_items();
             $wpem_keys_table_list->views();
-            $wpem_keys_table_list->wpem_search_box(__('Search by User', 'wpem-rest-api'), 'user');
+            $wpem_keys_table_list->wpem_search_box(__('Search by User or App Key', 'wpem-rest-api'), 'user');
             $wpem_keys_table_list->display();
 
         } else {
