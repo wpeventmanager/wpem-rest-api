@@ -238,7 +238,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
     {
         if (!empty($key['last_access'])) {
             /* translators: 1: last access date 2: last access time */
-            $date = sprintf(__('%1$s at %2$s', 'wpem-rest-api'), date_i18n('Y-m-d', strtotime($key['last_access'])), date_i18n('H:i:a', strtotime($key['last_access'])));
+            $date = sprintf(__('%1$s at %2$s', 'wpem-rest-api'), date_i18n('Y-m-d', strtotime($key['last_access'])), date_i18n('h:i:a', strtotime($key['last_access'])));
             return apply_filters('wpem_api_key_last_access_datetime', $date, $key['last_access']);
         }
         return __('Unknown', 'wpem-rest-api');
