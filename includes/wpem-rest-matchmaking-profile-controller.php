@@ -444,18 +444,27 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
 
             $priority = (isset($config['priority']) && is_numeric($config['priority'])) ? (int) $config['priority'] : $order;
-
-            $sections[$tab][] = array(
+            $field_type = !empty($config['type']) ? (string) $config['type'] : 'text';
+            $entry = array(
                 'label' => isset($config['label']) ? (string) $config['label'] : '',
-                'type' => !empty($config['type']) ? (string) $config['type'] : 'text',
+                'type' => $field_type,
                 'description' => $this->wpem_blank_to_null(isset($config['description']) ? $config['description'] : ''),
                 'placeholder' => $this->wpem_blank_to_null(isset($config['placeholder']) ? $config['placeholder'] : ''),
+            );
+
+            // Select type fields also return their selectable options.
+            if (in_array($field_type, array('select', 'multiselect'), true)) {
+                $entry['options'] = $this->wpem_get_profile_field_options($config);
+            }
+
+            $entry += array(
                 'metakey' => '_' . $field_key,
                 'value' => $this->wpem_get_profile_field_value($user_id, $user, $field_key, $config, $user_meta),
                 'priority' => $priority,
                 'validation' => $this->wpem_get_profile_field_validation($config),
                 '_order' => $order,
             );
+            $sections[$tab][] = $entry;
             $order++;
         }
 
@@ -563,7 +572,40 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
         }
 
+        // "options" are resolved the way the plugin does for the profile form (recursive merge), so the
+        // full country list of default fields is kept when the admin saves the form.
+        $merged = array_replace_recursive($defaults, $saved);
+        foreach ($fields as $key => $config) {
+            if (isset($merged[$key]['options']) && is_array($merged[$key]['options'])) {
+                $fields[$key]['options'] = $merged[$key]['options'];
+            }
+        }
+
         return $fields;
+    }
+
+    /**
+     * Options of a select type field as an ordered list: [ {value, label}, ... ].
+     * term-select / term-multiselect options are the terms (slug => name) of the field's taxonomy.
+     *
+     * @param array $config Field config.
+     * @return array
+     */
+    private function wpem_get_profile_field_options($config)
+    {
+        $options = (!empty($config['options']) && is_array($config['options'])) ? $config['options'] : array();
+
+        $list = array();
+        foreach ((array) $options as $value => $label) {
+            if ((string) $value === '' || !is_scalar($label)) {
+                continue; // skip the empty "Select ..." placeholder option
+            }
+            $list[] = array(
+                'value' => (string) $value,
+                'label' => wp_specialchars_decode(stripslashes((string) $label), ENT_QUOTES),
+            );
+        }
+        return $list;
     }
 
     /**
