@@ -446,6 +446,26 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 
                 $data = $this->wpem_prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
+
+                if ($object instanceof WC_Order && is_array($objects[array_key_last($objects)])) {
+                    $response_index = array_key_last($objects);
+                    $date_format = (string) get_option('date_format');
+                    $time_format = (string) get_option('time_format');
+                    $local_date_format = trim($date_format . ' ' . $time_format);
+
+                    $order_date = $object->get_date_modified();
+
+                    if (
+                        $order_date instanceof DateTimeInterface &&
+                        array_key_exists('date_modified', $objects[$response_index])
+                    ) {
+                        $objects[$response_index]['date_modified'] = wp_date(
+                            $local_date_format,
+                            $order_date->getTimestamp(),
+                            $order_date->getTimezone()
+                        );
+                    }
+                }
             }
 
             $page = isset($query_args['paged']) ? (int) $query_args['paged'] : 1;
