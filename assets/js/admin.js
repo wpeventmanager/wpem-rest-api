@@ -80,7 +80,7 @@ var WPEMRestAPIAdmin = (function () {
                             permissions: jQuery("#key_permissions").val(),
                             event_id: jQuery("#event_id").val(),
                             date_expires: jQuery("#date_expires").val(),
-                            restrict_check_in: jQuery('input[name="restrict_check_in"]').attr("checked") ? 0 : 1,
+                            restrict_check_in: jQuery('input[name="restrict_check_in"]').prop("checked") ? 1 : 0,
                             event_show_by: jQuery('input[name="event_show_by"]:checked').val(),
                             select_events: jQuery('#select_events').val() || [],
                             mobile_menu: jQuery('input[name="mobile_menu[]"]:checked').map(function () {
@@ -283,7 +283,7 @@ var WPEMRestAPIAdmin = (function () {
                             permissions: jQuery("#key_permissions").val(),
                             event_id: jQuery("#event_id").val(),
                             date_expires: jQuery("#date_expires").val(),
-                            restrict_check_in: jQuery('input[name="restrict_check_in"]').attr("checked") ? 0 : 1,
+                            restrict_check_in: jQuery('input[name="restrict_check_in"]').prop("checked") ? 1 : 0,
                             event_show_by: jQuery('input[name="event_show_by"]:checked').val(),
                             select_events: jQuery('#select_events').val() || [],
                             mobile_menu: jQuery('input[name="mobile_menu[]"]:checked').map(function () {
