@@ -117,6 +117,8 @@ class WPEM_Rest_API_Admin
             $event_id = !empty($_POST['event_id']) ? absint($_POST['event_id']) : '';
             $date_expires = !empty($_POST['date_expires']) ? gmdate('Y-m-d H:i:s', strtotime(str_replace('-', '/', wp_kses_post(wp_unslash($_POST['date_expires']))))) : null;
             $restrict_check_in = isset($_POST['restrict_check_in']) ? sanitize_text_field(wp_unslash($_POST['restrict_check_in'])) : '';
+            $disable_mobile_checkin = isset($_POST['disable_mobile_checkin']) ? 1 : 0;
+            $user_restrict_check_in_window_time = !empty($_POST['user_restrict_check_in_window_time']) ? absint($_POST['user_restrict_check_in_window_time']) : 30;
             $event_show_by = isset($_POST['event_show_by']) ? sanitize_text_field(wp_unslash($_POST['event_show_by'])) : 'loggedin';
             $select_events = isset($_POST['select_events']) ? maybe_serialize(array_map('absint', wp_unslash($_POST['select_events']))) : maybe_serialize(array());
             $mobile_menu = isset($_POST['mobile_menu']) ? array_map('sanitize_text_field', wp_unslash($_POST['mobile_menu'])) : array();
@@ -142,7 +144,10 @@ class WPEM_Rest_API_Admin
                 );
                 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
                 $wpdb->update($table_name, $data, array('key_id' => $key_id), array('%d', '%s', '%s', '%d', '%s', '%s', '%s'), array('%d'));
-                update_user_meta($user_id, '_restrict_check_in', $restrict_check_in);
+                update_user_meta($user_id, '_user_restrict_checkin', $restrict_check_in);
+                update_user_meta($user_id, '_user_disable_mobile_checkin', $disable_mobile_checkin);
+                update_user_meta($user_id, '_user_restrict_checkin_window_time', $user_restrict_check_in_window_time);
+
                 $response = $data;
                 $response['consumer_key'] = '';
                 $response['consumer_secret'] = '';

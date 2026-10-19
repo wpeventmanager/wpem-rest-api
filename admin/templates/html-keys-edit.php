@@ -237,12 +237,33 @@ defined('ABSPATH') || exit;
 					</tr>
 					<tr valign="top">
 						<th scope="row" class="titledesc">
+							<?php esc_html_e('Disable Mobile App Check-in', 'wpem-rest-api'); ?>
+						</th>
+						<?php $disable_mobile_checkin = get_user_meta($key_data["user_id"], '_user_disable_mobile_checkin', true); ?>
+						<td class="forminp">
+							<label><input type="checkbox" name="disable_mobile_checkin" <?php checked($disable_mobile_checkin, '1'); ?> value="1"> <?php esc_html_e('Disable the check-in feature in the mobile app.', 'wpem-rest-api'); ?></label>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row" class="titledesc">
 							<?php esc_html_e('Restrict Check-in', 'wpem-rest-api'); ?>
 						</th>
-						<?php $restrict = get_user_meta($key_data["user_id"], '_restrict_check_in', true);
-						?>
+						<?php $restrict = get_user_meta($key_data["user_id"], '_user_restrict_checkin', true); ?>
 						<td class="forminp" id="js-restrict-check-in">
-							<input id="js-restrict-check-in" type="checkbox" name="restrict_check_in" <?php echo ($restrict === '1') ? 'checked="checked"' : ''; ?> value="1">
+							<label><input id="js-restrict-check-in" type="checkbox" name="restrict_check_in" <?php echo ($restrict === '1') ? 'checked="checked"' : ''; ?> value="1"> <?php esc_html_e('Enable check-in restriction.', 'wpem-rest-api'); ?></label>
+							<p class="description">Only allow tickets to check-in during the start and end date of the event and the below mentioned ticket check-in window</p>
+						</td>
+					</tr>
+					<tr valign="top" id="user-restrict-check-in-window-row" style="<?php echo ($restrict === '1') ? '' : 'display: none;'; ?>">
+						<th scope="row" class="titledesc">
+							<?php esc_html_e('Check-in Window (min)', 'wpem-rest-api'); ?>
+						</th>
+						<?php $user_restrict_check_in_window_time = get_user_meta($key_data["user_id"], '_user_restrict_checkin_window_time', true); ?>
+						<td class="forminp">
+							<input id="user_restrict_check_in_window_time" name="user_restrict_check_in_window_time" type="number" class="input-number"
+								value="<?php echo (int) $user_restrict_check_in_window_time ?>" />
+							<p class="description">
+								<?php esc_html_e('Set the time window (in min) before the event during which attendees can check in.', 'wpem-rest-api'); ?></p>
 						</td>
 					</tr>
 
