@@ -689,6 +689,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     private function wpem_get_profile_field_value($user_id, $user, $field_key, $config, $user_meta)
     {
+        $type = !empty($config['type']) ? $config['type'] : 'text';
+
+        // File field that allows multiple files: always a list of URLs ([] when there is none).
+        if ('file' === $type && !empty($config['multiple'])) {
+            $meta_key = '_' . $field_key;
+            return $this->wpem_get_file_urls(isset($user_meta[$meta_key][0]) ? $user_meta[$meta_key][0] : '');
+        }
+
         // Photo / logo keep their placeholder image fallback (same as before).
         if ('profile_photo' === $field_key) {
             return $this->wpem_get_profile_photo_value($user_id);
@@ -711,7 +719,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
         }
 
-        $type = !empty($config['type']) ? $config['type'] : 'text';
         switch ($type) {
             case 'checkbox':
             case 'radio':
@@ -764,38 +771,172 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             return self::wpem_prepare_error_for_response(404);
         }
 
-        // Get all defined profile fields
-        $fields = get_wpem_user_matchmaking_profile_fields();
+        // Same field definitions the GET API uses (admin Registration Form).
+        $fields = $this->wpem_get_profile_form_fields();
+        $files = $request->get_file_params();
+        $files = is_array($files) ? $files : array();
 
-        foreach ($fields as $field_key => $field_config) {
-            if ($request->get_param($field_key) === null) {
+        $errors = array();       // meta key => message
+        $updates = array();      // meta key => sanitized value
+        $uploads = array();      // meta key => upload job
+        $known_meta_keys = array();
+
+        // ---------- 1) Read + validate (nothing is written here) ----------
+        foreach ($fields as $field_key => $config) {
+            if (!is_array($config)) {
+                continue;
+            }
+            $field_key = (string) $field_key;
+            $meta_key = '_' . $field_key;
+            $known_meta_keys[] = $meta_key;
+            $type = !empty($config['type']) ? (string) $config['type'] : 'text';
+            $label = !empty($config['label']) ? (string) $config['label'] : $field_key;
+
+            // Meta key first, plain field key only as backward compatibility.
+            $has_param = false;
+            $raw = null;
+            foreach (array($meta_key, $field_key) as $param_name) {
+                $param_value = $request->get_param($param_name);
+                if ($param_value !== null) {
+                    $raw = $param_value;
+                    $has_param = true;
+                    break;
+                }
+            }
+
+            // ----- file fields -----
+            if ('file' === $type) {
+                $new_files = array();
+                foreach (array($meta_key, $field_key) as $param_name) {
+                    if (isset($files[$param_name])) {
+                        $new_files = $this->wpem_normalize_uploaded_files($files[$param_name]);
+                        break;
+                    }
+                }
+                if (!$has_param && empty($new_files)) {
+                    continue; // nothing sent for this field
+                }
+
+                $multiple = !empty($config['multiple']);
+                if (!$multiple && count($new_files) > 1) {
+                    $errors[$meta_key] = sprintf('Only one file can be uploaded in %s field.', $label);
+                    continue;
+                }
+
+                // Existing file URLs the client wants to keep (text param). Only URLs already stored are accepted.
+                $keep = array();
+                if ($has_param) {
+                    $tokens = is_array($raw) ? $raw : array($raw);
+                    $current_urls = $this->wpem_get_file_urls(get_user_meta($user_id, $meta_key, true));
+                    $invalid_token = false;
+                    foreach ($tokens as $token) {
+                        if (!is_scalar($token)) {
+                            $invalid_token = true;
+                            break;
+                        }
+                        $token = trim((string) $token);
+                        if ($token === '') {
+                            continue;
+                        }
+                        $token = esc_url_raw($token);
+                        if ($token !== '' && in_array($token, $current_urls, true)) {
+                            $keep[] = $token;
+                        } else {
+                            $invalid_token = true;
+                            break;
+                        }
+                    }
+                    if ($invalid_token) {
+                        $errors[$meta_key] = sprintf('%s: send files as multipart/form-data. Only URLs of already uploaded files can be sent as text.', $label);
+                        continue;
+                    }
+                }
+
+                if (!$multiple && count($new_files) === 0 && count($keep) > 1) {
+                    $errors[$meta_key] = sprintf('Only one file can be uploaded in %s field.', $label);
+                    continue;
+                }
+
+                if (empty($new_files) && empty($keep) && $this->wpem_profile_field_is_required($config)) {
+                    $errors[$meta_key] = sprintf('%s is a required field.', $label);
+                    continue;
+                }
+
+                $uploads[$meta_key] = array(
+                    'label' => $label,
+                    'files' => $new_files,
+                    'keep' => $keep,
+                    'multiple' => $multiple,
+                    'mimes' => (!empty($config['allowed_mime_types']) && is_array($config['allowed_mime_types'])) ? $config['allowed_mime_types'] : null,
+                );
+                continue;
+            }
+
+            if (!$has_param) {
                 continue; // skip if not provided
             }
 
-            $value = $request->get_param($field_key);
-            $type = isset($field_config['type']) ? $field_config['type'] : 'text';
+            $result = $this->wpem_validate_profile_field_value($raw, $type, $config, $label);
+            if (is_wp_error($result)) {
+                $errors[$meta_key] = $result->get_error_message();
+                continue;
+            }
+            $updates[$meta_key] = $result;
+        }
 
-            if (str_starts_with($field_key, '_'))
-                $field_key = $field_key;
-            else
-                $field_key = '_' . $field_key;
+        if (!empty($errors)) {
+            return $this->wpem_send_profile_update_error($errors);
+        }
 
-            // Save value
-            if ($value !== '' && !(is_array($value) && empty($value))) {
-                update_user_meta($user_id, $field_key, $value);
+        // ---------- 2) Upload files (still nothing saved in DB) ----------
+        $final_files = array();
+        $uploaded_paths = array();
+        if (!empty($uploads)) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            foreach ($uploads as $meta_key => $job) {
+                $urls = array();
+                foreach ($job['files'] as $file) {
+                    $overrides = array('test_form' => false);
+                    if (!empty($job['mimes'])) {
+                        $overrides['mimes'] = $job['mimes'];
+                    }
+                    $movefile = wp_handle_upload($file, $overrides);
+                    if (empty($movefile['url']) || !empty($movefile['error'])) {
+                        foreach ($uploaded_paths as $path) {
+                            wp_delete_file($path); // roll back files uploaded earlier in this request
+                        }
+                        $message = !empty($movefile['error']) ? (string) $movefile['error'] : 'File upload failed.';
+                        return $this->wpem_send_profile_update_error(array($meta_key => sprintf('%s: %s', $job['label'], $message)));
+                    }
+                    $uploaded_paths[] = $movefile['file'];
+                    $urls[] = esc_url_raw($movefile['url']);
+                }
+
+                if ($job['multiple']) {
+                    $final_files[$meta_key] = array_values(array_unique(array_merge($job['keep'], $urls)));
             } else {
-                update_user_meta($user_id, $field_key, '');
+                    // single file: a new upload replaces the old one
+                    $final_files[$meta_key] = !empty($urls) ? $urls[0] : (!empty($job['keep']) ? $job['keep'][0] : '');
+                }
             }
         }
 
-        // Update core user fields (first name, last name, email)
+        // ---------- 3) Save ----------
+        foreach ($updates as $meta_key => $value) {
+            update_user_meta($user_id, $meta_key, $value);
+        }
+        foreach ($final_files as $meta_key => $value) {
+            update_user_meta($user_id, $meta_key, $value);
+        }
+
+        // Update core user fields (first name, last name, display name)
         if ($request->get_param('first_name')) {
             update_user_meta($user_id, 'first_name', sanitize_text_field($request->get_param('first_name')));
         }
         if ($request->get_param('last_name')) {
             update_user_meta($user_id, 'last_name', sanitize_text_field($request->get_param('last_name')));
         }
-        if ( $request->get_param( 'display_name' ) ) {
+        if ($request->get_param('display_name')) {
             wp_update_user(
                 array(
                     'ID' => $user_id,
@@ -804,42 +945,340 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             );
         }
 
-        // Upload profile image
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- REST API request is authenticated.
-        if (!empty($_FILES['profile_photo'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- REST API request is authenticated.
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-	        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- File upload array handled by wp_handle_upload().
-            $file =  wp_unslash( $_FILES['profile_photo'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- REST API authenticated upload.
-            $upload_overrides = array(
-                'test_form' => false,
-            );
-            $movefile = wp_handle_upload($file, $upload_overrides);
-            if (!empty($movefile['url'])) {
-                $file_url = esc_url_raw($movefile['url']);
-                update_user_meta($user_id, '_profile_photo', $file_url);
+        $response = self::wpem_prepare_error_for_response(200);
+
+        // Tell the client about meta keys that are not in the Registration Form (typos like "skills_" or old names).
+        $reserved = array('_method', '_wpnonce', '_locale', '_envelope', '_embed', '_fields', '_jsonp');
+        $ignored = array();
+        foreach (array_keys((array) $request->get_params()) as $param_name) {
+            $param_name = (string) $param_name;
+            if ($param_name !== '' && '_' === $param_name[0] && !in_array($param_name, $known_meta_keys, true) && !in_array($param_name, $reserved, true)) {
+                $ignored[] = $param_name;
+            }
+        }
+        if (!empty($ignored)) {
+            $response['data'] = array('ignored_fields' => $ignored);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Sends a 400 validation error. "message" is the first error, "data.errors" has every error (meta key => message).
+     */
+    private function wpem_send_profile_update_error($errors)
+    {
+        $message = reset($errors);
+        return wp_send_json(
+            array(
+                'code' => 400,
+                'status' => 'Bad request',
+                'message' => $message,
+                'data' => array('errors' => $errors),
+            )
+        );
+    }
+
+    /**
+     * Is the field required (Required flag or "required" validation rule)?
+     */
+    private function wpem_profile_field_is_required($config)
+    {
+        if (!empty($config['required'])) {
+            return true;
+        }
+        return !empty($config['rules']) && in_array('required', (array) $config['rules'], true);
+    }
+
+    /**
+     * Flat list of uploaded files from a $_FILES entry (single file or file[] style), empty slots skipped.
+     */
+    private function wpem_normalize_uploaded_files($entry)
+    {
+        $out = array();
+        if (!is_array($entry) || !isset($entry['name'])) {
+            return $out;
+        }
+        if (is_array($entry['name'])) {
+            foreach ($entry['name'] as $i => $name) {
+                if (is_array($name)) {
+                    continue;
+                }
+                $error = isset($entry['error'][$i]) ? (int) $entry['error'][$i] : UPLOAD_ERR_OK;
+                if ($error === UPLOAD_ERR_NO_FILE || (string) $name === '') {
+                    continue;
+                }
+                $out[] = array(
+                    'name' => $name,
+                    'type' => isset($entry['type'][$i]) ? $entry['type'][$i] : '',
+                    'tmp_name' => isset($entry['tmp_name'][$i]) ? $entry['tmp_name'][$i] : '',
+                    'error' => $error,
+                    'size' => isset($entry['size'][$i]) ? $entry['size'][$i] : 0,
+                );
+            }
             } else {
-                update_user_meta($user_id, '_profile_photo', '');
+            $error = isset($entry['error']) ? (int) $entry['error'] : UPLOAD_ERR_OK;
+            if ($error !== UPLOAD_ERR_NO_FILE && (string) $entry['name'] !== '') {
+                $out[] = $entry;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * File URLs stored in user meta (string, array or serialized array) as a clean list.
+     */
+    private function wpem_get_file_urls($raw)
+    {
+        $raw = maybe_unserialize($raw);
+        $urls = array();
+        foreach ((array) $raw as $item) {
+            $item = maybe_unserialize($item);
+            foreach ((array) $item as $url) {
+                if (is_string($url)) {
+                    $url = esc_url_raw($url);
+                    if ($url !== '') {
+                        $urls[] = $url;
+                    }
+                }
+            }
+        }
+        return array_values(array_unique($urls));
+    }
+
+    /**
+     * Comma separated string or array => clean list of strings (null when the input is not usable).
+     */
+    private function wpem_to_value_list($raw)
+    {
+        $items = is_array($raw) ? $raw : array($raw);
+        $list = array();
+        foreach ($items as $item) {
+            if (!is_scalar($item)) {
+                return null;
+            }
+            foreach (explode(',', (string) $item) as $part) {
+                $part = trim($part);
+                if ($part !== '') {
+                    $list[] = $part;
+                }
+            }
+        }
+        return array_values(array_unique($list));
+    }
+
+    /**
+     * Slug of a term from a slug (or term id), false when it does not exist in the taxonomy.
+     */
+    private function wpem_resolve_term_slug($token, $taxonomy)
+    {
+        $term = get_term_by('slug', $token, $taxonomy);
+        if (!$term) {
+            $term = get_term_by('slug', sanitize_title($token), $taxonomy);
+        }
+        if (!$term && ctype_digit((string) $token)) {
+            $term = get_term_by('id', (int) $token, $taxonomy);
+        }
+        return ($term && !is_wp_error($term)) ? $term->slug : false;
+    }
+
+    /**
+     * Validate + sanitize one (non-file) field value.
+     *
+     * @return mixed|WP_Error Sanitized value to store, or WP_Error with the message for the client.
+     */
+    private function wpem_validate_profile_field_value($raw, $type, $config, $label)
+    {
+        $required = $this->wpem_profile_field_is_required($config);
+        $required_error = new WP_Error('required', sprintf('%s is a required field.', $label));
+        $taxonomy = !empty($config['taxonomy']) ? (string) $config['taxonomy'] : '';
+        $use_taxonomy = ($taxonomy !== '' && taxonomy_exists($taxonomy));
+
+        // Valid option values of select type fields (empty "Select ..." option ignored).
+        $option_keys = array();
+        if (!empty($config['options']) && is_array($config['options'])) {
+            foreach (array_keys($config['options']) as $option_key) {
+                if ((string) $option_key !== '') {
+                    $option_keys[] = (string) $option_key;
+            }
+        }
+        }
+
+        switch ($type) {
+            // ---- many values: stored as array ----
+            case 'term-multiselect':
+            case 'term-checkbox':
+            case 'multiselect':
+            case 'checkbox_multi':
+            case 'checkbox_group':
+                $list = $this->wpem_to_value_list($raw);
+                if ($list === null) {
+                    return new WP_Error('invalid', sprintf('%s: invalid value. Pass comma separated values, e.g. value1,value2.', $label));
+                }
+                if (empty($list)) {
+                    return $required ? $required_error : array();
+                }
+
+                $is_term = in_array($type, array('term-multiselect', 'term-checkbox'), true);
+                $values = array();
+                $invalid = array();
+                foreach ($list as $token) {
+                    if ($is_term && $use_taxonomy) {
+                        $slug = $this->wpem_resolve_term_slug($token, $taxonomy);
+                        if ($slug === false) {
+                            $invalid[] = $token;
+                        } else {
+                            $values[] = $slug;
+                        }
+                    } elseif (!$is_term && !empty($option_keys)) {
+                        if (in_array($token, $option_keys, true)) {
+                            $values[] = $token;
+                        } else {
+                            $invalid[] = $token;
+                        }
+                    } else {
+                        $values[] = sanitize_text_field($token);
+                    }
+                }
+                if (!empty($invalid)) {
+                    return new WP_Error('invalid', sprintf('%s: invalid value(s): %s.', $label, implode(', ', $invalid)));
+                }
+                return array_values(array_unique($values));
+
+            // ---- exactly one value ----
+            case 'term-select':
+            case 'select':
+                $multiple_error = new WP_Error('multiple', sprintf('You can not pass multiple values in %s field.', $label));
+
+                if (is_array($raw)) {
+                    $parts = array();
+                    foreach ($raw as $item) {
+                        if (!is_scalar($item)) {
+                            return new WP_Error('invalid', sprintf('%s: invalid value.', $label));
+                        }
+                        if (trim((string) $item) !== '') {
+                            $parts[] = trim((string) $item);
+                        }
+                    }
+                    if (count($parts) > 1) {
+                        return $multiple_error;
+                    }
+                    $value = isset($parts[0]) ? $parts[0] : '';
+                } elseif (is_scalar($raw)) {
+                    $value = trim((string) $raw);
+                } else {
+                    return new WP_Error('invalid', sprintf('%s: invalid value.', $label));
+                }
+
+                if ($value === '') {
+                    return $required ? $required_error : '';
+                }
+
+                if ('term-select' === $type) {
+                    if (strpos($value, ',') !== false) {
+                        return $multiple_error;
+                    }
+                    if ($use_taxonomy) {
+                        $slug = $this->wpem_resolve_term_slug($value, $taxonomy);
+                        if ($slug === false) {
+                            return new WP_Error('invalid', sprintf('%s: invalid value "%s".', $label, $value));
+                        }
+                        return $slug;
+                    }
+                    return sanitize_text_field($value);
+                }
+
+                // select
+                if (!empty($option_keys) && !in_array($value, $option_keys, true)) {
+                    if (strpos($value, ',') !== false) {
+                        return $multiple_error;
+                    }
+                    $message = sprintf('%s: invalid value "%s".', $label, $value);
+                    if (count($option_keys) <= 20) {
+                        $message .= ' Allowed values: ' . implode(', ', $option_keys) . '.';
+                    }
+                    return new WP_Error('invalid', $message);
+                }
+                return sanitize_text_field($value);
+
+            // ---- on / off ----
+            case 'checkbox':
+                if (is_array($raw) || (!is_scalar($raw) && $raw !== null)) {
+                    return new WP_Error('invalid', sprintf('%s: value must be 1 or 0.', $label));
+                }
+                $flag = is_bool($raw) ? ($raw ? '1' : '0') : strtolower(trim((string) $raw));
+                if (in_array($flag, array('1', 'true', 'yes', 'on'), true)) {
+                    return 1;
+                }
+                if (in_array($flag, array('0', 'false', 'no', 'off', ''), true)) {
+                    return 0;
+                }
+                return new WP_Error('invalid', sprintf('%s: value must be 1 or 0.', $label));
+        }
+
+        // ---- single scalar value (text, textarea, number, email, url, date, ...) ----
+        if (!is_scalar($raw)) {
+            return new WP_Error('invalid', sprintf('%s: invalid value.', $label));
+        }
+        $raw = (string) $raw;
+
+        switch ($type) {
+            case 'textarea':
+                $value = wp_kses_post(trim($raw));
+                break;
+            case 'email':
+                $value = sanitize_email(trim($raw));
+                if ($value === '' && trim($raw) !== '') {
+                    return new WP_Error('invalid', sprintf('%s: Please provide a valid email address', $label));
+                }
+                break;
+            case 'url':
+                $value = esc_url_raw(trim($raw));
+                if ($value === '' && trim($raw) !== '') {
+                    return new WP_Error('invalid', sprintf('%s: Please provide a valid URL.', $label));
+                }
+                break;
+            default:
+                $value = sanitize_text_field($raw);
+                break;
+        }
+
+        if ($value === '') {
+            return $required ? $required_error : '';
+        }
+
+        if ('email' === $type && !is_email($value)) {
+            return new WP_Error('invalid', sprintf('%s: Please provide a valid email address', $label));
+        }
+        if ('number' === $type && !is_numeric($value)) {
+            return new WP_Error('invalid', sprintf('%s: Please enter a number.', $label));
+        }
+
+        // Validation rules chosen in Registration Form > Validation / Rules (same checks as the registration form).
+        if (!empty($config['rules'])) {
+            foreach ((array) $config['rules'] as $rule) {
+                switch ($rule) {
+                    case 'email':
+                    case 'from_email':
+                        if (!is_email($value)) {
+                            return new WP_Error('invalid', sprintf('%s: Please provide a valid email address', $label));
+                        }
+                        break;
+                    case 'alphabet':
+                        if (!ctype_alpha(str_replace(' ', '', $value))) {
+                            return new WP_Error('invalid', sprintf('%s: Please enter only alphabets.', $label));
+                        }
+                        break;
+                    case 'numeric':
+                        if (!is_numeric($value)) {
+                            return new WP_Error('invalid', sprintf('%s: Please enter a number.', $label));
+                        }
+                        break;
+                }
             }
         }
 
-        // Upload oraganization logo
-        if (!empty($_FILES['organization_logo'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- REST API request is authenticated.
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing
-            $file = $_FILES['organization_logo']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- REST API authenticated upload.
-            $upload_overrides = array(
-                'test_form' => false,
-            );
-            $movefile = wp_handle_upload($file, $upload_overrides);
-            if (!empty($movefile['url'])) {
-                $file_url = esc_url_raw($movefile['url']);
-                update_user_meta($user_id, '_organization_logo', $file_url);
-            } else {
-                update_user_meta($user_id, '_organization_logo', '');
-            }
-        }
-        
-        return self::wpem_prepare_error_for_response(200);
+        return $value;
     }
 
     /**
