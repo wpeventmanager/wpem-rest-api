@@ -444,7 +444,9 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
 
             $priority = (isset($config['priority']) && is_numeric($config['priority'])) ? (int) $config['priority'] : $order;
+
             $field_type = !empty($config['type']) ? (string) $config['type'] : 'text';
+
             $entry = array(
                 'label' => isset($config['label']) ? (string) $config['label'] : '',
                 'type' => $field_type,
@@ -457,11 +459,27 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 $entry['options'] = $this->wpem_get_profile_field_options($config);
             }
 
+            // Term fields return the taxonomy selected in the form (e.g. event_registration_professions).
+            if (in_array($field_type, array('term-select', 'term-multiselect'), true)) {
+                $entry['taxonomy'] = !empty($config['taxonomy']) ? (string) $config['taxonomy'] : null;
+            }
+
+            // File fields return whether multiple files are allowed.
+            if ('file' === $field_type) {
+                $entry['multiple_files'] = !empty($config['multiple']) ? 1 : 0;
+            }
+
+            // "Add to Registration Form" / "Add to User Profile Form" checkboxes.
+            // Attendee name / last name / email are locked (always checked) in the admin screen.
+            $is_locked = in_array($field_key, array('attendee_name', 'attendee_last_name', 'attendee_email'), true);
+
             $entry += array(
                 'metakey' => '_' . $field_key,
                 'value' => $this->wpem_get_profile_field_value($user_id, $user, $field_key, $config, $user_meta),
                 'priority' => $priority,
                 'validation' => $this->wpem_get_profile_field_validation($config),
+                'add_to_registration_form' => ($is_locked || !empty($config['add_to_form'])) ? 1 : 0,
+                'add_to_user_profile_form' => ($is_locked || !empty($config['matchmaking_field'])) ? 1 : 0,
                 '_order' => $order,
             );
             $sections[$tab][] = $entry;
@@ -585,8 +603,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
-     * Options of a select type field as an ordered list: [ {value, label}, ... ].
-     * term-select / term-multiselect options are the terms (slug => name) of the field's taxonomy.
+     * Options of a select / multiselect field as an ordered list: [ {value, label}, ... ].
      *
      * @param array $config Field config.
      * @return array
@@ -1457,8 +1474,20 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
                 case 'multiselect':
                 case 'checkbox_multi':
-                    $arr = is_array($raw_value) ? $raw_value : (array) $raw_value;
-                    $value = array_map('sanitize_text_field', $arr);
+                case 'term-multiselect':
+                case 'term-checkbox':
+                    // Array values: blank entries (e.g. a:1:{i:0;s:0:"";}) are dropped, so blank => [].
+                    $arr = is_array($raw_value) ? $raw_value : (($raw_value === '' || $raw_value === null) ? array() : array($raw_value));
+                    $value = array();
+                    foreach ($arr as $item) {
+                        if (!is_scalar($item)) {
+                            continue;
+                        }
+                        $item = sanitize_text_field($item);
+                        if ($item !== '') {
+                            $value[] = $item;
+                        }
+                    }
                     break;
 
                 case 'url':
@@ -1467,11 +1496,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                         $raw_value = reset($raw_value);
                     }
                     $value = esc_url_raw($raw_value);
-                    break;
-
-                case 'term-multiselect':
-                case 'term-checkbox':
-                    $value = $raw_value;
                     break;
 
                 default:
