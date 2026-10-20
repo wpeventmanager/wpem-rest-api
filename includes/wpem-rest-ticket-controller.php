@@ -116,6 +116,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
 
                 $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
                 $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+                $date_time_separator = get_option( 'event_manager_date_time_format_separator', '@' );
 
                 foreach ( $registration_ids as $registration_id ) {
                     $event_id = wp_get_post_parent_id( $registration_id );
@@ -160,6 +161,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                                 'event_start_time' => $event_start_time,
                                 'event_end_date' => $event_end_date,
                                 'event_end_time' => $event_end_time,
+                                'date_time_separator' => $date_time_separator,
                                 'thumbnail'     => wpem_get_event_thumbnail( $event_id, 'thumbnail' )
                             );
                         }
