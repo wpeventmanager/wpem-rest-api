@@ -794,8 +794,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function wpem_update_matchmaking_profile($request)
     {
-        error_log('WPEM FILES: ' . print_r($request->get_file_params(), true));
-        error_log('WPEM PARAMS: ' . print_r($request->get_params(), true));
         $user_id = (int) wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
         if (!$user) {
