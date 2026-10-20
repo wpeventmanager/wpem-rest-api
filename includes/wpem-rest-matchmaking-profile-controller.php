@@ -500,7 +500,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
             if ('organization' === $tab) {
                 $has_value = false;
+                $has_saved_logo = !empty($this->wpem_get_saved_organization_logo_urls($user_id));
                 foreach ($items as $item) {
+                    // The default organization logo is only a placeholder, it is not "filled in" data.
+                    if ('_organization_logo' === $item['metakey'] && !$has_saved_logo) {
+                        continue;
+                    }
                     if (!($item['value'] === null || $item['value'] === array())) {
                         $has_value = true;
                         break;
@@ -532,7 +537,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $other['profile_photo_status'] = get_user_meta($user_id, '_profile_photo', true) ? true : false;
-        $other['organization_logo_status'] = get_user_meta($user_id, '_organization_logo', true) ? true : false;
+        $other['organization_logo_status'] = !empty($this->wpem_get_saved_organization_logo_urls($user_id));
 
         if (!isset($form_fields['is_user_matchmaking_profile_enabled'])) {
             $other['is_user_matchmaking_profile_enabled'] = get_user_meta($user_id, '_matchmaking_profile', true) ? (int) get_user_meta($user_id, '_matchmaking_profile', true) : 0;
@@ -548,7 +553,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             $other['available_for_meeting'] = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
         }
 
-        $other['organization_default_logo'] = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+        $other['organization_default_logo'] = $this->wpem_get_default_organization_logo();
 
         $data['other_fields'] = $other;
 
@@ -668,20 +673,32 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         return get_wpem_user_profile_photo($user_id) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
     }
 
+    /**
+     * Default organization logo (used when the user has not set one).
+     */
+    private function wpem_get_default_organization_logo()
+    {
+        return EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+    }
+
+    /**
+     * Organization logo URLs really saved by the user (default placeholder is ignored).
+     */
+    private function wpem_get_saved_organization_logo_urls($user_id)
+    {
+        $urls = $this->wpem_get_file_urls(get_user_meta($user_id, '_organization_logo', true));
+        return array_values(array_filter($urls, function ($url) {
+            return basename(wp_parse_url($url, PHP_URL_PATH) ?: $url) !== 'organisation-icon.jpg';
+        }));
+    }
+
+    /**
+     * Organization logo (single file field): saved logo, otherwise the default logo.
+     */
     private function wpem_get_organization_logo_value($user_id)
     {
-        $organization_logo = get_user_meta($user_id, '_organization_logo', true);
-        $organization_logo = maybe_unserialize($organization_logo);
-        if (is_array($organization_logo)) {
-            $organization_logo = reset($organization_logo);
-        }
-        if (empty($organization_logo) || !is_string($organization_logo)) {
-            return null;
-        }
-        if (basename(wp_parse_url($organization_logo, PHP_URL_PATH) ?: $organization_logo) === 'organisation-icon.jpg') {
-            return null;
-        }
-        return $organization_logo;
+        $urls = $this->wpem_get_saved_organization_logo_urls($user_id);
+        return !empty($urls) ? reset($urls) : $this->wpem_get_default_organization_logo();
     }
 
     /**
@@ -698,6 +715,13 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             // No photo saved: return the default photo (as a one item list) like the single file field does.
             if (empty($urls) && 'profile_photo' === $field_key) {
                 $urls = array(EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png');
+            }
+            // No organization logo saved: return the default logo (as a one item list).
+            if ('organization_logo' === $field_key) {
+                $urls = $this->wpem_get_saved_organization_logo_urls($user_id);
+                if (empty($urls)) {
+                    $urls = array($this->wpem_get_default_organization_logo());
+                }
             }
             return $urls;
         }
@@ -770,6 +794,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
      */
     public function wpem_update_matchmaking_profile($request)
     {
+        error_log('WPEM FILES: ' . print_r($request->get_file_params(), true));
+        error_log('WPEM PARAMS: ' . print_r($request->get_params(), true));
         $user_id = (int) wpem_rest_get_current_user_id();
         $user = get_user_by('id', $user_id);
         if (!$user) {
