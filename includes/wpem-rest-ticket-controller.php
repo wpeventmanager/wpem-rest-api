@@ -114,6 +114,9 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
                 $order_date = $wpdb->get_var($wpdb->prepare( "SELECT DATE(post_date) FROM {$wpdb->posts} WHERE ID = %d", $order_id));
 
+                $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+                $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+
                 foreach ( $registration_ids as $registration_id ) {
                     $event_id = wp_get_post_parent_id( $registration_id );
                     if ( empty( $event_id ) ) {
@@ -128,6 +131,15 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                     if ( ! $event_post || 'event_listing' !== $event_post->post_type ) {
                         continue;
                     }
+
+                    $startdate_timestamp = strtotime( get_post_meta($event_id, '_event_start_date', true) );
+                    $enddate_timestamp = strtotime( get_post_meta($event_id, '_event_end_date', true) );
+                    $starttime_timestamp = strtotime( get_post_meta($event_id, '_event_start_time', true) );
+                    $endtime_timestamp = strtotime( get_post_meta($event_id, '_event_end_time', true) );
+                    $event_start_date = date_i18n( $date_format, $startdate_timestamp );
+                    $event_end_date = date_i18n( $date_format, $enddate_timestamp );
+                    $event_start_time = date_i18n( $time_format, $starttime_timestamp );
+                    $event_end_time = date_i18n( $time_format, $endtime_timestamp );
 
                     // Only process event data when event_id not passed
                     if ( ! $requested_event_id ) {
@@ -144,8 +156,10 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                             $event_data[ $event_id ] = array(
                                 'event_id'      => $event_id,
                                 'event_title'   => get_the_title( $event_id ),
-                                'event_date'    => wpem_get_event_start_date( $event_id ),
-                                'event_time'    => wpem_get_event_start_time( $event_id ),
+                                'event_start_date' => $event_start_date,
+                                'event_start_time' => $event_start_time,
+                                'event_end_date' => $event_end_date,
+                                'event_end_time' => $event_end_time,
                                 'thumbnail'     => wpem_get_event_thumbnail( $event_id, 'thumbnail' )
                             );
                         }
