@@ -2132,6 +2132,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 'event_id' => $event_id,
                 'title' => $event_post->post_title,
                 'status' => $event_post->post_status,
+                'description' => wpautop(do_shortcode($event_post->post_content)),
                 '_event_start_date' => $event_start_date,
                 '_event_start_time' => $event_start_time,
                 '_event_end_date' => $event_end_date,
