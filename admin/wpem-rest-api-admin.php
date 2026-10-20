@@ -117,7 +117,7 @@ class WPEM_Rest_API_Admin
             $event_id = !empty($_POST['event_id']) ? absint($_POST['event_id']) : '';
             $date_expires = !empty($_POST['date_expires']) ? gmdate('Y-m-d H:i:s', strtotime(str_replace('-', '/', wp_kses_post(wp_unslash($_POST['date_expires']))))) : null;
             $restrict_check_in = isset($_POST['restrict_check_in']) ? sanitize_text_field(wp_unslash($_POST['restrict_check_in'])) : '';
-            $disable_mobile_checkin = isset($_POST['disable_mobile_checkin']) ? 1 : 0;
+            $disable_mobile_checkin = !empty($_POST['disable_mobile_checkin']) ? 1 : 0;
             $user_restrict_check_in_window_time = !empty($_POST['user_restrict_check_in_window_time']) ? absint($_POST['user_restrict_check_in_window_time']) : 30;
             $event_show_by = isset($_POST['event_show_by']) ? sanitize_text_field(wp_unslash($_POST['event_show_by'])) : 'loggedin';
             $select_events = isset($_POST['select_events']) ? maybe_serialize(array_map('absint', wp_unslash($_POST['select_events']))) : maybe_serialize(array());
