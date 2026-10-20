@@ -694,7 +694,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         // File field that allows multiple files: always a list of URLs ([] when there is none).
         if ('file' === $type && !empty($config['multiple'])) {
             $meta_key = '_' . $field_key;
-            return $this->wpem_get_file_urls(isset($user_meta[$meta_key][0]) ? $user_meta[$meta_key][0] : '');
+            $urls = $this->wpem_get_file_urls(isset($user_meta[$meta_key][0]) ? $user_meta[$meta_key][0] : '');
+            // No photo saved: return the default photo (as a one item list) like the single file field does.
+            if (empty($urls) && 'profile_photo' === $field_key) {
+                $urls = array(EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png');
+            }
+            return $urls;
         }
 
         // Photo / logo keep their placeholder image fallback (same as before).
@@ -1948,7 +1953,14 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         // Photos / logos
-        $profile['profile_photo'] = get_wpem_user_profile_photo($uid) ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+        $default_photo = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
+        if (!empty($fields['profile_photo']['multiple'])) {
+            // Multiple files allowed: list of URLs, default photo when nothing is saved.
+            $photo_urls = $this->wpem_get_file_urls(isset($user_meta['_profile_photo'][0]) ? $user_meta['_profile_photo'][0] : '');
+            $profile['profile_photo'] = !empty($photo_urls) ? $photo_urls : array($default_photo);
+        } else {
+            $profile['profile_photo'] = get_wpem_user_profile_photo($uid) ?: $default_photo;
+        }
         $org_logo = get_user_meta($uid, '_organization_logo', true);
         $org_logo = is_array($org_logo) ? reset($org_logo) : $org_logo;
         $profile['organization_logo'] = $org_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
