@@ -90,6 +90,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             'meeting_expiration' => get_option('wpem_meeting_expiration'),
             'is_matchmaking_site_feature_enabled' => get_option('enable_matchmaking'),
             'participant_activation' => get_option('participant_activation'),
+            'meeting_delete_permission' => get_option('wpem_meeting_delete_policy'),
         ];
 
         $response_data = self::wpem_prepare_error_for_response(200);
