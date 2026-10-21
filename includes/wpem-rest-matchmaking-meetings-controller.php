@@ -419,7 +419,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'room' => $room,
             'floor' => $floor,
             'table' => $table,
-            'host_meeting_delete_permission' => $host_delete_permission,
+            'host_meeting_delete_permission' => $host_delete_permission, // host can delete meeting according to meeting status
         );
 
     }
