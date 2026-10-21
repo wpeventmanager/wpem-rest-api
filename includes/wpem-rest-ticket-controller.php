@@ -257,6 +257,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
 
                         // get seat number
                         $seatnumber = maybe_unserialize( get_post_meta( $registration_id, '_seats_details', true ) );
+			            $currency = wpem_get_attendee_currency($order_id);
 
                         $ticket_data[] = array(
                             'registration_id' => absint( $registration_id ),
@@ -273,6 +274,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                             'organizer_name'  => $organizer_name,
                             'event_venue'      => $venue_name,
                             'seat_number'      => is_array( $seatnumber ) ? $seatnumber[0] : $seatnumber,
+				            'currency_symbol' => $currency['symbol'],
                         );
                     }
                 }

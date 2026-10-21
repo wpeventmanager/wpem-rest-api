@@ -727,3 +727,37 @@ if (!function_exists('wpem_addon_get_event_banner')) {
         }
     }
 }
+
+/**
+ * Get the currency (code + symbol) the attendee actually paid in.
+ *
+ * With a multicurrency setup the site currency can differ per visitor, so the
+ * currency saved on the WooCommerce order is the only reliable value. We fall back
+ * to the store base currency when there is no order (free / offline registrations).
+ *
+ * Use the 'wpem_rest_attendee_currency' filter to override.
+ *
+ * @param int $order_id
+ * @return array array('code' => 'USD', 'symbol' => '$')
+ */
+if (!function_exists('wpem_get_attendee_currency')) {
+    function wpem_get_attendee_currency($order_id = 0) {
+        $code = '';
+        if(!empty($order_id) && function_exists('wc_get_order')) {
+            $order = wc_get_order($order_id);
+            if($order instanceof WC_Order) {
+                $code = $order->get_currency();
+            }
+        }
+        if(empty($code)) {
+            $code = get_option('woocommerce_currency');
+        }
+        $code = apply_filters('wpem_rest_attendee_currency', $code, $order_id);
+
+        $symbol = function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol($code) : $code;
+        // WooCommerce returns HTML entities (e.g. &#8377;), decode them for API consumers.
+        $symbol = html_entity_decode($symbol, ENT_QUOTES, 'UTF-8');
+
+        return array('code' => $code, 'symbol' => $symbol);
+    }
+}
