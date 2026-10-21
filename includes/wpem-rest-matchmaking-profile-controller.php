@@ -1407,9 +1407,23 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             'meeting_request_mode' => get_user_meta($user_id, '_wpem_meeting_request_mode', true) ?: 'approval',
             'timezone_settings' => $timezone_settings,
         );
+
         if ($timezone_settings === 'custom') {
             $settings['custom_timezone'] = get_user_meta($user_id, '_custom_timezone', true);
-            $settings['custom_timezone_offset'] = DateTimeZone::listIdentifiers();
+
+            $timezone_values = array();
+            if (preg_match_all('/<option\b[^>]*\bvalue="([^"]+)"/', wp_timezone_choice('', get_user_locale()), $matches)) {
+                foreach ($matches[1] as $value) {
+                    $value = html_entity_decode($value);
+                    if ($value === 'UTC') {
+                        $value = 'UTC/' . $value;
+                    } elseif (preg_match('/^UTC[+-]/', $value)) {
+                        $value = 'Manual Offsets/' . $value;
+                    }
+                    $timezone_values[] = $value;
+                }
+            }
+            $settings['custom_timezone_offset'] = $timezone_values;
         }
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $settings;
