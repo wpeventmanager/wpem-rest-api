@@ -261,7 +261,7 @@ defined('ABSPATH') || exit;
 						<?php $user_restrict_check_in_window_time = get_user_meta($key_data["user_id"], '_user_restrict_checkin_window_time', true); ?>
 						<td class="forminp">
 							<input id="user_restrict_check_in_window_time" name="user_restrict_check_in_window_time" type="number" class="input-number"
-								value="<?php echo (int) $user_restrict_check_in_window_time ?>" />
+								value="<?php echo (int) $user_restrict_check_in_window_time ?>" min="0" />
 							<p class="description">
 								<?php esc_html_e('Set the time window (in min) before the event during which attendees can check in.', 'wpem-rest-api'); ?></p>
 						</td>

@@ -105,6 +105,10 @@ var WPEMRestAPIAdmin = (function () {
                                       .first()
                                       .append('<div class="wpem-api-message error"><p>' + e.data.message + "</p></div>");
                                       
+                                if (e.success) {
+                                    jQuery('#user_restrict_check_in_window_time').val(e.data.user_restrict_check_in_window_time);
+                                }
+
                                 if (e.data.mobile_menu) {
                                     jQuery('input[name="mobile_menu[]"]').prop('checked', false);
                                     e.data.mobile_menu.forEach(function (val) {
@@ -318,6 +322,10 @@ var WPEMRestAPIAdmin = (function () {
                                       .first()
                                       .append('<div class="wpem-api-message error"><p>' + e.data.message + "</p></div>");
                                       
+                                if (e.success) {
+                                    jQuery('#user_restrict_check_in_window_time').val(e.data.user_restrict_check_in_window_time);
+                                }
+
                                 if (e.data.mobile_menu) {
                                     jQuery('input[name="mobile_menu[]"]').prop('checked', false);
                                     e.data.mobile_menu.forEach(function (val) {
