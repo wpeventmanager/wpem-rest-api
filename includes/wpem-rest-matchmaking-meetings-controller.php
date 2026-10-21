@@ -390,6 +390,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $room = !empty($room_info['room_name']) ? $room_info['room_name'] : '';
             $floor = !empty($room_info['floor']) ? $room_info['floor'] : '';
         }
+
+        // get seetings from event dashboard page > registration > matchmaking settings
+        $host_delete_permission = array();
+        $event_id = isset($row['event_id']) ? (int) $row['event_id'] : 0;
+        if ($event_id) {
+            $event_author_id = (int) get_post_field('post_author', $event_id); // event organizer (who created a meeting)
+            if ($event_author_id) {
+                $permission = get_user_meta($event_author_id, '_host_delete_permission', true);
+                if (is_array($permission)) {
+                    $host_delete_permission = $permission;
+                }
+            }
+        }
         // phpcs:enable
         // Build final payload
         return array(
@@ -406,6 +419,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'room' => $room,
             'floor' => $floor,
             'table' => $table,
+            'host_meeting_delete_permission' => $host_delete_permission,
         );
 
     }
