@@ -736,6 +736,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				// Get all user data from meta
 				$user_email = get_user_meta($user_id, 'user_email', true);
 				$first_name = get_user_meta($user_id, 'first_name', true);
+				$first_name = ! empty( $first_name ) ? $first_name : ( get_userdata( $user_id )->display_name ?? '' );
 				$last_name = get_user_meta($user_id, 'last_name', true);
 				$user_login = get_user_meta($user_id, 'user_login', true);
 				$print_badge_mode = get_user_meta($user_id, 'wpem_print_badge_mode', true) ?? 0;
