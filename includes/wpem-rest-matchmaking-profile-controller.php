@@ -1914,18 +1914,28 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
-     * Moves every registration-form field of a built profile into one "profile_fields" list
-     * of { label, value } items (in registration form order). A field without a value is left
-     * out of the list completely. Base info (user_id, display_name, email, first_name,
-     * last_name) and the matchmaking / meeting meta keys stay at the top level.
+     * Moves the registration-form fields of a built profile into one "profile_fields" list.
+     *
+     * Rules:
+     *  - Only fields with "Add to User Profile Form" checked are listed (attendee first name,
+     *    last name and email are locked/always checked in the admin screen, so they are always included).
+     *  - Only fields of the "About" and "Organization" tabs go in "profile_fields"
+     *    (an empty / unknown tab group falls back to "about", same as the admin screen).
+     *  - A field without a value is left out completely.
+     *  - Each item is { label, metakey, type, value } (+ "taxonomy" for term-select / term-multiselect).
+     *  - The two "Settings" tab fields (create_matchmaking, message_notification) are NOT in
+     *    "profile_fields"; they are returned as plain top level keys instead.
      *
      * @param array $profile Flat profile from wpem_build_matchmaking_profile().
-     * @param array $fields  Matchmaking profile field definitions.
+     * @param array $fields  Registration form field definitions.
      * @return array
      */
     private function wpem_format_profile_fields_with_label($profile, $fields)
     {
         $profile_fields = array();
+        $locked_fields = array('attendee_name', 'attendee_last_name', 'attendee_email');
+        $setting_keys = array('create_matchmaking', 'message_notification');
+        $setting_values = array();
 
         foreach ($fields as $field_key => $field_config) {
             if (!array_key_exists($field_key, $profile)) {
@@ -1934,6 +1944,28 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
             $value = $profile[$field_key];
             unset($profile[$field_key]);
+
+            // Settings tab: the two settings fields are returned at the top level below.
+            $tab = (is_array($field_config) && !empty($field_config['tabgroup'])) ? (string) $field_config['tabgroup'] : 'about';
+            if ('settings' === $tab) {
+                if (in_array($field_key, $setting_keys, true)) {
+                    $setting_values[$field_key] = $value;
+                }
+                continue;
+            }
+
+            // Only fields with "Add to User Profile Form" checked.
+            $is_locked = in_array($field_key, $locked_fields, true);
+            if (!$is_locked && empty($field_config['matchmaking_field'])) {
+                continue;
+            }
+
+            // Only "About" and "Organization" tabs (unknown tab group => about).
+            if (!in_array($tab, array('about', 'organization'), true)) {
+                if (function_exists('wpem_get_matchmaking_profile_tabs') && array_key_exists($tab, (array) wpem_get_matchmaking_profile_tabs())) {
+                    continue; // some other custom tab
+                }
+            }
 
             // No value => do not show the field in the response at all.
             if ($value === null || $value === '' || (is_array($value) && empty($value))) {
@@ -1944,13 +1976,32 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 ? wp_specialchars_decode(stripslashes((string) $field_config['label']), ENT_QUOTES)
                 : $field_key;
 
-            $profile_fields[] = array(
+            $field_type = !empty($field_config['type']) ? (string) $field_config['type'] : 'text';
+
+            $item = array(
                 'label' => $label,
+                'metakey' => '_' . $field_key,
+                'type' => $field_type,
                 'value' => $value,
             );
+
+            // Term fields also return the taxonomy used by the field.
+            if (in_array($field_type, array('term-select', 'term-multiselect'), true)) {
+                $item['taxonomy'] = !empty($field_config['taxonomy']) ? (string) $field_config['taxonomy'] : null;
+            }
+
+            $profile_fields[] = $item;
         }
 
-        // Keep the base info first, then profile_fields, then the remaining keys.
+        // Settings fields (top level keys, outside profile_fields).
+        $user_id = isset($profile['user_id']) ? (int) $profile['user_id'] : 0;
+        if (array_key_exists('message_notification', $setting_values)) {
+            // Same default as the plugin: no saved value => 1 (enabled).
+            $saved = $user_id ? get_user_meta($user_id, '_message_notification', true) : '';
+            $setting_values['message_notification'] = ($saved === '' || $saved === null) ? 1 : (int) $setting_values['message_notification'];
+        }
+
+        // Keep the base info first, then profile_fields, then the settings, then the remaining keys.
         $base_keys = array('user_id', 'display_name', 'email', 'first_name', 'last_name');
         $result = array();
         foreach ($base_keys as $key) {
@@ -1960,6 +2011,11 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             }
         }
         $result['profile_fields'] = $profile_fields;
+        foreach ($setting_keys as $key) {
+            if (array_key_exists($key, $setting_values)) {
+                $result[$key] = (int) $setting_values[$key];
+            }
+        }
 
         return $result + $profile;
     }
