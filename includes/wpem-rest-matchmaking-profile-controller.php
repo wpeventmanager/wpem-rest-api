@@ -221,6 +221,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         );
 
         // Alias endpoint for legacy path and POST method
+        // get current user's registered events, match by current user's emailid
         register_rest_route(
             $this->namespace,
             '/' . $this->rest_base . '/events',
@@ -1654,7 +1655,8 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         }
 
         $countries = wpem_get_all_countries();
-        $fields = get_wpem_user_matchmaking_profile_fields();
+        // Same field definitions as the GET /matchmaking-profile API (admin Registration Form).
+        $fields = $this->wpem_get_profile_form_fields();
         $filtered_users = [];
 
         $your_matches_mode = !empty($filters['your_matches']) ? strtolower(sanitize_text_field($filters['your_matches'])) : '';
@@ -1894,6 +1896,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         $offset = ($page - 1) * $per_page;
         $paged_users = array_slice($final_users, $offset, $per_page);
         foreach ($paged_users as &$paged_user) {
+            $paged_user = $this->wpem_format_profile_fields_with_label($paged_user, $fields);
             $paged_user['is_bookmarked'] = in_array((int) $paged_user['user_id'], $bookmarked_user_ids, true);
         }
         unset($paged_user);
@@ -1911,6 +1914,57 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     }
 
     /**
+     * Moves every registration-form field of a built profile into one "profile_fields" list
+     * of { label, value } items (in registration form order). A field without a value is left
+     * out of the list completely. Base info (user_id, display_name, email, first_name,
+     * last_name) and the matchmaking / meeting meta keys stay at the top level.
+     *
+     * @param array $profile Flat profile from wpem_build_matchmaking_profile().
+     * @param array $fields  Matchmaking profile field definitions.
+     * @return array
+     */
+    private function wpem_format_profile_fields_with_label($profile, $fields)
+    {
+        $profile_fields = array();
+
+        foreach ($fields as $field_key => $field_config) {
+            if (!array_key_exists($field_key, $profile)) {
+                continue;
+            }
+
+            $value = $profile[$field_key];
+            unset($profile[$field_key]);
+
+            // No value => do not show the field in the response at all.
+            if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                continue;
+            }
+
+            $label = isset($field_config['label']) && is_scalar($field_config['label'])
+                ? wp_specialchars_decode(stripslashes((string) $field_config['label']), ENT_QUOTES)
+                : $field_key;
+
+            $profile_fields[] = array(
+                'label' => $label,
+                'value' => $value,
+            );
+        }
+
+        // Keep the base info first, then profile_fields, then the remaining keys.
+        $base_keys = array('user_id', 'display_name', 'email', 'first_name', 'last_name');
+        $result = array();
+        foreach ($base_keys as $key) {
+            if (array_key_exists($key, $profile)) {
+                $result[$key] = $profile[$key];
+                unset($profile[$key]);
+            }
+        }
+        $result['profile_fields'] = $profile_fields;
+
+        return $result + $profile;
+    }
+
+    /**
      * Builds the response-ready matchmaking profile array for a single participant.
      * Extracted from wpem_get_wpem_matchmaking_filter_users() so it can be reused by
      * both the default search flow and the "your_matches" flow.
@@ -1923,6 +1977,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
     private function wpem_build_matchmaking_profile($uid, $user, $fields)
     {
         $user_meta = get_user_meta($uid);
+        $wp_user = get_userdata($uid);
 
         // Base info
         $profile = [
@@ -1933,75 +1988,19 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             'last_name' => $user_meta['last_name'][0] ?? '',
         ];
 
-        // Dynamic fields
+        // Dynamic fields: values are read by the SAME function the GET /matchmaking-profile API uses,
+        // so both APIs always return the same value (single file => URL, multiple files => array of URLs,
+        // photo / logo placeholder fallback, attendee name / email fallback, ...).
         foreach ($fields as $field_key => $field_config) {
-            $raw_value = isset($user_meta["_" . $field_key][0]) ? maybe_unserialize($user_meta["_" . $field_key][0]) : '';
-            $type = $field_config['type'] ?? 'text';
-            $value = '';
-
-            switch ($type) {
-                case 'text':
-                case 'email':
-                case 'number':
-                case 'textarea':
-                case 'select':
-                case 'term-select':
-                    $value = sanitize_text_field($raw_value);
-                    break;
-
-                case 'checkbox':
-                case 'radio':
-                    $value = !empty($raw_value) ? 1 : 0;
-                    break;
-
-                case 'multiselect':
-                case 'checkbox_multi':
-                case 'term-multiselect':
-                case 'term-checkbox':
-                    // Array values: blank entries (e.g. a:1:{i:0;s:0:"";}) are dropped, so blank => [].
-                    $arr = is_array($raw_value) ? $raw_value : (($raw_value === '' || $raw_value === null) ? array() : array($raw_value));
-                    $value = array();
-                    foreach ($arr as $item) {
-                        if (!is_scalar($item)) {
-                            continue;
-                        }
-                        $item = sanitize_text_field($item);
-                        if ($item !== '') {
-                            $value[] = $item;
-                        }
-                    }
-                    break;
-
-                case 'url':
-                case 'file':
-                    if (is_array($raw_value)) {
-                        $raw_value = reset($raw_value);
-                    }
-                    $value = esc_url_raw($raw_value);
-                    break;
-
-                default:
-                    $value = sanitize_text_field(is_scalar($raw_value) ? $raw_value : '');
-                    break;
+            if (!is_array($field_config)) {
+                continue;
             }
+            $value = $this->wpem_get_profile_field_value($uid, $wp_user, (string) $field_key, $field_config, $user_meta);
             if ($field_key === 'profession' && ($value === '0' || $value === 0)) {
-                $value = '';
+                $value = null;
             }
             $profile[$field_key] = $value;
         }
-
-        // Photos / logos
-        $default_photo = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/user-profile-photo.png';
-        if (!empty($fields['profile_photo']['multiple'])) {
-            // Multiple files allowed: list of URLs, default photo when nothing is saved.
-            $photo_urls = $this->wpem_get_file_urls(isset($user_meta['_profile_photo'][0]) ? $user_meta['_profile_photo'][0] : '');
-            $profile['profile_photo'] = !empty($photo_urls) ? $photo_urls : array($default_photo);
-        } else {
-            $profile['profile_photo'] = get_wpem_user_profile_photo($uid) ?: $default_photo;
-        }
-        $org_logo = get_user_meta($uid, '_organization_logo', true);
-        $org_logo = is_array($org_logo) ? reset($org_logo) : $org_logo;
-        $profile['organization_logo'] = $org_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
 
         // Matchmaking / meeting meta
         $profile['matchmaking_profile'] = (int) get_user_meta($uid, '_matchmaking_profile', true);
