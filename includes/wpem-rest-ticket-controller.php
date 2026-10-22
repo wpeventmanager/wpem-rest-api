@@ -259,6 +259,10 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         $seatnumber = maybe_unserialize( get_post_meta( $registration_id, '_seats_details', true ) );
 			            $currency = wpem_get_attendee_currency($order_id);
 
+                        $date_format = (string) get_option('date_format');
+                        $time_format = (string) get_option('time_format');
+                        $local_date_format = trim($date_format . ' ' . $time_format);
+
                         $ticket_data[] = array(
                             'registration_id' => absint( $registration_id ),
                             'order_id'        => $order_id,
@@ -267,7 +271,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                             'last_name'       => $last_name,
                             'email'           => $email,
                             'user_photo'      => $user_photo,
-                            'order_date'      => wp_date( 'Y-m-d', strtotime( $order_date ) ),
+                            'order_date'      => wp_date( $local_date_format, strtotime( $order_date ) ),
                             'order_amount'    => $order_amount,
                             'payment_method'  => $payment_method,
                             'payment_status'  => $payment_status,
