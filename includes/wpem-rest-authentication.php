@@ -254,7 +254,8 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	public function wpem_get_authorization_header()
 	{
 		if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
-			return wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION'])); // WPCS: sanitization ok.
+			// return wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION'])); // WPCS: sanitization ok.
+			return sanitize_text_field(wp_unslash($_SERVER['HTTP_AUTHORIZATION']));
 		}
 		if (function_exists('getallheaders')) {
 			$headers = getallheaders();
@@ -394,8 +395,10 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 */
 	private function wpem_check_oauth_signature($user, $params)
 	{
-		$http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(wp_kses_post(wp_unslash($_SERVER['REQUEST_METHOD']))) : ''; // WPCS: sanitization ok.
-		$request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : ''; // WPCS: sanitization ok.
+		// $http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(wp_kses_post(wp_unslash($_SERVER['REQUEST_METHOD']))) : ''; // WPCS: sanitization ok.
+		$http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD']))) : '';
+		// $request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : ''; // WPCS: sanitization ok.
+		$request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : '';
 		$wp_base = get_home_url(null, '/', 'relative');
 		if (substr($request_path, 0, strlen($wp_base)) === $wp_base) {
 			$request_path = substr($request_path, strlen($wp_base));
