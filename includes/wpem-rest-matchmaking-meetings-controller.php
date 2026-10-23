@@ -915,7 +915,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $wpdb->delete( $bookings, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
 
         if ( $this->wpem_meeting_table_id_column_exists() ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $wpdb->query( $wpdb->prepare( "UPDATE {$this->table} SET table_id = NULL WHERE id = %d", $meeting_id ) );
         }
     }
@@ -1014,14 +1014,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $check_user_ids = array_map( 'intval', array_unique( array_merge( array( $host_id ), (array) $participants ) ) );
         $participant_only_ids = array_map( 'intval', (array) $participants );
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $overlaps = $wpdb->get_results( $wpdb->prepare(
-            "SELECT user_id, participant_ids FROM {$this->table}
-            WHERE id != %d AND meeting_date = %s
-            AND meeting_status != -1
-            AND meeting_start_time < %s AND meeting_end_time > %s",
-            $exclude_meeting_id, $meeting_date, $end_time, $start_time
-        ), ARRAY_A );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $overlaps = $wpdb->get_results( $wpdb->prepare( "SELECT user_id, participant_ids FROM {$this->table} WHERE id != %d AND meeting_date = %s AND meeting_status != -1 AND meeting_start_time < %s AND meeting_end_time > %s", $exclude_meeting_id, $meeting_date, $end_time, $start_time ), ARRAY_A );
 
         foreach ( (array) $overlaps as $row ) {
             $pids = maybe_unserialize( $row['participant_ids'] );
@@ -1509,7 +1503,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $this->wpem_release_meeting_table($meeting_id);
 
         // Fetch meeting
-
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, 	WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $fresh_row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $meeting   = $fresh_row ? (object) $fresh_row : null;
 

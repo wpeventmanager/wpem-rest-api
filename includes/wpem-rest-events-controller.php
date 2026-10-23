@@ -250,6 +250,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             unset($args['post_status']);
         }
 
+        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
         $args['meta_key'] = '_event_start_date'; $args['orderby'] = 'meta_value'; $args['order'] = 'DESC';
 
         // Taxonomy query to filter events by type, category,
@@ -320,8 +321,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             }
 
             // Empty post__in returns all events, so use [0] to return nothing.
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
             $args['post__in'] = !empty($registered_event_ids) ? array_values($registered_event_ids) : array(0);
-            $args['meta_key'] = '_event_start_date';
+            $args['meta_key'] = '_event_start_date'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
             $args['orderby'] = 'meta_value';
             $args['order'] = 'DESC';
         }
