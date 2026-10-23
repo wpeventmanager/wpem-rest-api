@@ -16,103 +16,155 @@ WP Event Manager Rest API
 
 == Description ==
 
-WP Event Manager Rest API
+WP Event Manager REST API lets apps and outside tools work with the events on your WordPress site. Once it's active, events, venues, organizers and attendee check-ins in **[WP Event Manager](https://wordpress.org/plugins/wp-event-manager/)** can be read or changed through API requests, with no extra code in your theme.
 
-* [Demo](https://demo.wp-eventmanager.com/)
-* [Add-ons](http://www.wp-eventmanager.com/plugins/)
-* [Documentation](http://www.wp-eventmanager.com/documentation/)
+Most organizers use it for one job, which is running our Event App at the entrance on event day. Developers have another use in mind. If you're building a custom app or a headless site, the events API is already here, so there's no need to write your own. There's no charge for the plugin, and your data stays on your server the whole time. Every key gets its own limits. A door volunteer, for example, could see only one event and lose access after that weekend.
 
-[youtube https://www.youtube.com/watch?v=CPK0P7ToRgM]
+* [Event App](https://wp-eventmanager.com/product/organizer-app/)
+* [Live Demo](https://demo.wp-eventmanager.com/)
+* [Documentation](https://support.wp-eventmanager.com/portal/en/kb)
+* [Add-ons](https://wp-eventmanager.com/plugins/)
+* [GitHub](https://github.com/wpeventmanager/wpem-rest-api)
 
+== Why Organizers Pick the WP Event Manager REST API ==
 
-= Documentation =
+A printed guest list works fine until the queue gets long. With two doors open, the staff on one side can't tell who already came in through the other. A separate check-in service solves this, but somebody then has to export attendees and make sure both lists match. With this plugin the app reads straight from your website instead.
 
-Documentation for the core plugin and add-ons can be found [on the docs site here](https://wp-eventmanager.com/knowledge-base/). Please take a look before requesting support because it covers all frequently asked questions!
+* **Same data everywhere**: The app shows what's in your WordPress admin, updated as people arrive
+* **Nothing to export**: Someone registers on your site and appears on the app's list a moment later
+* **Keys you control**: Permissions, events, and the end date are set individually for each key
+* **No platform fees**: We don't sit in the middle because the data stays on your own hosting
+* **Made by our team**: WP Event Manager itself runs on more than 30,000 websites
 
+== Event Check-in App for iOS and Android ==
 
-= Be a contributor =
-If you want to contribute, go to our [WP Event Manager Rest API GitHub Repository](https://github.com/wpeventmanager/wpem-rest-api/) and see where you can help.
+This plugin is how your site connects to the free **[WP Event Manager app](https://wp-eventmanager.com/product/organizer-app/)** from the **[App Store](https://apps.apple.com/us/app/wp-event-manager/id1554422731)** and **[Google Play](https://play.google.com/store/apps/details?id=com.wpeventmanager)**. Here's what staff at the door got with it:
 
-You can also add a new language via [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/wpem-rest-api). We've built a short guide explaining [how to translate and localize the plugin](https://www.wp-eventmanager.com/documentation/translating-wp-event-manager/).
+* **QR scanning**: Each ticket has a code to scan, or staff can swipe a name on the list instead
+* **Offline mode**: If the venue Wi-Fi drops, check-ins are saved on the phone and sent once it's back
+* **Multiple devices**: Use as many phones as you have entrances, and each one sees the others' check-ins
+* **Attendee search**: Type a name to find someone, open their order, or leave a note
+* **Dashboard**: Registration numbers (new, confirmed, waiting, cancelled) are shown next to how many people actually showed up
+* **Branding**: Your logo and color, in light or dark mode
 
-Thanks to all of our contributors.
+To use the app, you will need the Event App add-on. It comes with all four WP Event Manager bundles. Information about tickets and attendees is pulled from the Sell Tickets, Registrations, and Guest List add-ons.
 
-= Documentation and Support =
-- For documentation and tutorials go to our [Documentation](https://wp-eventmanager.com/knowledge-base/).
-- If you have any more questions, visit our support on the [Plugin's Forum](https://wordpress.org/support/plugin/wpem-rest-api).
-- If you want help with a customisation, you can contact any one for the [Listed Certified Developers](https://www.wp-eventmanager.com/hire-certified-wp-event-manager-developers/?utm_source=wp-repo&utm_medium=link&utm_campaign=readme).
-- If you need help with one of our add-ons, [please contact here](https://www.wp-eventmanager.com/get-support/?utm_source=wp-repo&utm_medium=link&utm_campaign=readme).
-- For more information about features, FAQs and documentation, check out our website at [WP Event Manager](https://www.wp-eventmanager.com/?utm_source=wp-repo&utm_medium=link&utm_campaign=readme).
+== Control Who Can Access Your Event Data ==
 
+Every app or person connects with a separate API key. These are the settings on each key:
 
-= Connect With US =
-To stay in touch and get latest update about WP Event Manager's further releases and features, you can connect with us via:
-- [Facebook](https://www.facebook.com/wpeventmanager/)
-- [Twitter](https://twitter.com/wp_eventmanager)
-- [Google Plus](https://plus.google.com/u/0/b/107105224603939407328/107105224603939407328)
-- [Linkedin](https://www.linkedin.com/company/wp-event-manager)
-- [Pinterest](https://www.pinterest.com/wpeventmanager/)
-- [Youtube](https://www.youtube.com/channel/UCnfYxg-fegS_n9MaPNU61bg).
+* **Permissions**: Read only, write only, or both
+* **Expiry date**: Handy for temporary staff, since the key simply stops working on that day
+* **Events**: Pick specific ones, or limit the key to events its owner created
+* **App screens**: Hide or show Dashboard, Attendees, Guest List, and Arrivals
+* **Check-in restriction**: Turn check-in on or off for whoever uses that key
+* **Last access**: The list shows the date each key was used last, with a revoke link next to it
 
+Site admins also choose which user roles may create keys, and one setting switches the whole API off. Organizers don't need wp-admin for any of this because key management is in the front-end event dashboard too.
 
-== Installation ==
+== Events API Endpoints for Developers ==
 
+Every endpoint is found at /wp-json/wpem/. They build on the WordPress REST API that’s already on your site, and return JSON, so you can call them from React, Next.js, Flutter, a CRM sync script, or any tool that makes HTTP calls.
 
-= Automatic installation =
+* **Events**: List, create, edit, delete, batch requests, custom event fields
+* **Organizers** and venues: The same full set of actions, batch included
+* **Filtering**: Keyword and date range search, with pagination and sorting
+* **Registered** events: Returns what a logged-in attendee has signed up for
+* **Ecosystem**: Tells your app which WP Event Manager add-ons are switched on
+* **Branding** and settings: Logo, colors and app options
+* **Authentication**: A consumer key and secret over HTTPS, OAuth 1.0a signing, or a username and password login that hands back a token
 
-Automatic installation is the easiest option as WordPress handles the file transfers itself and you don't even need to leave your web browser. To do an automatic install, log in to your WordPress admin panel, navigate to the Plugins menu and click Add New.
+== Attendee Networking and Matchmaking API ==
 
-In the search field type "WP Event Manager" and click Search Plugins. Once you've found the plugin you can view details about it such as the the point release, rating and description. Most importantly of course, you can install it by clicking _Install Now_.
+If you run conferences or expos with the **[Registrations](https://wp-eventmanager.com/product/wp-event-manager-registrations/)** add-on, there are networking endpoints too. They cover:
 
+* Attendee profiles with photo and company logo Searchable by other attendees at the event 
+* One-to-one meeting requests in open time slots
+* Messaging between attendees
+* A saved contacts list
+* Matchmaking, profile visibility, and meeting settings for each attendee
 
-= Manual installation =
+== Who Uses the WP Event Manager REST API ==
 
-The manual installation method involves downloading the plugin and uploading it to your web server via your favorite FTP application.
+* **Event organizers**: QR check-in at the entrance, in an app with their branding
+* **Conference and Expo Teams**: Mobile Networking and Meeting Scheduling for Attendees
+* **Developers and agencies**: A base for custom apps, check-in kiosks, or headless event sites
+* **Venues and multi-event sites**: Each organizer gets access to their own events and no one else's
 
-* Download the plugin file to your computer and unzip it
+== Requirements ==
 
-* Using an FTP program, or your hosting control panel, upload the unzipped plugin folder to your WordPress installation's `wp-content/plugins/` directory.
+* **[WP Event Manager](https://wordpress.org/plugins/wp-event-manager/)** (free) must be installed and active
+* Server on WordPress version 6.7+ with PHP 8.0+
+* We suggest an SSL certificate (HTTPS) as API keys are part of each request
+* Event App mobile check-in add-on (and Sell Tickets, Registrations, and Guest List for ticket and attendee data)
 
-* Activate the plugin from the Plugins menu within the WordPress admin.
+== How to Set It Up ==
 
+* **Event Manager > Rest API**: Check that **Enable Rest API** is on
+* **API Access** tab > **Add Key**: Pick a user and access level (expiry date and events optional)
+* **Generate API key**: Copy the consumer key and secret (the secret will only be shown once) 
+* **App Branding** (Optional): App logo and branding colors 
+* Use the key to connect your app, or the WP Event Manager app, to the site.
 
-= Getting started =
+== Documentation and Support ==
 
-Once installed:
+* **[Documentation](https://support.wp-eventmanager.com/portal/en/kb)**: Setup guides for this plugin and every add-on
+* **[Support forum](https://wordpress.org/support/plugin/wpem-rest-api/)**: Questions about the free plugin
+* **[Premium support](https://www.wp-eventmanager.com/get-support/)**: For add-ons and the Event App
+* **[Certified developers](https://www.wp-eventmanager.com/hire-certified-wp-event-manager-developers/)**: If you'd like someone to build it for you
+* **[GitHub](https://github.com/wpeventmanager/wpem-rest-api/)**: Bug reports and pull requests are welcome
+* **[Translate](https://translate.wordpress.org/projects/wp-plugins/wpem-rest-api)**: Help bring the plugin to your language
 
-**Note when using shortcodes**, if the content looks blown up/spaced out/poorly styled, edit your page and above the visual editor click on the 'text' tab. Then remove any 'pre' or 'code' tags wrapping your shortcode.
+Reviews on WordPress.org help other organizers find the plugin, so if it has worked well for you, please **[leave one](https://wordpress.org/support/plugin/wpem-rest-api/reviews/)**.
 
+== External Services ==
+
+To check whether a WP Event Manager license has expired, the plugin contacts wp-eventmanager.com and sends the license key. Nothing else is sent. Event details, attendee records, and personal data stay on your site, and the mobile app talks to your website directly rather than going through our servers. Please read our Terms of Use and Privacy Policy for more information.
 
 == Frequently Asked Questions ==
 
-= How do I setup WP Event Manager? =
+= Is the WP Event Manager REST API free? =
 
-View the getting [installation](http://www.wp-eventmanager.com/plugins-documentation/wp-event-manager/installation/) and [setup](http://www.wp-eventmanager.com/plugins-documentation/wp-event-manager/setting-up-wp-event-manager/) guide for advice getting started with the plugin. In most cases it's just a case of adding some shortcodes to your pages!
+The plugin is a free download from WordPress.org, and so is the mobile app. Connecting the app to your site does need the Event App add-on, which you get with any [WP Event Manager bundle](https://wp-eventmanager.com/pricing/).
 
+= Does WP Event Manager have a REST API? =
 
-= Can I use WP Event Manager without frontend event submission? =
+It does, through this plugin. After activation you'll find endpoints for events, organizers, venues, registered attendees, app branding and matchmaking under /wp-json/wpem/.
 
-Yes! If you don't setup the [submit_event_form] shortcode, you can just post from the admin backend.
+= How do I connect the WP Event Manager app to my website? =
 
+Create a key in **Event Manager > Rest API > API Access**, then type it into the app. Logging in with a WordPress username and password works too, for staff who don't want to use a key.
 
-= How can I customize the event submission form? =
+= How does QR code check-in work? =
 
-There are three ways to customize the fields in WP Event Manager;
+A unique QR code is printed on each ticket. When staff scan it in the Event App, that attendee is marked as arrived, and the same code won't work a second time for somebody else.
 
+= Does check-in work without the Internet? =
 
-1. For simple text changes, using a localisation file or a plugin such as [Say What](https://wordpress.org/plugins/say-what/).
+Yes. If there is no connection, the app stores the searches and check-ins on the phone and then forwards them to your site when it is back online.
 
-2. For field changes, or adding new fields, using functions/filters inside your theme's functions.php file: [Read more](http://www.wp-eventmanager.com/plugins-documentation/wp-event-manager/editing-event-submission-form-fields/).
+= Can a key be restricted to certain events? =
 
-3. Use a 3rd party plugin which has a UI for field editing.
+Yes, either to events you pick or to the events the key owner created. An expiry date and a choice of visible app screens can be added on top of that.
 
+= Can I build a headless events website or my own mobile app? =
 
-If you'd like to learn about WordPress filters, here is a great place to start: [Read more](https://pippinsplugins.com/a-quick-introduction-to-using-filters/).
+Yes. Responses are plain JSON over the WordPress REST API, so any framework works, whether that's React, Vue, Next.js, Flutter or React Native.
 
+= How is this different from the WordPress core REST API? =
 
-= How can I be notified of new events via email? =
+WordPress core handles posts and pages but knows nothing about events. This plugin adds event endpoints along with things core doesn't have, such as keys with their own expiry, access per event, check-in rules and app branding.
 
-If you wish to be notified of new postings on your site you can use a plugin such as [Post Status Notifier](http://wordpress.org/plugins/post-status-notifier-lite/).
+= How does this compare with other WordPress event plugins? =
+
+The Events Calendar includes REST API endpoints in its free plugin, though QR check-in sits in the paid Event Tickets Plus. Events Manager sells its iPhone and iPad app on a separate subscription, and Android is still marked as coming soon. WP Event Manager REST API plugin costs nothing. The app works on iOS as well as Android, and you'll find the Event App add-on in every bundle. On top of that, attendees at conferences can match, book meetings, and message each other through the API.
+
+= Is the API secure? =
+
+Before answering a request, the plugin checks the key's permissions and the user's role. You can set an end date on a key or revoke it at any time. There's also a setting that shuts the API off for the whole site. With HTTPS on your site, keys are encrypted every time they're sent.
+
+= How can I report security bugs? =
+Send them to us through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fb8c2-a4d2-4fb4-b9f5-97c718eca70a).
 
 
 == Screenshots ==
