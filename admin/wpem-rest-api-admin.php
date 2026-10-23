@@ -155,7 +155,7 @@ class WPEM_Rest_API_Admin
                     update_user_meta($user_id, '_user_restrict_checkin', $restrict_check_in);
                     update_user_meta($user_id, '_user_restrict_checkin_window_time', $user_restrict_check_in_window_time);
                 } else {
-                    update_user_meta($user_id, '_user_restrict_checkin', '');
+                    update_user_meta($user_id, '_user_restrict_checkin', 0);
 			        update_user_meta($user_id, '_user_restrict_checkin_window_time', 0);
                 }
 

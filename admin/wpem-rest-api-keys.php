@@ -297,7 +297,19 @@ class WPEM_Rest_API_Keys
     {
         global $wpdb;
         $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
+
+        // Get the key owner before the key row is deleted.
+        $user_id = (int) $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$table_name} WHERE key_id = %d", $key_id)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
         $delete = $wpdb->delete($table_name, array('key_id' => $key_id), array('%d'));// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+        // Remove check-in related user meta once the key is revoked.
+        if ($delete && $user_id) {
+            delete_user_meta($user_id, '_user_disable_mobile_checkin');
+            delete_user_meta($user_id, '_user_restrict_checkin');
+            delete_user_meta($user_id, '_user_restrict_checkin_window_time');
+        }
+
         return $delete;
     }
 }
