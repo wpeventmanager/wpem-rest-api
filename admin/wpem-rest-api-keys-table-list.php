@@ -193,6 +193,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
 
             $title = get_the_title($event);
             if (empty($title)) {
+                /* translators: %d: Event ID. */
                 $title = sprintf(__('Event #%d', 'wpem-rest-api'), $event_id);
             }
 
@@ -292,12 +293,14 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
         // Get the API keys.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $query_args = array_merge($search_args, array($per_page, $offset));
+        // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, event_show_by, selected_events, description, permissions, truncated_key, last_access FROM {$table_name} {$where} ORDER BY key_id DESC LIMIT %d OFFSET %d", $query_args), ARRAY_A);
         $count_query = "SELECT COUNT(key_id) FROM {$table_name} {$where}";
         if (!empty($search_args)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
             $count_query = $wpdb->prepare($count_query, $search_args);
         }
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $count = (int) $wpdb->get_var($count_query);
         $this->_column_headers = array($columns, $hidden, $sortable);
         $this->items = $keys;

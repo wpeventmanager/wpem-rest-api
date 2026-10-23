@@ -108,6 +108,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
         }
 
 		if($token){
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$auth_user_data = $wpdb->get_row($wpdb->prepare("SELECT `consumer_key`, `consumer_secret` FROM {$table_name} WHERE user_id = %s", wpem_rest_get_current_user_id()));
 			if($auth_user_data){
 				$consumer_key = $auth_user_data->consumer_key;
