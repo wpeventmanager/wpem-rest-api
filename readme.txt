@@ -286,9 +286,9 @@ Fixed : Password with some special character, user not able to loggedin in app.
 
 = 1.0.7 [ 12th March 2025 ] =
 
-Fixed : Centralize repsponse of Rest Api.
+Fixed : Centralize response of Rest Api.
 Fixed : Without active license, APP will not work and show message that renew your license.
-Fixed : Checkin restriction based on app loggedin user and web settings.
+Fixed : Checkin restriction based on app logged in user and web settings.
 Added : Create API for login with username and password instead of app key.
 Added : Checkin restriction API added.
 
@@ -314,7 +314,7 @@ Added : Application name feature added to the add-on.
 
 = 1.0.3 [ 22nd Dec 2022 ] =
 
-Fixed - Event Ticket scaning issue with mobile app.
+Fixed - Event Ticket scanning issue with mobile app.
 Fixed - Order tab option not working in mobile app.
 Fixed - Event organizer user permission issue.
 Fixed - Organizer add note feature not working correctly.
@@ -334,4 +334,4 @@ Fixed - Data improvements.
 
 = 1.0.0 [ 9th Apr 2021 ] =
 
-* Inital release.
+* Initial release.
