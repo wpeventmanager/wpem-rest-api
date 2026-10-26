@@ -244,7 +244,7 @@ defined('ABSPATH') || exit;
 							<label><input type="checkbox" name="disable_mobile_checkin" <?php checked($disable_mobile_checkin, '1'); ?> value="1"> <?php esc_html_e('Disable the check-in feature in the mobile app.', 'wpem-rest-api'); ?></label>
 						</td>
 					</tr>
-					<tr valign="top">
+					<tr valign="top" id="user-restrict-check-in-row" style="<?php echo ('1' === $disable_mobile_checkin) ? 'display: none;' : ''; ?>">
 						<th scope="row" class="titledesc">
 							<?php esc_html_e('Restrict Check-in', 'wpem-rest-api'); ?>
 						</th>
@@ -254,7 +254,7 @@ defined('ABSPATH') || exit;
 							<p class="description">Only allow tickets to check-in during the start and end date of the event and the below mentioned ticket check-in window</p>
 						</td>
 					</tr>
-					<tr valign="top" id="user-restrict-check-in-window-row" style="<?php echo ($restrict === '1') ? '' : 'display: none;'; ?>">
+					<tr valign="top" id="user-restrict-check-in-window-row" style="<?php echo ('1' === $disable_mobile_checkin || '1' !== $restrict) ? 'display: none;' : ''; ?>">
 						<th scope="row" class="titledesc">
 							<?php esc_html_e('Check-in Window (min)', 'wpem-rest-api'); ?>
 						</th>
