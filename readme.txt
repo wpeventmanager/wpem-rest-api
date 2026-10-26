@@ -190,12 +190,12 @@ Fixed : Various Code Improvements and Bug Fixes.
 
 Fixed : Authentication data securities
 Fixed : Permission-check issues
-Fixed : Data Santization
+Fixed : Data Sanitization
 
 = 1.4.1 [ 5th June 2026 ] =
 
 Fixed : WordPress.org security problems.
-Fixed : Meeting list API status not corractly worked.
+Fixed : Meeting list API status not correctly worked.
 Fixed : Update matchmaking profile photo & organization logo.
 Fixed : WordPress org problem
 Fixed : Access to API always open to everyone everytime
