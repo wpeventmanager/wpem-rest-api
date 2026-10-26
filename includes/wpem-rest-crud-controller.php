@@ -756,8 +756,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 
                 if ( ! empty( $user_meta ) && 1 == $user_meta ) {
 
-                    if ( ! get_option( 'enable_matchmaking', false ) ) {
-                        return self::wpem_prepare_error_for_response( 506 );
+                    if( ! $is_admin ) {
+                        if ( ! get_option( 'enable_matchmaking', false ) ) {
+                            return self::wpem_prepare_error_for_response( 506 );
+                        }
                     }
 
                     return false;
@@ -773,14 +775,9 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             return false;
         }
 
-        // Admin will have full access if match making functionality is enabled, otherwise return error.
+        // Admin will have full access if match making functionality is enabled or disabled.
         // If admin matchmaking is enabled or not they will have access the API.
         if ( $is_admin ) {
-
-            if ( ! get_option( 'enable_matchmaking', false ) ) {
-                return self::wpem_prepare_error_for_response( 506 );
-            }
-
             return false;
         }
 
