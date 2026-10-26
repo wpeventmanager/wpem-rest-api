@@ -6,11 +6,10 @@ defined('ABSPATH') || exit;
  *
  * Single endpoint: POST /wp-json/wpem/forgot-password
  *
- * Type 1 body: { "user": "username or email" }
- *   -> checks that the user exists
- *
- * Type 2 body: { "user": "username or email", "password": "new password" }
- *   -> checks that the user exists and updates the password in wp_users
+ * Body: { "user": "username or email" }
+ *   -> checks that the user exists and sends the standard WordPress
+ *      password reset email (with reset link) to the user's email address.
+ *      The user then resets the password from the link in that email.
  *
  * @since 1.4.5
  */
@@ -91,6 +90,7 @@ class WPEM_REST_Forgot_Password_Controller extends WPEM_REST_CRUD_Controller
 			]);
 		}
 
+		// throw error if user tries more than 10 times in 5 minute.
 		if (!$this->wpem_throttle(10, 5 * MINUTE_IN_SECONDS)) {
             return wp_send_json([
 				'code'    => 429,
@@ -127,37 +127,64 @@ class WPEM_REST_Forgot_Password_Controller extends WPEM_REST_CRUD_Controller
 			]);
 		}
 
-		// Type 1: only "user" passed -> just confirm the user exists.
-		if (!array_key_exists('password', $params)) {
+		// Send the standard WordPress "Password Reset" email with the reset link.
+		$sent = $this->wpem_send_reset_email($user);
+
+		if (is_wp_error($sent)) {
             return wp_send_json([
-				'code'    => 200,
-				'status'  => 'OK',
-				'message' => __('User found.', 'wpem-rest-api'),
+				'code'    => 500,
+				'status'  => 'Error',
+				'message' => $sent->get_error_message(),
 			]);
 		}
 
-		// Type 2: "user" + "password" -> update the password.
-		// Do not sanitize the password; it must be saved exactly as typed.
-		$password = is_string($params['password']) ? wp_unslash($params['password']) : '';
-		if ('' === $password) {
+		if (!$sent) {
             return wp_send_json([
-				'code'    => 400,
-				'status'  => 'Bad request',
-				'message' => __('Please enter a new password.', 'wpem-rest-api'),
+				'code'    => 500,
+				'status'  => 'Error',
+				'message' => __('The email could not be sent. Please contact the site administrator.', 'wpem-rest-api'),
 			]);
 		}
-
-		// Hashes the password like every other WordPress user and saves it in wp_users.user_pass.
-		wp_set_password($password, $user->ID);
-
-		// Log the user out of existing sessions.
-		WP_Session_Tokens::get_instance($user->ID)->destroy_all();
 
         return wp_send_json([
             'code'    => 200,
             'status'  => 'OK',
-            'message' => __('Password has been updated successfully.', 'wpem-rest-api'),
-        ]);
+			'message' => __('Password reset link has been sent to your registered email address.', 'wpem-rest-api'),
+		]);
+	}
+
+	/**
+	 * Send the WordPress default password reset email to the user.
+	 *
+	 * Uses WordPress core retrieve_password(), so the mail is exactly the
+	 * same as the website's "Lost your password?" form (same template,
+	 * same filters, same mail settings).
+	 *
+	 * @param WP_User $user User object.
+	 * @return bool|WP_Error True when mail was sent.
+	 */
+	private function wpem_send_reset_email($user)
+	{
+		if (!function_exists('retrieve_password')) {
+			return new WP_Error(
+				'wpem_retrieve_password_missing',
+				__('Password reset is not supported on this WordPress version.', 'wpem-rest-api')
+			);
+		}
+
+		// Older core versions read the login from $_POST.
+		$previous = isset($_POST['user_login']) ? $_POST['user_login'] : null;
+		$_POST['user_login'] = $user->user_login;
+
+		$result = retrieve_password($user->user_login);
+
+		if (null === $previous) {
+			unset($_POST['user_login']);
+		} else {
+			$_POST['user_login'] = $previous;
+		}
+
+		return is_wp_error($result) ? $result : true;
 	}
 }
 new WPEM_REST_Forgot_Password_Controller();
