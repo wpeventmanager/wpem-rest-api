@@ -67,11 +67,11 @@ Site admins also choose which user roles may create keys, and one setting switch
 Every endpoint is found at /wp-json/wpem/. They build on the WordPress REST API that’s already on your site, and return JSON, so you can call them from React, Next.js, Flutter, a CRM sync script, or any tool that makes HTTP calls.
 
 * **Events**: List, create, edit, delete, batch requests, custom event fields
-* **Organizers** and venues: The same full set of actions, batch included
+* **Organizers and venues**: The same full set of actions, batch included
 * **Filtering**: Keyword and date range search, with pagination and sorting
-* **Registered** events: Returns what a logged-in attendee has signed up for
+* **Registered events**: Returns what a logged-in attendee has signed up for
 * **Ecosystem**: Tells your app which WP Event Manager add-ons are switched on
-* **Branding** and settings: Logo, colors and app options
+* **Branding and settings**: Logo, colors and app options
 * **Authentication**: A consumer key and secret over HTTPS, OAuth 1.0a signing, or a username and password login that hands back a token
 
 == Attendee Networking and Matchmaking API ==
