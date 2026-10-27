@@ -780,7 +780,17 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 $value = is_scalar($raw_value) ? sanitize_textarea_field($raw_value) : '';
                 return $value === '' ? null : $value;
 
-            default: // text, email, number, select, term-select, date, ...
+            case 'date':
+                // Return the date in the "Date Format" selected in Event Manager > Settings > Date & Time Format.
+                $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+                $value = is_scalar($raw_value) ? sanitize_text_field($raw_value) : '';
+                if ($value === '') {
+                    return null;
+                }
+                $timestamp = strtotime($value);
+                return $timestamp ? date_i18n($date_format, $timestamp) : $value;
+
+            default: // text, email, number, select, term-select, ...
                 $value = is_scalar($raw_value) ? sanitize_text_field($raw_value) : '';
                 return $value === '' ? null : $value;
         }
