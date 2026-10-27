@@ -214,10 +214,16 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         $order_event_id = absint( $order_event_meta[0] );
                     }
                     if ( $order_event_id ) {
+                        // event online or offline
+                        $event_online = get_post_meta( $order_event_id, '_event_online', true );
+                        if ( empty( $event_online ) ) {
+                            $event_online = null;
+                        }
+
                         // Venue
                         $venue_name = get_post_meta( $order_event_id, '_event_location', true );
-                        if ( empty( $venue_name ) ) {
-                            $venue_name = '';
+                        if ( empty( $venue_name ) || $event_online == "yes" ) {
+                            $venue_name = null;
                         }
 
                         // Organizer
@@ -276,8 +282,9 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                             'payment_method'  => $payment_method,
                             'payment_status'  => $payment_status,
                             'organizer_name'  => $organizer_name,
-                            'event_venue'      => $venue_name,
-                            'seat_number'      => is_array( $seatnumber ) ? $seatnumber[0] : $seatnumber,
+                            '_event_online'    => $event_online,
+                            'event_venue'     => $venue_name,
+                            'seat_number'     => is_array( $seatnumber ) ? $seatnumber[0] : $seatnumber,
 				            'currency_symbol' => $currency['symbol'],
                         );
                     }
