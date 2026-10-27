@@ -91,12 +91,49 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             'is_matchmaking_site_feature_enabled' => get_option('enable_matchmaking'),
             'participant_activation' => get_option('participant_activation'),
             'meeting_delete_permission' => get_option('wpem_meeting_delete_policy'),
+            'datepicker_date_format' => $this->wpem_get_datepicker_format_data(),
         ];
 
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $settings;
         // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
+    }
+
+    /**
+     * Get the datepicker date format saved in WP Event Manager settings.
+     *
+     * The core plugin saves only an index (0-11) in the option
+     * "event_manager_datepicker_format". The real formats are read from the
+     * core plugin (WP_Event_Manager_Date_Time) so they always stay in sync,
+     * including any change made through its filters.
+     *
+     * @return array|null
+     */
+    private function wpem_get_datepicker_format_data()
+    {
+        if (!class_exists('WP_Event_Manager_Date_Time')) {
+            return null;
+        }
+
+        // jQuery UI datepicker format, e.g. "yy.mm.dd".
+        $datepicker_format = WP_Event_Manager_Date_Time::get_datepicker_format();
+        // PHP date() format for the same index, e.g. "Y.m.d".
+        $php_format = WP_Event_Manager_Date_Time::get_view_date_format_from_datepicker_date_format($datepicker_format);
+
+        $data = array(
+            'value'             => absint(get_option('event_manager_datepicker_format', 0)),
+            'datepicker_format' => $datepicker_format,
+            'php_format'        => $php_format,
+            'example'           => gmdate($php_format, strtotime('January 15 ' . gmdate('Y'))),
+        );
+
+        // Moment.js / Day.js style format, e.g. "YYYY.MM.DD" (available in newer core versions).
+        if (method_exists('WP_Event_Manager_Date_Time', 'wpem_convert_php_to_moment_format')) {
+            $data['moment_format'] = WP_Event_Manager_Date_Time::wpem_convert_php_to_moment_format($php_format);
+        }
+
+        return $data;
     }
 
     /**
