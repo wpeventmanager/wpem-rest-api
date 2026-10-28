@@ -739,6 +739,19 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             return self::wpem_prepare_error_for_response( 405 );
         }
 
+        return $this->wpem_check_user_access( $user );
+    }
+
+    /**
+     * Check API access of an already authenticated user (API key / expiry / permission / matchmaking).
+     * Used by wpem_check_authorized_user() (bearer token) and by the app login API (username/password).
+     *
+     * @param WP_User $user Authenticated user.
+     * @return false|mixed False when access is allowed, otherwise the prepared error response.
+     */
+    public function wpem_check_user_access( $user ) {
+        global $wpdb;
+
         $is_admin  = user_can( $user->ID, 'manage_options' );
         $user_meta = get_user_meta( $user->ID, '_matchmaking_profile', true );
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -776,24 +789,22 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         }
 
         // Admin will have full access if match making functionality is enabled or disabled.
-        // If admin matchmaking is enabled or not they will have access the API.
         if ( $is_admin ) {
             return false;
         }
 
-        // No API key found.
-        if ( ! empty( $user_meta ) && 1 == $user_meta ) {
-
+        // No API key found (customer).
+        // 1) Matchmaking feature disabled on the site.
             if ( ! get_option( 'enable_matchmaking', false ) ) {
                 return self::wpem_prepare_error_for_response( 506 );
             }
 
-            return false;
+        // 2) Matchmaking profile disabled by the user.
+        if ( empty( $user_meta ) || 1 != $user_meta ) {
+            return self::wpem_prepare_error_for_response( 509 );
         }
         
-        // return self::wpem_prepare_error_for_response( 405 );
-        // Valid customer (not admin, no API key) whose matchmaking profile is disabled.
-        return self::wpem_prepare_error_for_response( 509 );
+        return false;
     }
 
     /**

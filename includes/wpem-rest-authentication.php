@@ -724,6 +724,12 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 				$user_id = $user->ID;
 
+				// Same access rules as bearer-token APIs (key expiry, key permission, admin, matchmaking enabled/disabled).
+				$auth_check = $this->wpem_check_user_access($user);
+				if ($auth_check) {
+					return $auth_check; // Standardized error already sent
+				}
+
 				$token = $this->wpem_generate_jwt_token($user->ID, $password);
 				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true) ? 1 : 0;
 				$enable_matchmaking = get_option('enable_matchmaking', false) ? 1 : 0;
@@ -889,10 +895,6 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 					}
 				}
 
-				// Customer only: admins and users having an API key are allowed to login even if matchmaking is disabled.
-				if (empty($key_data) && !$is_admin && !get_user_meta($user_id, '_matchmaking_profile', true)) {
-					return parent::wpem_prepare_error_for_response(509);
-				}
 				// $data['user_status'] = wpem_get_user_login_status($user_id);
 				$response_data = parent::wpem_prepare_error_for_response(200);
 				$response_data['data'] = $data;
