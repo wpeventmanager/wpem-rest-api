@@ -791,7 +791,9 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             return false;
         }
         
-        return self::wpem_prepare_error_for_response( 405 );
+        // return self::wpem_prepare_error_for_response( 405 );
+        // Valid customer (not admin, no API key) whose matchmaking profile is disabled.
+        return self::wpem_prepare_error_for_response( 509 );
     }
 
     /**

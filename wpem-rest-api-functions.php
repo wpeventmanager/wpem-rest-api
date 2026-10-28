@@ -349,6 +349,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'status'  => 'Self Bookmark Not Allowed',
                 'message' => __('You cannot bookmark your own profile.', 'wpem-rest-api')
             ),
+            array(
+                'code'    => 509,
+                'status'  => 'Matchmaking Profile Disabled',
+                'message' => __("User's matchmaking profile is disabled.", 'wpem-rest-api')
+            ),
         ));
         return $error_info;
     }

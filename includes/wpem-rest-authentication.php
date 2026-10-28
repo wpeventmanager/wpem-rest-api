@@ -890,7 +890,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				}
 
 				if (empty($key_data) && !get_user_meta($user_id, '_matchmaking_profile', true)) {
-					return parent::wpem_prepare_error_for_response(405);
+					return parent::wpem_prepare_error_for_response(509);
 				}
 				// $data['user_status'] = wpem_get_user_login_status($user_id);
 				$response_data = parent::wpem_prepare_error_for_response(200);
