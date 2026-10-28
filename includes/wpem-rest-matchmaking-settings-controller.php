@@ -83,6 +83,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
      */
     public function wpem_get_settings($request)
     {
+        $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
         $settings = [
             'request_mode' => get_option('wpem_meeting_request_mode'),
             'scheduling_mode' => get_option('wpem_meeting_scheduling_mode'),
@@ -92,6 +93,7 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             'participant_activation' => get_option('participant_activation'),
             'meeting_delete_permission' => get_option('wpem_meeting_delete_policy'),
             'datepicker_date_format' => $this->wpem_get_datepicker_format_data(),
+            'date_format' => $date_format,
         ];
 
         $response_data = self::wpem_prepare_error_for_response(200);
