@@ -513,7 +513,7 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                     }
                 }
                 if (!$has_value) {
-                    $data['organization'] = null; // nothing filled in the organization tab
+                    // $data['organization'] = null; // nothing filled in the organization tab
                     continue;
                 }
             }
