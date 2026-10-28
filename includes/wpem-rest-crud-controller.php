@@ -739,7 +739,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             return self::wpem_prepare_error_for_response( 405 );
         }
 
-        return $this->wpem_check_user_access( $user );
+        return $this->wpem_check_authorized_user_access( $user );
     }
 
     /**
@@ -749,7 +749,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
      * @param WP_User $user Authenticated user.
      * @return false|mixed False when access is allowed, otherwise the prepared error response.
      */
-    public function wpem_check_user_access( $user ) {
+    public function wpem_check_authorized_user_access( $user ) {
         global $wpdb;
 
         $is_admin  = user_can( $user->ID, 'manage_options' );
