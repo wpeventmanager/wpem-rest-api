@@ -235,6 +235,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'message' => __('Username or Password Wrong, Please try again.', 'wpem-rest-api')
             ),
             array(
+                'code' => 402,
+                'status' => 'Session Expired',
+                'message' => __('Your session has expired. Please log in again.', 'wpem-rest-api')
+            ),
+            array(
                 'code' => 403,
                 'status' => 'Forbidden',
                 'message' => __('Does not have permissions to access the requested resource.', 'wpem-rest-api')

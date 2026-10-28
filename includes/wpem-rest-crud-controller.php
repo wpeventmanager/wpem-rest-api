@@ -736,7 +736,8 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         $user = get_userdata( $user_data['id'] );
 
         if ( ! $user || ! wp_check_password( $user_data['password'], $user->user_pass, $user->ID ) ) {
-            return self::wpem_prepare_error_for_response( 405 );
+            // return self::wpem_prepare_error_for_response( 405 );
+            return self::wpem_prepare_error_for_response( 402 );
         }
 
         return $this->wpem_check_authorized_user_access( $user );
