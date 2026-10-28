@@ -725,7 +725,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				$user_id = $user->ID;
 
 				// Same access rules as bearer-token APIs (key expiry, key permission, admin, matchmaking enabled/disabled).
-				$auth_check = $this->wpem_check_user_access($user);
+				$auth_check = $this->wpem_check_authorized_user_access($user);
 				if ($auth_check) {
 					return $auth_check; // Standardized error already sent
 				}
