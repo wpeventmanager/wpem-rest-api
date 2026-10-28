@@ -889,7 +889,8 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 					}
 				}
 
-				if (empty($key_data) && !get_user_meta($user_id, '_matchmaking_profile', true)) {
+				// Customer only: admins and users having an API key are allowed to login even if matchmaking is disabled.
+				if (empty($key_data) && !$is_admin && !get_user_meta($user_id, '_matchmaking_profile', true)) {
 					return parent::wpem_prepare_error_for_response(509);
 				}
 				// $data['user_status'] = wpem_get_user_login_status($user_id);
