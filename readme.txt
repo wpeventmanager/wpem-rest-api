@@ -172,6 +172,27 @@ Send them to us through the [Patchstack Vulnerability Disclosure Program](https:
 
 == Changelog ==
 
+= 1.4.5 [ 29th October 2026 ] =
+
+Fixed : User unable to login when registration plugin not activate.
+Fixed : Enable/Disable Rest API functionality isn't working.
+Fixed : App name and logo aren't being saved.
+Fixed : Admin : Event selection dropdown not shows properly during share API access to users.
+Fixed : In allocated API keys listing section, user should able to search API keys details via user details and API key.
+Fixed : Attendee checkout not worked.
+Fixed : Add Event Type Field to Attendee Events API.
+Fixed : General setting Enable/Disable Rest API feature is not working.
+Fixed : For Any API key the Last access datetime not showing.
+Fixed : In API listing section the selected event is not showing.
+Fixed : Ecosystem API Not Reflecting Plugin Activation Status.
+Fixed : Book mark plugin has to add in Eco system.
+Fixed : Application name should be default as WP Event Manager.
+Fixed : Past event is not working.
+Fixed : Non Organiser user or volunteer login with app not working.
+Fixed : When the 'Disable Mobile App Check-in' feature is enabled, the 'Restrict Check-in' setting is hidden during API key generation.
+Fixed : Code Improvements and Bug Fixes
+
+
 = 1.4.4 [ 27th August 2026 ] =
 
 Fixed : Fixed an image retrieval issue across event, organizer, and venue API endpoints
