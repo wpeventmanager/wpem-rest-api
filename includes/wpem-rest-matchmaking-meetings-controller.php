@@ -182,6 +182,69 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     }
     
     /**
+     * Get the timezone the given user selected in Matchmaking Profile > Timezone Settings.
+     *
+     * - "default" (or nothing saved / invalid zone) => WordPress site timezone
+     * - "custom"                                    => user's `_custom_timezone` (e.g. Asia/Jayapura)
+     *
+     * @param int $user_id
+     * @return DateTimeZone
+     */
+    protected function wpem_get_user_display_timezone($user_id)
+    {
+        $site_tz = wp_timezone();
+
+        if (empty($user_id)) {
+            return $site_tz;
+        }
+
+        $timezone_settings = get_user_meta($user_id, '_timezone_settings', true);
+        if ($timezone_settings !== 'custom') {
+            return $site_tz;
+        }
+
+        $custom_timezone = get_user_meta($user_id, '_custom_timezone', true);
+        if (empty($custom_timezone) || !in_array($custom_timezone, timezone_identifiers_list(), true)) {
+            return $site_tz;
+        }
+
+        return new DateTimeZone($custom_timezone);
+    }
+
+    /**
+     * Convert a stored meeting start/end (saved in the site timezone) to the
+     * timezone selected by the current user and return the formatted values.
+     *
+     * @param array $row DB row of the meeting.
+     * @return array { start_time, end_time }
+     */
+    protected function wpem_get_meeting_time_for_user($row)
+    {
+        $site_tz = wp_timezone();
+        $user_tz = $this->wpem_get_user_display_timezone(wpem_rest_get_current_user_id());
+
+        $start_hm = gmdate('H:i:s', strtotime($row['meeting_start_time']));
+        $end_hm   = gmdate('H:i:s', strtotime($row['meeting_end_time']));
+
+        try {
+            $start_dt = new DateTime($date_ymd . ' ' . $start_hm, $site_tz);
+            $end_dt   = new DateTime($date_ymd . ' ' . $end_hm, $site_tz);
+        } catch (Exception $e) {
+            // Fallback to the previous (unconverted) behaviour.
+            return array(
+                'start_time'   => date_i18n('H:i', strtotime($row['meeting_start_time'])),
+                'end_time'     => date_i18n('H:i', strtotime($row['meeting_end_time'])),
+            );
+        }
+
+        // Date follows the start time, so it moves to the next/previous day when the shift crosses midnight.
+        return array(
+            'start_time'   => wp_date('H:i', $start_dt->getTimestamp(), $user_tz),
+            'end_time'     => wp_date('H:i', $end_dt->getTimestamp(), $user_tz),
+        );
+    }
+
+    /**
      * Format a DB row as API response data.
      */
     protected function wpem_format_meeting_row($row)
@@ -404,14 +467,17 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             }
         }
         // phpcs:enable
+        // Meeting time converted to the timezone selected by the current user
+        $meeting_time = $this->wpem_get_meeting_time_for_user($row);
+
         // Build final payload
         return array(
             'meeting_id' => (int) $row['id'],
             'event_id' => isset($row['event_id']) ? (int) $row['event_id'] : 0,
             'event_title' => $event_title,
             'meeting_date' => date_i18n('l, d F Y', strtotime($row['meeting_date'])),
-            'start_time' => date_i18n('H:i', strtotime($row['meeting_start_time'])),
-            'end_time' => date_i18n('H:i', strtotime($row['meeting_end_time'])),
+            'start_time' => $meeting_time['start_time'],
+            'end_time' => $meeting_time['end_time'],
             'message' => isset($row['message']) ? $row['message'] : '',
             'host_info' => $host_info,
             'participants' => $participants_info,
