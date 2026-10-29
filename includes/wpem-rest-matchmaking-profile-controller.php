@@ -499,24 +499,6 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
             foreach ($items as $i => $item) {
                 unset($items[$i]['_order']);
             }
-            if ('organization' === $tab) {
-                $has_value = false;
-                $has_saved_logo = !empty($this->wpem_get_saved_organization_logo_urls($user_id));
-                foreach ($items as $item) {
-                    // The default organization logo is only a placeholder, it is not "filled in" data.
-                    if ('_organization_logo' === $item['metakey'] && !$has_saved_logo) {
-                        continue;
-                    }
-                    if (!($item['value'] === null || $item['value'] === array())) {
-                        $has_value = true;
-                        break;
-                    }
-                }
-                if (!$has_value) {
-                    // $data['organization'] = null; // nothing filled in the organization tab
-                    continue;
-                }
-            }
             $data[('settings' === $tab) ? 'setting' : $tab] = array('fields' => array_values($items));
         }
 
