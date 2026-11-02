@@ -188,7 +188,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array(
             $this->rest_base => $response,
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         );
         return wp_send_json($response_data);
     }
@@ -446,6 +446,26 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 
                 $data = $this->wpem_prepare_object_for_response($object, $request);
                 $objects[] = $this->prepare_response_for_collection($data);
+
+                if ($object instanceof WC_Order && is_array($objects[array_key_last($objects)])) {
+                    $response_index = array_key_last($objects);
+                    $date_format = (string) get_option('date_format');
+                    $time_format = (string) get_option('time_format');
+                    $local_date_format = trim($date_format . ' ' . $time_format);
+
+                    $order_date = $object->get_date_modified();
+
+                    if (
+                        $order_date instanceof DateTimeInterface &&
+                        array_key_exists('date_modified', $objects[$response_index])
+                    ) {
+                        $objects[$response_index]['date_modified'] = wp_date(
+                            $local_date_format,
+                            $order_date->getTimestamp(),
+                            $order_date->getTimezone()
+                        );
+                    }
+                }
             }
 
             $page = isset($query_args['paged']) ? (int) $query_args['paged'] : 1;
@@ -458,7 +478,7 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
                 'last_page' => max(1, $total_pages),
                 'total_pages' => $total_pages,
                 $this->rest_base => $objects,
-                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+                // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }
@@ -716,8 +736,22 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
         $user = get_userdata( $user_data['id'] );
 
         if ( ! $user || ! wp_check_password( $user_data['password'], $user->user_pass, $user->ID ) ) {
-            return self::wpem_prepare_error_for_response( 405 );
+            // return self::wpem_prepare_error_for_response( 405 );
+            return self::wpem_prepare_error_for_response( 402 );
         }
+
+        return $this->wpem_check_authorized_user_access( $user );
+    }
+
+    /**
+     * Check API access of an already authenticated user (API key / expiry / permission / matchmaking).
+     * Used by wpem_check_authorized_user() (bearer token) and by the app login API (username/password).
+     *
+     * @param WP_User $user Authenticated user.
+     * @return false|mixed False when access is allowed, otherwise the prepared error response.
+     */
+    public function wpem_check_authorized_user_access( $user ) {
+        global $wpdb;
 
         $is_admin  = user_can( $user->ID, 'manage_options' );
         $user_meta = get_user_meta( $user->ID, '_matchmaking_profile', true );
@@ -736,8 +770,10 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
 
                 if ( ! empty( $user_meta ) && 1 == $user_meta ) {
 
-                    if ( ! get_option( 'enable_matchmaking', false ) ) {
-                        return self::wpem_prepare_error_for_response( 506 );
+                    if( ! $is_admin ) {
+                        if ( ! get_option( 'enable_matchmaking', false ) ) {
+                            return self::wpem_prepare_error_for_response( 506 );
+                        }
                     }
 
                     return false;
@@ -753,28 +789,23 @@ abstract class WPEM_REST_CRUD_Controller extends WPEM_REST_Posts_Controller
             return false;
         }
 
-        // Admin will have full access if match making functionality is enabled, otherwise return error.
-        // If admin matchmaking is enabled or not they will have access the API.
+        // Admin will have full access if match making functionality is enabled or disabled.
         if ( $is_admin ) {
-
-            if ( ! get_option( 'enable_matchmaking', false ) ) {
-                return self::wpem_prepare_error_for_response( 506 );
-            }
-
             return false;
         }
 
-        // No API key found.
-        if ( ! empty( $user_meta ) && 1 == $user_meta ) {
-
+        // No API key found (customer).
+        // 1) Matchmaking feature disabled on the site.
             if ( ! get_option( 'enable_matchmaking', false ) ) {
                 return self::wpem_prepare_error_for_response( 506 );
             }
 
-            return false;
+        // 2) Matchmaking profile disabled by the user.
+        if ( empty( $user_meta ) || 1 != $user_meta ) {
+            return self::wpem_prepare_error_for_response( 509 );
         }
         
-        return self::wpem_prepare_error_for_response( 405 );
+        return false;
     }
 
     /**

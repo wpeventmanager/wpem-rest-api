@@ -165,10 +165,47 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
      */
     public function column_event_id($key)
     {
-        if (!empty($key['event_id'])) {
-            return '<a href="' . esc_url(admin_url('post.php?post=' . $key['event_id']) . '&action=edit') . '" />' . get_the_title($key['event_id']) . '</a>';
+        if ('loggedin' === ($key['event_show_by'] ?? '')) {
+            return '<strong>' . esc_html__('Logged-in user events', 'wpem-rest-api') . '</strong>';
         }
-        return;
+
+        $event_ids = array();
+        if ('selected' === ($key['event_show_by'] ?? '') && !empty($key['selected_events'])) {
+            $selected_events = maybe_unserialize($key['selected_events']);
+            $event_ids = array_filter(array_unique(array_map('absint', (array) $selected_events)));
+        }
+
+        // Retain display of event_id for keys created before selected-event access was added.
+        if (empty($event_ids) && !empty($key['event_id'])) {
+            $event_ids = array(absint($key['event_id']));
+        }
+
+        $events = array();
+        foreach ($event_ids as $event_id) {
+            if (!$event_id) {
+                continue;
+            }
+
+            $event = get_post($event_id);
+            if (empty($event) || 'event_listing' !== $event->post_type) {
+                continue;
+            }
+
+            $title = get_the_title($event);
+            if (empty($title)) {
+                /* translators: %d: Event ID. */
+                $title = sprintf(__('Event #%d', 'wpem-rest-api'), $event_id);
+            }
+
+            $edit_url = get_edit_post_link($event_id);
+            if ($edit_url) {
+                $events[] = '<a href="' . esc_url($edit_url) . '">' . esc_html($title) . '</a>';
+            } else {
+                $events[] = esc_html($title);
+            }
+        }
+
+        return implode(', ', $events);
     }
     /**
      * Return permissions column.
@@ -202,7 +239,7 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
     {
         if (!empty($key['last_access'])) {
             /* translators: 1: last access date 2: last access time */
-            $date = sprintf(__('%1$s at %2$s', 'wpem-rest-api'), date_i18n('Y-m-d', strtotime($key['last_access'])), date_i18n('H:s:i', strtotime($key['last_access'])));
+            $date = sprintf(__('%1$s at %2$s', 'wpem-rest-api'), date_i18n('Y-m-d', strtotime($key['last_access'])), date_i18n('h:i:a', strtotime($key['last_access'])));
             return apply_filters('wpem_api_key_last_access_datetime', $date, $key['last_access']);
         }
         return __('Unknown', 'wpem-rest-api');
@@ -243,35 +280,28 @@ class WPEM_API_Keys_Table_List extends WP_List_Table
             $offset = 0;
         }
 
-        $search = '';
+        $where = 'WHERE 1 = 1';
+        $search_args = array();
 
         if (!empty($_REQUEST['s'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended 
-            $term = wp_kses_post(wp_unslash($_REQUEST['s'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- input var okay, CSRF ok.
+            $term = sanitize_text_field(wp_unslash($_REQUEST['s'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- input var okay, CSRF ok.
             $like = '%' . $wpdb->esc_like($term) . '%';
-            $cache_key = 'wpem_user_search_' . md5($like);
-
-            // Try cache first
-            $user_ids = wp_cache_get($cache_key);
-            // Find users matching by display name, username, or email.
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name is safe and result is cached.
-            $user_ids = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->users} WHERE display_name LIKE %s OR user_login LIKE %s OR user_email LIKE %s", $like, $like, $like));
-
-            // Store in cache (group optional but good practice)
-            wp_cache_set($cache_key, $user_ids, 'wpem', 300); // 5 min cache
-
-            // Only search by user (username/display name/email). If no users match, return no results.
-            if (!empty($user_ids)) {
-                $search = 'AND user_id IN (' . implode(',', array_map('absint', $user_ids)) . ') ';
-            } else {
-                $search = 'AND 1 = 0 ';
-            }
+            $where .= " AND (user_id IN (SELECT ID FROM {$wpdb->users} WHERE display_name LIKE %s OR user_login LIKE %s OR user_email LIKE %s) OR app_key LIKE %s)";
+            $search_args = array($like, $like, $like, $like);
         }
 
         // Get the API keys.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, description, permissions, truncated_key, last_access FROM {$table_name} WHERE 1 = 1 {$search} ORDER BY key_id DESC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $count = (int) $wpdb->get_var("SELECT COUNT(key_id) FROM {$table_name} WHERE 1 = 1 AND 1 = 0");
+        $query_args = array_merge($search_args, array($per_page, $offset));
+        // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $keys = $wpdb->get_results($wpdb->prepare("SELECT key_id, app_key, user_id, event_id, event_show_by, selected_events, description, permissions, truncated_key, last_access FROM {$table_name} {$where} ORDER BY key_id DESC LIMIT %d OFFSET %d", $query_args), ARRAY_A);
+        $count_query = "SELECT COUNT(key_id) FROM {$table_name} {$where}";
+        if (!empty($search_args)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            $count_query = $wpdb->prepare($count_query, $search_args);
+        }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $count = (int) $wpdb->get_var($count_query);
         $this->_column_headers = array($columns, $hidden, $sortable);
         $this->items = $keys;
 

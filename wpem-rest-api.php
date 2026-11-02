@@ -9,7 +9,7 @@
  * 
  * Text Domain: wpem-rest-api
  * Domain Path: /languages
- * Version: 1.4.4
+ * Version: 1.4.5
  * Since: 1.0.0
  * 
  * Requires WordPress Version at least: 6.7
@@ -42,7 +42,7 @@ class WPEM_Rest_API
         }
 
         // Define constants
-        define('WPEM_REST_API_VERSION', '1.4.4');
+        define('WPEM_REST_API_VERSION', '1.4.5');
         define('WPEM_REST_API_FILE', __FILE__);
         define('WPEM_REST_API_PLUGIN_DIR', untrailingslashit(plugin_dir_path(__FILE__)));
         define('WPEM_REST_API_PLUGIN_URL', untrailingslashit(plugins_url(basename(plugin_dir_path(__FILE__)), basename(__FILE__))));
@@ -72,6 +72,7 @@ class WPEM_Rest_API
         include 'includes/wpem-rest-ticket-controller.php';
         include 'includes/wpem-rest-organizers-controller.php';
         include 'includes/wpem-rest-venues-controller.php';
+        include 'includes/wpem-rest-forgot-password-controller.php';
 
         // match making api
         include 'includes/wpem-rest-matchmaking-meetings-controller.php';

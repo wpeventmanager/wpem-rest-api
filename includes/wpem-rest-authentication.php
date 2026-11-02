@@ -78,6 +78,8 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 */
 	public function wpem_rest_authenticate($user_id)
 	{
+		global $wpdb;
+		$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 		// Do not authenticate twice and check if is a request to our endpoint in the WP REST API.
 		if (!empty($user_id) || !$this->wpem_is_request_to_rest_api()) {
 			return $user_id;
@@ -89,6 +91,31 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 			return $user_id;
 		}
 
+		$headers = getallheaders();
+        $token = '';
+		
+        // First try standard header
+        if (isset($headers['Authorization'])) {
+            $token = trim(str_replace('Bearer', '', $headers['Authorization']));
+        }
+        // Try for some server environments
+        elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $token = trim(str_replace('Bearer', '', sanitize_text_field(wp_unslash($_SERVER['HTTP_AUTHORIZATION']))));
+        }
+        // NGINX or fastcgi_pass may use this
+        elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $token = trim(str_replace('Bearer', '', sanitize_text_field(wp_unslash($_SERVER['REDIRECT_HTTP_AUTHORIZATION']))));
+        }
+
+		if($token){
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$auth_user_data = $wpdb->get_row($wpdb->prepare("SELECT `consumer_key`, `consumer_secret` FROM {$table_name} WHERE user_id = %s", wpem_rest_get_current_user_id()));
+			if($auth_user_data){
+				$consumer_key = $auth_user_data->consumer_key;
+				$consumer_secret = $auth_user_data->consumer_secret;
+				$this->user = $this->wpem_get_user_data_by_consumer_key($consumer_key);
+			}
+		}
 		return $this->wpem_perform_oauth_authentication();
 	}
 
@@ -228,7 +255,8 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	public function wpem_get_authorization_header()
 	{
 		if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
-			return wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION'])); // WPCS: sanitization ok.
+			// return wp_kses_post(wp_unslash($_SERVER['HTTP_AUTHORIZATION'])); // WPCS: sanitization ok.
+			return sanitize_text_field(wp_unslash($_SERVER['HTTP_AUTHORIZATION']));
 		}
 		if (function_exists('getallheaders')) {
 			$headers = getallheaders();
@@ -368,8 +396,10 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 	 */
 	private function wpem_check_oauth_signature($user, $params)
 	{
-		$http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(wp_kses_post(wp_unslash($_SERVER['REQUEST_METHOD']))) : ''; // WPCS: sanitization ok.
-		$request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : ''; // WPCS: sanitization ok.
+		// $http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(wp_kses_post(wp_unslash($_SERVER['REQUEST_METHOD']))) : ''; // WPCS: sanitization ok.
+		$http_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD']))) : '';
+		// $request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(wp_kses_post(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : ''; // WPCS: sanitization ok.
+		$request_path = isset($_SERVER['REQUEST_URI']) ? wp_parse_url(esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH) : '';
 		$wp_base = get_home_url(null, '/', 'relative');
 		if (substr($request_path, 0, strlen($wp_base)) === $wp_base) {
 			$request_path = substr($request_path, strlen($wp_base));
@@ -640,6 +670,9 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		$username = isset($params['username']) ? trim($params['username']) : '';
 		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
+		if(!(int) get_option('enable_wpem_rest_api')){
+			return parent::wpem_prepare_error_for_response(507);
+		}
 		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
 			if (is_wp_error($user)) {
@@ -679,7 +712,9 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 		$username = isset($params['username']) ? trim($params['username']) : '';
 		$password = isset($params['password']) ? $params['password'] : '';
 		$response = array();
-
+		if(!(int) get_option('enable_wpem_rest_api')){
+			return parent::wpem_prepare_error_for_response(507);
+		}
 		if (!empty($username) && !empty($password)) {
 			$user = wp_authenticate($username, $password);
 			if (is_wp_error($user)) {
@@ -689,8 +724,14 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				$table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
 				$user_id = $user->ID;
 
+				// Same access rules as bearer-token APIs (key expiry, key permission, admin, matchmaking enabled/disabled).
+				$auth_check = $this->wpem_check_authorized_user_access($user);
+				if ($auth_check) {
+					return $auth_check; // Standardized error already sent
+				}
+
 				$token = $this->wpem_generate_jwt_token($user->ID, $password);
-				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true);
+				$is_matchmaking = get_user_meta($user_id, '_matchmaking_profile', true) ? 1 : 0;
 				$enable_matchmaking = get_option('enable_matchmaking', false) ? 1 : 0;
 
 				$all_mobile_pages = array('dashboard', 'attendees', 'guest_list', 'orders', 'arrivals');
@@ -705,6 +746,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 				// Get all user data from meta
 				$user_email = get_user_meta($user_id, 'user_email', true);
 				$first_name = get_user_meta($user_id, 'first_name', true);
+				$first_name = ! empty( $first_name ) ? $first_name : ( get_userdata( $user_id )->display_name ?? '' );
 				$last_name = get_user_meta($user_id, 'last_name', true);
 				$user_login = get_user_meta($user_id, 'user_login', true);
 				$print_badge_mode = get_user_meta($user_id, 'wpem_print_badge_mode', true) ?? 0;
@@ -717,9 +759,10 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 						'first_name' => $first_name,
 						'last_name' => $last_name,
 						'username' => $user_login,
+						'roles' => (array) $user->roles,
 						'wpem_print_badge_mode' => (int) $print_badge_mode,
-						'matchmaking_profile' => $is_matchmaking,
-						'enable_matchmaking' => $enable_matchmaking,
+						'is_user_matchmaking_profile_enabled' => $is_matchmaking,
+						'is_matchmaking_site_feature_enabled' => $enable_matchmaking,
 						'mobile_menu' => $mobile_menu_status,
 					)
 				);
@@ -731,11 +774,20 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 					if (is_array($organization_logo)) {
 						$organization_logo = reset($organization_logo); // get first value in the array
 					}
-					$organization_logo = $organization_logo ?: EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					if (empty($organization_logo) && defined('EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL')) {
+						$organization_logo = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					} else {
+						$organization_logo = $organization_logo ?: '';
+					}
 					$meta = get_user_meta($user_id, '_available_for_meeting', true);
 					$meeting_available = ($meta !== '' && $meta !== null) ? ((int) $meta === 0 ? 0 : 1) : 1;
 
-					$photo = function_exists('get_wpem_user_profile_photo') ? get_wpem_user_profile_photo($user_id) : EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					$photo = '';
+					if (function_exists('get_wpem_user_profile_photo')) {
+						$photo = get_wpem_user_profile_photo($user_id);
+					} elseif (defined('EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL')) {
+						$photo = EVENT_MANAGER_REGISTRATIONS_PLUGIN_URL . '/assets/images/organisation-icon.jpg';
+					}
 					// --- Skills ---
 					$skills_slugs = [];
 					$skills_arr = maybe_unserialize(isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : []);
@@ -796,20 +848,20 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 						'display_name' => $user->display_name,
 						'profile_photo' => $photo,
 						'profession' => $profession_slug,
-						'experience' => get_user_meta($user_id, '_experience', true) ?: '',
-						'company_name' => get_user_meta($user_id, '_company_name', true) ?: '',
-						'country' => get_user_meta($user_id, '_country', true) ?: '',
-						'city' => get_user_meta($user_id, '_city', true) ?: '',
-						'about' => get_user_meta($user_id, '_about', true) ?: '',
-						'skills' => isset($user_meta['_skills'][0]) ? $user_meta['_skills'][0] : array(),
-						'interests' => isset($user_meta['_interests'][0]) ? $user_meta['_interests'][0] : array(),
-						'organization_name' => get_user_meta($user_id, '_organization_name', true) ?: '',
+						'experience' => get_user_meta($user_id, '_experience', true) ?: null,
+						'company_name' => get_user_meta($user_id, '_company_name', true) ?: null,
+						'country' => get_user_meta($user_id, '_country', true) ?: null,
+						'city' => get_user_meta($user_id, '_city', true) ?: null,
+						'about' => get_user_meta($user_id, '_about', true) ?: null,
+						'skills' => isset($skills_slugs) ? $skills_slugs : [],
+						'interests' => isset($interests_slugs) ? $interests_slugs : [],
+						'organization_name' => get_user_meta($user_id, '_organization_name', true) ?: null,
 						'organization_logo' => $organization_logo,
-						'organization_city' => get_user_meta($user_id, '_organization_city', true) ?: '',
-						'organization_country' => get_user_meta($user_id, '_organization_country', true) ?: '',
-						'organization_description' => get_user_meta($user_id, '_organization_description', true) ?: '',
-						'message_notification' => get_user_meta($user_id, '_message_notification', true) ?: '',
-						'approve_profile_status' => get_user_meta($user_id, '_approve_profile_status', true) ?: '',
+						'organization_city' => get_user_meta($user_id, '_organization_city', true) ?: null,
+						'organization_country' => get_user_meta($user_id, '_organization_country', true) ?: null,
+						'organization_description' => get_user_meta($user_id, '_organization_description', true) ?: null,
+						'message_notification' => get_user_meta($user_id, '_message_notification', true) ?: null,
+						'approve_profile_status' => get_user_meta($user_id, '_approve_profile_status', true) ?: 0,
 						'matchmaking_profile' => isset($user_meta['_matchmaking_profile'][0]) ? (int) $user_meta['_matchmaking_profile'][0] : 0,
 						'approve_profile_status' => isset($user_meta['_approve_profile_status'][0]) ? (int) $user_meta['_approve_profile_status'][0] : 0,
 						'wpem_meeting_request_mode' => isset($user_meta['_wpem_meeting_request_mode'][0]) ? $user_meta['_wpem_meeting_request_mode'][0] : 'approval',
@@ -843,10 +895,7 @@ class WPEM_REST_Authentication extends WPEM_REST_CRUD_Controller
 					}
 				}
 
-				if (empty($key_data) && !get_user_meta($user_id, '_matchmaking_profile', true)) {
-					return parent::wpem_prepare_error_for_response(405);
-				}
-				$data['user_status'] = wpem_get_user_login_status($user_id);
+				// $data['user_status'] = wpem_get_user_login_status($user_id);
 				$response_data = parent::wpem_prepare_error_for_response(200);
 				$response_data['data'] = $data;
 				return $response_data;
