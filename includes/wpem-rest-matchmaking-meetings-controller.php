@@ -179,22 +179,71 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ),
             )
         );
-
-        register_rest_route(
-            $this->namespace,
-            '/' . $this->rest_base . '/organizer',
-            array(
-                array(
-                    'methods' => WP_REST_Server::READABLE,
-                    'callback' => array($this, 'wpem_get_meeting_list_for_organizer'),
-                    'permission_callback' => array($this, 'wpem_permission_check'),
-                    'args' => $this->wpem_get_collection_params(),
-                ),
-                'schema' => array($this, 'get_public_item_schema'),
-            )
-        );
     }
     
+    /**
+     * Get the timezone the given user selected in Matchmaking Profile > Timezone Settings.
+     *
+     * - "default" (or nothing saved / invalid zone) => WordPress site timezone
+     * - "custom"                                    => user's `_custom_timezone` (e.g. Asia/Jayapura)
+     *
+     * @param int $user_id
+     * @return DateTimeZone
+     */
+    protected function wpem_get_user_display_timezone($user_id)
+    {
+        $site_tz = wp_timezone();
+
+        if (empty($user_id)) {
+            return $site_tz;
+        }
+
+        $timezone_settings = get_user_meta($user_id, '_timezone_settings', true);
+        if ($timezone_settings !== 'custom') {
+            return $site_tz;
+        }
+
+        $custom_timezone = get_user_meta($user_id, '_custom_timezone', true);
+        if (empty($custom_timezone) || !in_array($custom_timezone, timezone_identifiers_list(), true)) {
+            return $site_tz;
+        }
+
+        return new DateTimeZone($custom_timezone);
+    }
+
+    /**
+     * Convert a stored meeting start/end (saved in the site timezone) to the
+     * timezone selected by the current user and return the formatted values.
+     *
+     * @param array $row DB row of the meeting.
+     * @return array { start_time, end_time }
+     */
+    protected function wpem_get_meeting_time_for_user($row)
+    {
+        $site_tz = wp_timezone();
+        $user_tz = $this->wpem_get_user_display_timezone(wpem_rest_get_current_user_id());
+
+        $start_hm = gmdate('H:i:s', strtotime($row['meeting_start_time']));
+        $end_hm   = gmdate('H:i:s', strtotime($row['meeting_end_time']));
+
+        try {
+            $start_dt = new DateTime($date_ymd . ' ' . $start_hm, $site_tz);
+            $end_dt   = new DateTime($date_ymd . ' ' . $end_hm, $site_tz);
+        } catch (Exception $e) {
+            // Fallback to the previous (unconverted) behaviour.
+            return array(
+                'start_time'   => date_i18n('H:i', strtotime($row['meeting_start_time'])),
+                'end_time'     => date_i18n('H:i', strtotime($row['meeting_end_time'])),
+            );
+        }
+
+        // Date follows the start time, so it moves to the next/previous day when the shift crosses midnight.
+        return array(
+            'start_time'   => wp_date('H:i', $start_dt->getTimestamp(), $user_tz),
+            'end_time'     => wp_date('H:i', $end_dt->getTimestamp(), $user_tz),
+        );
+    }
+
     /**
      * Format a DB row as API response data.
      */
@@ -404,15 +453,31 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $room = !empty($room_info['room_name']) ? $room_info['room_name'] : '';
             $floor = !empty($room_info['floor']) ? $room_info['floor'] : '';
         }
+
+        // get seetings from event dashboard page > registration > matchmaking settings
+        $host_delete_permission = array();
+        $event_id = isset($row['event_id']) ? (int) $row['event_id'] : 0;
+        if ($event_id) {
+            $event_author_id = (int) get_post_field('post_author', $event_id); // event organizer (who created a meeting)
+            if ($event_author_id) {
+                $permission = get_user_meta($event_author_id, '_host_delete_permission', true);
+                if (is_array($permission)) {
+                    $host_delete_permission = $permission;
+                }
+            }
+        }
         // phpcs:enable
+        // Meeting time converted to the timezone selected by the current user
+        $meeting_time = $this->wpem_get_meeting_time_for_user($row);
+
         // Build final payload
         return array(
             'meeting_id' => (int) $row['id'],
             'event_id' => isset($row['event_id']) ? (int) $row['event_id'] : 0,
             'event_title' => $event_title,
             'meeting_date' => date_i18n('l, d F Y', strtotime($row['meeting_date'])),
-            'start_time' => date_i18n('H:i', strtotime($row['meeting_start_time'])),
-            'end_time' => date_i18n('H:i', strtotime($row['meeting_end_time'])),
+            'start_time' => $meeting_time['start_time'],
+            'end_time' => $meeting_time['end_time'],
             'message' => isset($row['message']) ? $row['message'] : '',
             'host_info' => $host_info,
             'participants' => $participants_info,
@@ -420,6 +485,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'room' => $room,
             'floor' => $floor,
             'table' => $table,
+            'host_meeting_delete_permission' => $host_delete_permission, // host can delete meeting according to meeting status
         );
 
     }
@@ -435,16 +501,17 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
     public function wpem_get_items($request)
     {
         global $wpdb;
-        // Get current user ID
-        $user_id = wpem_rest_get_current_user_id();
-        $partner_id = (int) $request->get_param('partner_id');
-        $event_id = (int) $request->get_param('event_id');
-        $status = sanitize_text_field($request->get_param('status'));
-        $search = sanitize_text_field($request->get_param('search'));
-        $page = max(1, (int) $request->get_param('page'));
-        $per_page = max(1, min(100, (int) $request->get_param('per_page')));
-        $offset = ($page - 1) * $per_page;
-        $params = array();
+        $user_id      = wpem_rest_get_current_user_id();
+        $partner_id   = (int) $request->get_param('partner_id');
+        $meeting_date = sanitize_text_field($request->get_param('meeting_date'));
+        $event_id     = (int) $request->get_param('event_id');
+        $status       = sanitize_text_field($request->get_param('status'));
+        $search       = sanitize_text_field($request->get_param('search'));
+        $own_meeting  = (int) $request->get_param('own_meeting'); // NEW
+        $page         = max(1, (int) $request->get_param('page'));
+        $per_page     = max(1, min(100, (int) $request->get_param('per_page')));
+        $offset       = ($page - 1) * $per_page;
+        $params       = array();
 
         // --- Determine current user's role tier ---
         // Use user_can() against an explicit WP_User object rather than current_user_can(),
@@ -453,10 +520,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $current_user_obj = get_userdata( $user_id );
         $is_admin         = $current_user_obj && user_can( $current_user_obj, 'manage_options' );
 
-        // Organizer detection: this plugin has no dedicated capability for organizers.
-        // The same pattern used in wpem_get_meeting_list_for_organizer() applies here —
-        // a user is treated as an organizer if they have at least one published event_listing
-        // where they are the post author.
         $organizer_event_ids = array();
         if ( ! $is_admin ) {
             $organizer_event_ids = get_posts( array(
@@ -471,7 +534,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         // Base WHERE clause
         if ( $is_admin ) {
-
             // Admin: filter by event_id if provided, otherwise all events.
             if ( $event_id ) {
                 $where_sql  = 'WHERE event_id = %d';
@@ -479,42 +541,67 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             } else {
                 $where_sql = 'WHERE 1=1';
             }
-
         } elseif ( $is_organizer ) {
+            if ($own_meeting === 1) {
+                // Organizer wants ONLY their own meetings (host/participant),
+                // regardless of which event it belongs to.
+                if ($event_id) {
+                    $where_sql = 'WHERE event_id = %d';
+                    $params[]  = $event_id;
+                } else {
+                    $where_sql = 'WHERE 1=1';
+                }
 
-            // Organizer: scope to their own published events only.
-            if ( $event_id ) {
-                // Requested a specific event — must belong to this organizer.
-                if ( ! in_array( $event_id, $organizer_event_ids, true ) ) {
-                    // Event doesn't belong to this organizer — return a clear error message.
-                    $organizer_name   = $current_user_obj ? $current_user_obj->display_name : '';
-                    $response_data    = self::wpem_prepare_error_for_response( 403 );
-                    $response_data['message'] = sprintf(
-                        /* translators: %s: organizer display name */
-                        __( 'This event is not published by you (%s).', 'wpem-rest-api' ),
-                        $organizer_name
-                    );
-                    return wp_send_json( $response_data );
+                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                $params[]   = $user_id;
+                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+
+                if ($partner_id) {
+                    $filter_sql .= ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                    $params[]    = $partner_id;
+                    $params[]    = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
                 }
-                $where_sql = 'WHERE event_id = %d';
-                $params[]  = $event_id;
+
             } else {
-                // No specific event — show meetings for ALL organizer's events.
-                if ( empty( $organizer_event_ids ) ) {
-                    $response_data = self::wpem_prepare_error_for_response( 200 );
-                    $response_data['data'] = array(
-                        'total_post_count' => 0,
-                        'current_page'     => $page,
-                        'last_page'        => 1,
-                        'total_pages'      => 1,
-                        $this->rest_base   => array(),
-                        'user_status'      => wpem_get_user_login_status( $user_id ),
-                    );
-                    return wp_send_json( $response_data );
+                // Default organizer behavior — scoped to their own published events.
+                if ($event_id) {
+                    if (! in_array($event_id, $organizer_event_ids, true)) {
+                        $organizer_name = $current_user_obj ? $current_user_obj->display_name : '';
+                        $response_data  = self::wpem_prepare_error_for_response(403);
+                        $response_data['message'] = sprintf(
+                            /* translators: %s: organizer display name */
+                            __('This event is not published by you (%s).', 'wpem-rest-api'),
+                            $organizer_name
+                        );
+                        return wp_send_json($response_data);
+                    }
+                    $where_sql = 'WHERE event_id = %d';
+                    $params[]  = $event_id;
+                } else {
+                    if (empty($organizer_event_ids)) {
+                        $response_data = self::wpem_prepare_error_for_response(200);
+                        $response_data['data'] = array(
+                            'total_post_count' => 0,
+                            'current_page'     => $page,
+                            'last_page'        => 1,
+                            'total_pages'      => 1,
+                            $this->rest_base   => array(),
+                            // 'user_status'      => wpem_get_user_login_status($user_id),
+                        );
+                        return wp_send_json($response_data);
+                    }
+                    $placeholders = implode(',', array_fill(0, count($organizer_event_ids), '%d'));
+                    $where_sql    = "WHERE event_id IN ($placeholders)";
+                    $params       = array_merge($params, $organizer_event_ids);
                 }
-                $placeholders = implode( ',', array_fill( 0, count( $organizer_event_ids ), '%d' ) );
-                $where_sql    = "WHERE event_id IN ($placeholders)";
-                $params       = array_merge( $params, $organizer_event_ids );
+
+                // Narrowing to a specific partner is safe here — organizer already
+                // has full read access to every meeting within their own events.
+                if ($partner_id) {
+                    $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                    $params[]   = $partner_id;
+                    $params[]   = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
+                }
             }
 
         } else {
@@ -526,47 +613,23 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             } else {
                 $where_sql = 'WHERE 1=1';
             }
-        }
 
-        // --- Per-role meeting visibility filter ---
-        $filter_sql = '';
-
-        if ( $is_admin ) {
-
-            // Admin sees every meeting — no extra filter.
-            $filter_sql = '';
-
-        } elseif ( $is_organizer ) {
-
-            // Organizer sees all meetings of their events (scoped by WHERE above) —
-            // no extra per-user participant filter needed.
-            if ( $partner_id ) {
-                // Optional: narrow down to a specific participant within organizer's events.
-                $filter_sql  = ' AND (
-                    user_id = %d
-                    OR participant_ids LIKE %s
-                )';
-                $params[] = $partner_id;
-                $params[] = '%' . $wpdb->esc_like( 'i:' . $partner_id ) . '%';
-            }
-
-        } else {
-
-            // Regular user: only their own meetings (host or participant).
-            if ( $partner_id ) {
-                $filter_sql  = ' AND (
-                    user_id = %d
-                    OR participant_ids LIKE %s
-                )';
-                $params[] = $partner_id;
-                $params[] = '%' . $wpdb->esc_like( 'i:' . $partner_id ) . '%';
-            } else {
-                $filter_sql  = ' AND (
-                    user_id = %d
-                    OR participant_ids LIKE %s
+            if ($partner_id) {
+                // FIX (IDOR): logged-in user must ALWAYS be part of the meeting.
+                // partner_id only narrows further to meetings shared with that partner.
+                $filter_sql = ' AND (
+                    ( user_id = %d OR participant_ids LIKE %s )
+                    AND
+                    ( user_id = %d OR participant_ids LIKE %s )
                 )';
                 $params[] = $user_id;
-                $params[] = '%' . $wpdb->esc_like( 'i:' . $user_id ) . '%';
+                $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+                $params[] = $partner_id;
+                $params[] = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
+            } else {
+                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                $params[]   = $user_id;
+                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
             }
         }
 
@@ -591,11 +654,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if ($status === 'past') {
             $status_filter = $wpdb->prepare(' AND meeting_date < %s AND meeting_status != -1', $current_date);
         }
+        $date_filter = '';
+        if (!empty($meeting_date)) {
+            // $date_filter = $wpdb->prepare(' AND meeting_date = %s', $meeting_date);
+            $date_filter = $wpdb->prepare(' AND DATE(meeting_date) = %s', $meeting_date);
+        }
         
         $search_filter = '';
-
         if (!empty($search)) {
-        
             $search_filter = " AND EXISTS (
                 SELECT 1
                 FROM {$wpdb->postmeta} pm
@@ -603,19 +669,19 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 AND pm.meta_key = '_event_title'
                 AND pm.meta_value LIKE %s
             )";
-
             $params[] = '%' . $wpdb->esc_like($search) . '%';
         }
         // SQL queries
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$search_filter}";
+        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$date_filter} {$search_filter}";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_count = $wpdb->prepare($sql_count, ...$params);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total = (int) $wpdb->get_var($sql_count);
         
-        $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$search_filter} ORDER BY meeting_date ASC, meeting_start_time ASC LIMIT %d OFFSET %d";
+        $sql_rows = "SELECT * FROM {$this->table} {$where_sql} {$filter_sql} {$status_filter} {$date_filter} {$search_filter} ORDER BY meeting_date DESC, meeting_start_time ASC LIMIT %d OFFSET %d";
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $rows = $wpdb->get_results($sql_rows, ARRAY_A);
 
@@ -632,7 +698,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'last_page' => (int) max(1, ceil($total / $per_page)),
             'total_pages' => (int) max(1, ceil($total / $per_page)),
             $this->rest_base => $items,
-            'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+            // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         );
         return wp_send_json($response_data);
     }
@@ -656,7 +722,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $this->wpem_format_meeting_row($row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -699,6 +765,16 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             ], 400);
         }
 
+        $current_date = current_time('Y-m-d');
+        $current_time = current_time('H:i:s');
+        if($current_date > $meeting_date || ($meeting_date === $current_date && $current_time > $slot)) {
+            return new WP_REST_Response([
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Please select future date and time.',
+            ], 400);
+        }
+
         /**
          * Time
          */
@@ -731,39 +807,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         /**
-         * check participant availability
+         * check participant availability (slots + overlapping meetings)
          */
-        $check_user_ids = array_unique(array_merge([$user_id], $participants));
-        foreach ($check_user_ids as $check_user_id) {
-
-            // Host meetings
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $host_conflict = $wpdb->get_var($wpdb->prepare( "SELECT id FROM {$this->table} WHERE meeting_date = %s AND user_id = %d AND ( (meeting_start_time < %s AND meeting_end_time > %s) ) LIMIT 1", $meeting_date, $check_user_id, $end_time, $start_time));
-
-            if ($host_conflict) {
-                return new WP_REST_Response([
-                    'code'    => 409,
-                    'status'  => 'ERROR',
-                    'message' => __('participant not available on this time', 'wpem-rest-api'),
-                ], 409);
-            }
-
-            // Participant meetings
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $participant_conflicts = $wpdb->get_results($wpdb->prepare("SELECT id, participant_ids FROM {$this->table} WHERE meeting_date = %s AND ((meeting_start_time < %s AND meeting_end_time > %s))", $meeting_date, $end_time, $start_time), ARRAY_A);
-
-            if (!empty($participant_conflicts)) {
-                foreach ($participant_conflicts as $row) {
-                    $participant_ids = maybe_unserialize($row['participant_ids']);
-                    if (is_array($participant_ids) && array_key_exists($check_user_id, $participant_ids)) {
-                        return new WP_REST_Response([
-                            'code'    => 409,
-                            'status'  => 'ERROR',
-                            'message' => __('participant not available on this time', 'wpem-rest-api'),
-                        ], 409);
-                    }
-                }
-            }
+        if ( ! $this->wpem_check_meeting_time_availability( $user_id, $participants, $meeting_date, $start_time, $end_time ) ) {
+            return new WP_REST_Response([
+                'code'    => 409,
+                'status'  => 'ERROR',
+                'message' => __('Participant not available on this time, check availability of participants first.', 'wpem-rest-api'),
+            ], 409);
         }
 
         /**
@@ -775,7 +826,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $available_table_id = null;
         if ($event_room_count > 0) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $available_table_id = $wpdb->get_var($wpdb->prepare( "SELECT t.id FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d AND t.table_capacity >= %d AND t.id NOT IN ( SELECT b.table_id FROM {$table_bookings_table} b WHERE b.booked_date = %s AND b.start_time < %s AND b.end_time > %s ) ORDER BY t.id ASC LIMIT 1", $event_id, $total_persons_requested, $meeting_date, $end_time, $start_time));
+            $available_table_id = $wpdb->get_var($wpdb->prepare( "SELECT t.id FROM {$tables_table} t INNER JOIN {$rooms_table} r ON r.id = t.room_id WHERE r.event_id = %d AND t.table_capacity >= %d AND t.id NOT IN ( SELECT b.table_id FROM {$table_bookings_table} b WHERE b.booked_date = %s AND b.start_time < %s AND b.end_time > %s ) ORDER BY t.table_capacity ASC, t.id ASC LIMIT 1", $event_id, $total_persons_requested, $meeting_date, $end_time, $start_time));
 
             if (!$available_table_id) {
                 return new WP_REST_Response([
@@ -826,6 +877,15 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $meeting_id = $wpdb->insert_id;
 
         /**
+         * Assign table only when at least one participant has accepted
+         * (automatic-mode participants are accepted at creation time).
+         * Otherwise the table is assigned later, on first acceptance.
+         */
+        if ( $available_table_id && $this->wpem_has_accepted_participant( $participant_status_array ) ) {
+            $this->wpem_book_meeting_table( $meeting_id, $available_table_id, $meeting_date, $start_time, $end_time );
+        }
+
+        /**
          * send mail
          */
         WP_Event_Manager_Registrations_MatchMaking::send_matchmaking_meeting_emails(
@@ -857,6 +917,203 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'message' => 'Meeting created successfully.',
             'data'    => $this->wpem_format_meeting_row($row),
         ], 200);
+    }
+
+    /**
+     * True when at least one participant has accepted (status 1).
+     *
+     * @param array $participants_map [user_id => status]
+     * @return bool
+     */
+    protected function wpem_has_accepted_participant( $participants_map )
+    {
+        foreach ( (array) $participants_map as $status ) {
+            if ( (int) $status === 1 ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Does the meetings table have a table_id column?
+     *
+     * @return bool
+     */
+    protected function wpem_meeting_table_id_column_exists()
+    {
+        global $wpdb;
+        static $exists = null;
+        if ( null === $exists ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $exists = (bool) $wpdb->get_var( "SHOW COLUMNS FROM {$this->table} LIKE 'table_id'" );
+        }
+        return $exists;
+    }
+
+    /**
+     * Table currently booked for a meeting (0 when none).
+     *
+     * @param int $meeting_id
+     * @return int
+     */
+    protected function wpem_get_meeting_table_id( $meeting_id )
+    {
+        global $wpdb;
+        $bookings = esc_sql( WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        return (int) $wpdb->get_var( $wpdb->prepare( "SELECT table_id FROM {$bookings} WHERE meeting_id = %d ORDER BY id DESC LIMIT 1", (int) $meeting_id ) );
+    }
+
+    /**
+     * Release the table booked for a meeting so it can be used by another meeting
+     * on the same date/time.
+     *
+     * @param int $meeting_id
+     */
+    protected function wpem_release_meeting_table( $meeting_id )
+    {
+        global $wpdb;
+        $meeting_id = (int) $meeting_id;
+        $bookings   = esc_sql( WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->delete( $bookings, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
+
+        if ( $this->wpem_meeting_table_id_column_exists() ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->query( $wpdb->prepare( "UPDATE {$this->table} SET table_id = NULL WHERE id = %d", $meeting_id ) );
+        }
+    }
+
+    /**
+     * Book a table for a meeting (replaces any previous booking of that meeting).
+     *
+     * @param int    $meeting_id
+     * @param int    $table_id
+     * @param string $date  Y-m-d
+     * @param string $start H:i[:s]
+     * @param string $end   H:i[:s]
+     */
+    protected function wpem_book_meeting_table( $meeting_id, $table_id, $date, $start, $end )
+    {
+        global $wpdb;
+        $meeting_id = (int) $meeting_id;
+        $table_id   = (int) $table_id;
+        $bookings   = esc_sql( WPEM_MATCHMAKING_TABLE_BOOKINGS_TABLE );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->delete( $bookings, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $wpdb->insert(
+            $bookings,
+            array(
+                'meeting_id'  => $meeting_id,
+                'table_id'    => $table_id,
+                'booked_date' => $date,
+                'start_time'  => gmdate( 'H:i', strtotime( $start ) ),
+                'end_time'    => gmdate( 'H:i', strtotime( $end ) ),
+            ),
+            array( '%d', '%d', '%s', '%s', '%s' )
+        );
+
+        if ( $this->wpem_meeting_table_id_column_exists() ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update( $this->table, array( 'table_id' => $table_id ), array( 'id' => $meeting_id ), array( '%d' ), array( '%d' ) );
+        }
+    }
+
+    /**
+     * Check that every participant is available on the given date and slot.
+     *
+     * A participant is unavailable when:
+     *  - they switched off "available for meeting" (_available_for_meeting = 0), or
+     *  - the requested slot is not in their availability slots for that date, or
+     *  - the requested slot is already booked.
+     */
+    public function wpem_check_meeting_time_availability( $host_id, $participants, $meeting_date, $start_time, $end_time, $exclude_meeting_id = 0 )
+    {
+        global $wpdb;
+
+        $requested = gmdate( 'H:i', strtotime( $start_time ) );
+
+        // 1. Availability slots (participants only)
+        foreach ( (array) $participants as $uid ) {
+            $uid = (int) $uid;
+            if ( ! $uid ) {
+                continue;
+            }
+
+            $flag = get_user_meta( $uid, '_available_for_meeting', true );
+            if ( $flag !== '' && $flag !== null && (int) $flag === 0 ) {
+                return false;
+            }
+
+            $user_slots = function_exists( 'wpem_get_participants_available_meeting_slots' )
+                ? wpem_get_participants_available_meeting_slots( array( $uid ), $meeting_date )
+                : array();
+
+            // Only check that the slot EXISTS in the user's availability.
+            // "is_booked" is intentionally ignored here, because the helper may
+            // flag slots as booked even when the user rejected that meeting.
+            // Real conflicts are handled (status-aware) in step 2 below.
+            $found = false;
+            if ( is_array( $user_slots ) ) {
+                foreach ( $user_slots as $user_slot ) {
+                    if ( empty( $user_slot['time'] ) ) {
+                        continue;
+                    }
+                    if ( gmdate( 'H:i', strtotime( $user_slot['time'] ) ) === $requested ) {
+                        $found = true;
+                        break;
+                    }
+                }
+            }
+
+            if ( ! $found ) {
+                return false;
+            }
+        }
+
+        // 2. Overlapping ACTIVE meetings (host + participants)
+        $check_user_ids = array_map( 'intval', array_unique( array_merge( array( $host_id ), (array) $participants ) ) );
+        $participant_only_ids = array_map( 'intval', (array) $participants );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $overlaps = $wpdb->get_results( $wpdb->prepare( "SELECT user_id, participant_ids FROM {$this->table} WHERE id != %d AND meeting_date = %s AND meeting_status != -1 AND meeting_start_time < %s AND meeting_end_time > %s", $exclude_meeting_id, $meeting_date, $end_time, $start_time ), ARRAY_A );
+
+        foreach ( (array) $overlaps as $row ) {
+            $pids = maybe_unserialize( $row['participant_ids'] );
+            $pids = is_array( $pids ) ? $pids : array();
+
+            // A meeting where every participant rejected (status 0) is dead -> ignore it.
+            $has_active_participant = false;
+            foreach ( $pids as $status ) {
+                if ( (int) $status !== 0 ) {
+                    $has_active_participant = true;
+                    break;
+                }
+            }
+            if ( ! $has_active_participant ) {
+                continue;
+            }
+
+            // Someone is the host of an overlapping active meeting
+            if ( in_array( (int) $row['user_id'], $check_user_ids, true ) ) {
+                return false;
+            }
+
+            // Someone is a participant of an overlapping meeting
+            // (only counts if they did NOT reject it)
+                foreach ( $check_user_ids as $cid ) {
+                if ( array_key_exists( $cid, $pids ) && (int) $pids[ $cid ] !== 0 ) {
+                        return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -938,21 +1195,56 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                     if ( $pid <= 0 || $pid === $host_id ) {
                         continue;
                     }
-                    // Preserve existing status when participant already exists.
-                    $participants_map[ $pid ] = isset( $existing_pmap[ $pid ] )
-                        ? $existing_pmap[ $pid ]
-                        : -1;
+                    // Preserve existing status; new participants follow their request mode (same as create).
+                    if ( isset( $existing_pmap[ $pid ] ) ) {
+                        $participants_map[ $pid ] = $existing_pmap[ $pid ];
+                    } else {
+                        $mode = get_user_meta( $pid, '_wpem_meeting_request_mode', true );
+                        $participants_map[ $pid ] = ( strtolower( (string) $mode ) === 'automatic' ) ? 1 : -1;
+                    }
                 }
             }
         }
 
         // Determine whether time-sensitive checks are needed.
-        $schedule_changed = (
-            $new_date  !== $row['meeting_date']
-            || $new_start !== $row['meeting_start_time']
-            || $new_end   !== $row['meeting_end_time']
-            || $participants_changed
+        $date_time_changed = (
+            gmdate( 'Y-m-d', strtotime( $new_date ) ) !== gmdate( 'Y-m-d', strtotime( $row['meeting_date'] ) )
+            || gmdate( 'H:i', strtotime( $new_start ) ) !== gmdate( 'H:i', strtotime( $row['meeting_start_time'] ) )
+            || gmdate( 'H:i', strtotime( $new_end ) )   !== gmdate( 'H:i', strtotime( $row['meeting_end_time'] ) )
         );
+        $schedule_changed = ( $date_time_changed || $participants_changed );
+
+        // ----------------------------------------------------------------
+        // 1b. Basic validations (same as create meeting).
+        // ----------------------------------------------------------------
+        if ( $participants_changed && empty( $participants_map ) ) {
+            return new WP_REST_Response( array(
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Invalid participants.',
+            ), 400 );
+        }
+
+        if ( false === strtotime( $new_date ) || false === strtotime( $new_start ) || false === strtotime( $new_end ) ) {
+            return new WP_REST_Response( array(
+                'code'    => 400,
+                'status'  => 'ERROR',
+                'message' => 'Invalid date or time.',
+            ), 400 );
+        }
+
+        // Future date/time is required only when the date/time is being changed.
+        if ( $date_time_changed ) {
+            $current_date = current_time( 'Y-m-d' );
+            $current_time = current_time( 'H:i:s' );
+            if ( $current_date > $new_date || ( $new_date === $current_date && $current_time > $new_start ) ) {
+                return new WP_REST_Response( array(
+                    'code'    => 400,
+                    'status'  => 'ERROR',
+                    'message' => 'Please select future date and time.',
+                ), 400 );
+            }
+        }
 
         // ----------------------------------------------------------------
         // 2. Only run availability/capacity checks when schedule changes.
@@ -993,69 +1285,17 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 ), 400 );
             }
 
-            // -- 2b. Participant availability check ------------------------
-            $check_user_ids = array_unique( array_merge( array( $host_id ), $participant_ids ) );
-
-            foreach ( $check_user_ids as $check_user_id ) {
-
-                // Host-as-meeting-owner conflict (exclude the meeting being updated).
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-                $host_conflict = $wpdb->get_var(
-                    $wpdb->prepare(
-                        "SELECT id FROM {$this->table}
-                         WHERE id != %d
-                           AND meeting_date = %s
-                           AND user_id = %d
-                           AND meeting_start_time < %s
-                           AND meeting_end_time > %s
-                         LIMIT 1",
-                        $meeting_id,
-                        $new_date,
-                        $check_user_id,
-                        $new_end,
-                        $new_start
-                    )
-                );
-
-                if ( $host_conflict ) {
-                    return new WP_REST_Response( array(
-                        'code'    => 409,
-                        'status'  => 'ERROR',
-                        'message' => __( 'participant not available on this time', 'wpem-rest-api' ),
-                    ), 409 );
-                }
-
-                // Participant-in-other-meeting conflict (exclude the meeting being updated).
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-                $participant_conflicts = $wpdb->get_results(
-                    $wpdb->prepare(
-                        "SELECT id, participant_ids FROM {$this->table}
-                         WHERE id != %d
-                           AND meeting_date = %s
-                           AND meeting_start_time < %s
-                           AND meeting_end_time > %s",
-                        $meeting_id,
-                        $new_date,
-                        $new_end,
-                        $new_start
-                    ),
-                    ARRAY_A
-                );
-
-                if ( ! empty( $participant_conflicts ) ) {
-                    foreach ( $participant_conflicts as $conflict_row ) {
-                        $conflict_pids = maybe_unserialize( $conflict_row['participant_ids'] );
-                        if ( is_array( $conflict_pids ) && array_key_exists( $check_user_id, $conflict_pids ) ) {
-                            return new WP_REST_Response( array(
-                                'code'    => 409,
-                                'status'  => 'ERROR',
-                                'message' => __( 'participant not available on this time', 'wpem-rest-api' ),
-                            ), 409 );
-                        }
-                    }
-                }
-            }
             // phpcs:enable
+
+            // -- 2b. Participant availability check (slots + overlapping meetings) ---
+            // Excludes this meeting itself; cancelled meetings never block.
+            if ( ! $this->wpem_check_meeting_time_availability( $host_id, $participant_ids, $new_date, $new_start, $new_end, $meeting_id ) ) {
+                return new WP_REST_Response( array(
+                    'code'    => 409,
+                    'status'  => 'ERROR',
+                    'message' => __( 'Participant not available on this time, check availability of participants first.', 'wpem-rest-api' ),
+                ), 409 );
+            }
 
             // -- 2c. Table availability check -----------------------------
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1080,7 +1320,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                                  AND b.end_time    > %s
                                  AND b.meeting_id != %d
                            )
-                         ORDER BY t.id ASC
+                         ORDER BY t.table_capacity ASC, t.id ASC
                          LIMIT 1",
                         $event_id,
                         $total_persons,
@@ -1101,25 +1341,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                 }
             }
 
-            // -- 2d. Release old table booking and create a new one -------
-            if ( ! is_null( $new_table_id ) ) {
-                // Remove previous booking(s) for this meeting.
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-                $wpdb->delete( $table_bookings_table, array( 'meeting_id' => $meeting_id ), array( '%d' ) );
-
-                // Insert new booking.
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-                $wpdb->insert(
-                    $table_bookings_table,
-                    array(
-                        'meeting_id'  => $meeting_id,
-                        'table_id'    => $new_table_id,
-                        'booked_date' => $new_date,
-                        'start_time'  => gmdate( 'H:i', strtotime( $new_start ) ),
-                        'end_time'    => gmdate( 'H:i', strtotime( $new_end ) ),
-                    ),
-                    array( '%d', '%d', '%s', '%s', '%s' )
-                );
+            // -- 2d. Assign table only if at least one participant accepted ---
+            // No acceptance yet => make sure no table is held for this meeting.
+            if ( $this->wpem_has_accepted_participant( $participants_map ) ) {
+                if ( ! is_null( $new_table_id ) ) {
+                    $this->wpem_book_meeting_table( $meeting_id, $new_table_id, $new_date, $new_start, $new_end );
+                }
+            } else {
+                $this->wpem_release_meeting_table( $meeting_id );
             }
 
         } // end if $schedule_changed
@@ -1168,7 +1397,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             // Nothing actually changed — return current data.
             $response_data         = self::wpem_prepare_error_for_response( 200 );
             $response_data['data'] = $this->wpem_format_meeting_row( $row );
-            $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
+            // $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
             return wp_send_json( $response_data );
         }
 
@@ -1178,12 +1407,17 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return self::wpem_prepare_error_for_response( 500 );
         }
 
+        // If the meeting was cancelled via this endpoint, free its table too.
+        if ( isset( $fields['meeting_status'] ) && (int) $fields['meeting_status'] === -1 ) {
+            $this->wpem_release_meeting_table( $meeting_id );
+        }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $meeting_id ), ARRAY_A );
 
         $response_data         = self::wpem_prepare_error_for_response( 200 );
         $response_data['data'] = $this->wpem_format_meeting_row( $row );
-        $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
+        // $response_data['data']['user_status'] = wpem_get_user_login_status( wpem_rest_get_current_user_id() );
         return wp_send_json( $response_data );
     }
 
@@ -1227,7 +1461,13 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $meeting_status = in_array(1, $participant_data, true) ? 1 : 0;
 
         // --- Table auto-allocation on first acceptance (mirrors web-side logic) ---
-        $table_id = (int) $row['table_id'];
+        $table_id = $this->wpem_get_meeting_table_id( $meeting_id );
+
+        // No participant accepted (anymore) => the meeting must not hold a table.
+        if ( ! $this->wpem_has_accepted_participant( $participant_data ) ) {
+            $this->wpem_release_meeting_table( $meeting_id );
+            $table_id = 0;
+        }
 
         if ( (int) $status === 1 && empty( $table_id ) ) {
             // host + all participants
@@ -1257,7 +1497,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         );
         $update_formats = array( '%s', '%d' );
 
-        if ( ! empty( $table_id ) ) {
+        if ( ! empty( $table_id ) && $this->wpem_meeting_table_id_column_exists() ) {
             $update_data['table_id'] = $table_id;
             $update_formats[]        = '%d';
         }
@@ -1278,7 +1518,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = $this->wpem_format_meeting_row($row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -1325,14 +1565,17 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return self::wpem_prepare_error_for_response(500);
         }
 
+        // Release the assigned table so it can be booked by another meeting
+        $this->wpem_release_meeting_table($meeting_id);
+
         // Fetch meeting
-        $table = esc_sql($this->table);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $meeting = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $meeting_id));
-        //send mail to all participants        
-        if ( class_exists( 'WP_Event_Manager_Registrations_MatchMaking' ) ) {
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, 	WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $fresh_row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $meeting_id), ARRAY_A);
+        $meeting   = $fresh_row ? (object) $fresh_row : null;
+
+        // 4. Send cancel mail to participants
+        if ( $meeting && class_exists( 'WP_Event_Manager_Registrations_MatchMaking' ) ) {
             $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
-        
             $registration_instance->wpem_send_cancel_meeting_email(
                 $user_id,
                 $participant_ids,
@@ -1342,8 +1585,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // $registration_instance = new WP_Event_Manager_Registrations_MatchMaking();
         // $registration_instance->wpem_send_cancel_meeting_email($user_id, $participant_ids, $meeting);
         $response_data = self::wpem_prepare_error_for_response(200);
-        $response_data['data'] = $this->wpem_format_meeting_row($row);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        $response_data['data'] = $this->wpem_format_meeting_row($fresh_row ? $fresh_row : $row);
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -1371,9 +1614,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             return self::wpem_prepare_error_for_response(500);
         }
 
+        // Release the assigned table so it can be booked by another meeting
+        $this->wpem_release_meeting_table($meeting_id);
+
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = array('id' => $meeting_id);
-        $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
+        // $response_data['data']['user_status'] = wpem_get_user_login_status(wpem_rest_get_current_user_id());
         return wp_send_json($response_data);
     }
 
@@ -1489,7 +1735,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $response_data['data'] = array(
                 'available_for_meeting' => $meeting_available,
                 'slots' => $slots,
-                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+                // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         } else {
@@ -1519,7 +1765,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $response_data = self::wpem_prepare_error_for_response(200);
             $response_data['data'] = array(
                 'slots' => $slots,
-                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+                // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }
@@ -1548,151 +1794,6 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
 
         return self::wpem_prepare_error_for_response(200);
     }
-
-    /**
-     * Retrieves a specific matchmaking meeting by ID.
-     * GET /matchmaking-meetings
-     *
-     * @param WP_REST_Request $request
-     * @return WP_REST_Response
-     * @since 1.2.0
-     */
-    public function wpem_get_meeting_list_for_organizer($request)
-    {
-        global $wpdb;
-        // Get current user ID
-        $user_id = wpem_rest_get_current_user_id();
-        $event_id = (int) $request->get_param('event_id');
-        $status = sanitize_text_field($request->get_param('status'));
-        $page = max(1, (int) $request->get_param('page'));
-        $per_page = max(1, min(100, (int) $request->get_param('per_page')));
-        $offset = ($page - 1) * $per_page;
-
-        $params = [];
-
-        // --- Determine role tier (same logic as wpem_get_items) ---
-        $current_user_obj = get_userdata( $user_id );
-        $is_admin         = $current_user_obj && user_can( $current_user_obj, 'manage_options' );
-
-        // --- Get events published by this user as author ---
-        $organizer_events = [];
-        if ( ! $is_admin ) {
-            $organizer_events = get_posts([
-                'post_type'      => 'event_listing',
-                'post_status'    => 'publish',
-                'author'         => $user_id,
-                'fields'         => 'ids',
-                'posts_per_page' => -1,
-            ]);
-        }
-        $is_organizer = ! $is_admin && ! empty( $organizer_events );
-
-        // --- Build WHERE clause based on role ---
-        if ( $is_admin ) {
-
-            // Admin: see all meetings, optionally filtered by event_id.
-            if ( $event_id ) {
-                $where_sql = "WHERE event_id = %d";
-                $params[]  = $event_id;
-            } else {
-                $where_sql = "WHERE 1=1";
-            }
-
-        } elseif ( $is_organizer ) {
-
-            if ( $event_id ) {
-                // Requested a specific event — must belong to this organizer.
-                if ( ! in_array( $event_id, $organizer_events, true ) ) {
-                    $organizer_name           = $current_user_obj ? $current_user_obj->display_name : '';
-                    $response_data            = self::wpem_prepare_error_for_response( 403 );
-                    $response_data['message'] = sprintf(
-                        /* translators: %s: organizer display name */
-                        __( 'This event is not published by you (%s).', 'wpem-rest-api' ),
-                        $organizer_name
-                    );
-                    return wp_send_json( $response_data );
-                }
-                $where_sql = "WHERE event_id = %d";
-                $params[]  = $event_id;
-            } else {
-                // No event_id — show meetings for ALL organizer's published events.
-                $placeholders = implode( ',', array_fill( 0, count( $organizer_events ), '%d' ) );
-                $where_sql    = "WHERE event_id IN ($placeholders)";
-                $params       = array_merge( $params, $organizer_events );
-            }
-
-        } else {
-
-            // Regular user (customer): show only their own meetings (host or participant).
-            if ( $event_id ) {
-                $where_sql = "WHERE event_id = %d";
-                $params[]  = $event_id;
-            } else {
-                $where_sql = "WHERE 1=1";
-            }
-            $where_sql .= " AND ( user_id = %d OR participant_ids LIKE %s )";
-            $params[]   = $user_id;
-            $params[]   = '%' . $wpdb->esc_like( 'i:' . $user_id ) . '%';
-        }
-
-        // Status filter
-        $current_date = current_time('Y-m-d');
-        $status_filter = '';
-        if ($status === 'cancelled') {
-            $status_filter = ' AND meeting_status = -1';
-        }
-        if ($status === 'pending') {
-            $status_filter = ' AND meeting_status = -2';
-        }
-        if ($status === 'accepted') {
-            $status_filter = ' AND meeting_status = 1';
-        }
-        if ($status === 'rejected') {
-            $status_filter = ' AND meeting_status = 0';
-        }
-        if ($status === 'upcoming') {
-            $status_filter = $wpdb->prepare(' AND meeting_date >= %s AND meeting_status != -1', $current_date);
-        }
-        if ($status === 'past') {
-            $status_filter = $wpdb->prepare(' AND meeting_date < %s AND meeting_status != -1', $current_date);
-        }
-
-        // --- SQL queries ---
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-        $sql_count = "SELECT COUNT(*) FROM {$this->table} {$where_sql}{$status_filter}";
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query parts use prepared placeholders.
-        $sql_rows = "SELECT * FROM {$this->table} {$where_sql}{$status_filter}
-                    ORDER BY meeting_date ASC, meeting_start_time ASC
-                    LIMIT %d OFFSET %d";
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $sql_count = $wpdb->prepare($sql_count, ...$params);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $total = (int) $wpdb->get_var($sql_count);
-
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-        $sql_rows = $wpdb->prepare($sql_rows, array_merge($params, [$per_page, $offset]));
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-        $rows = $wpdb->get_results($sql_rows, ARRAY_A);
-
-        // Format rows
-        $items = [];
-        foreach ((array) $rows as $row) {
-            $items[] = $this->wpem_format_meeting_row($row);
-        }
-
-        $response_data = self::wpem_prepare_error_for_response(200);
-        $response_data['data'] = [
-            'total_post_count' => $total,
-            'current_page' => $page,
-            'last_page' => (int) max(1, ceil($total / $per_page)),
-            'total_pages' => (int) max(1, ceil($total / $per_page)),
-            $this->rest_base => $items,
-            'user_status' => wpem_get_user_login_status($user_id)
-        ];
-
-        return wp_send_json($response_data);
-    }
-
 }
 
 new WPEM_REST_Matchmaking_Meetings_Controller();
