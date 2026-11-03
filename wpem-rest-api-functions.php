@@ -235,6 +235,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'message' => __('Username or Password Wrong, Please try again.', 'wpem-rest-api')
             ),
             array(
+                'code' => 402,
+                'status' => 'Session Expired',
+                'message' => __('Your session has expired. Please log in again.', 'wpem-rest-api')
+            ),
+            array(
                 'code' => 403,
                 'status' => 'Forbidden',
                 'message' => __('Does not have permissions to access the requested resource.', 'wpem-rest-api')
@@ -283,6 +288,11 @@ if (!function_exists('wpem_response_default_status')) {
                 'code' => 418,
                 'status' => 'Error',
                 'message' => __('Already Checkin.', 'wpem-rest-api')
+            ),
+            array(
+                'code' => 419,
+                'status' => 'Error',
+                'message' => __('Already Checkout.', 'wpem-rest-api')
             ),
             array(
                 'code' => 416,
@@ -334,6 +344,21 @@ if (!function_exists('wpem_response_default_status')) {
                 'status' => 'Authentication Failed',
                 'message' => __('User not exist.', 'wpem-rest-api')
             ),
+            array(
+                'code' => 507,
+                'status' => 'REST API Disabled',
+                'message' => __('REST API feature is disabled.', 'wpem-rest-api')
+            ),
+            array(
+                'code'    => 508,
+                'status'  => 'Self Bookmark Not Allowed',
+                'message' => __('You cannot bookmark your own profile.', 'wpem-rest-api')
+            ),
+            array(
+                'code'    => 509,
+                'status'  => 'Matchmaking Profile Disabled',
+                'message' => __("User's matchmaking profile is disabled.", 'wpem-rest-api')
+            ),
         ));
         return $error_info;
     }
@@ -346,6 +371,17 @@ if (!function_exists('wpem_rest_api_get_ecosystem_info')) {
      */
     function wpem_rest_api_get_ecosystem_info()
     {
+        $cache_key = 'wpem_ecosystem_info';
+        $cached = get_transient($cache_key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        // get_plugins() / is_plugin_active() are not always loaded in REST requests
+        if (!function_exists('get_plugins') || !function_exists('is_plugin_active')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
         // Create required plugin list for wpem rest api
         $required_plugins = apply_filters('wpem_rest_api_required_plugin_list', array(
             'woocommerce' => 'Woocommerce',
@@ -356,11 +392,13 @@ if (!function_exists('wpem_rest_api_get_ecosystem_info')) {
             'wpem-guests' => 'WP Event Manager Guests',
             'wpem-speaker-schedule' => 'WP Event Manager Speaker & Schedule',
             'wpem-name-badges' => 'WP Event Manager - Name Badges',
+            'wp-event-manager-bookmarks' => 'WPEM - Bookmarks',
         ));
 
         // Get ecosystem data
         $plugins = get_plugins();
         $ecosystem_info = array();
+        $had_error = false; // true if any licence check failed because of network problem
 
         foreach ($plugins as $filename => $plugin) {
             if ('woocommerce' == $plugin['TextDomain'] || 'wp-event-manager' == $plugin['TextDomain'] || 'wpem-rest-api' == $plugin['TextDomain']) {
@@ -374,7 +412,17 @@ if (!function_exists('wpem_rest_api_get_ecosystem_info')) {
                     $licence_activate = get_option($plugin['TextDomain'] . '_licence_key');
 
                     if (!empty($licence_activate)) {
-                        $license_status = wpem_rest_api_check_license_expire_date($licence_activate);
+                        // 1) Status already saved by WPEM Auto Updater (instant, no remote request)
+                        $license_status = wpem_rest_api_get_local_license_status($plugin['TextDomain']);
+
+                        // 2) Not available locally (old activation / REST activation): ask licence server (cached)
+                        if (null === $license_status) {
+                            $network_error = false;
+                            $license_status = wpem_rest_api_check_license_expire_date($licence_activate, $network_error);
+                            if ($network_error) {
+                                $had_error = true;
+                            }
+                        }
                         $ecosystem_info[$plugin["TextDomain"]] = array(
                             'version' => $plugin["Version"],
                             'activated' => $license_status,
@@ -404,16 +452,56 @@ if (!function_exists('wpem_rest_api_get_ecosystem_info')) {
                 );
             }
         }
+
+        // Do NOT cache the whole result if a licence server/network error happened,
+        // otherwise a temporary outage would show "not activated" for the full hour.
+        if (!$had_error) {
+            set_transient($cache_key, $plugin_list, HOUR_IN_SECONDS);
+        }
+
         return $plugin_list;
+    }
+}
+
+if (!function_exists('wpem_rest_api_get_local_license_status')) {
+    /**
+     * Read licence status that WPEM Auto Updater already stores in wp_options.
+     * - "{slug}_key_expire" is set by the updater when the licence has expired
+     * - "{slug}_licence_key_activate" is set when the licence is activated
+     *
+     * @return bool|null true = active, false = expired, null = unknown (use remote check)
+     */
+    function wpem_rest_api_get_local_license_status($slug)
+    {
+        if (get_option($slug . '_key_expire')) {
+            return false;
+        }
+        if (get_option($slug . '_licence_key_activate')) {
+            return true;
+        }
+        return null;
     }
 }
 
 if (!function_exists('wpem_rest_api_check_license_expire_date')) {
     /**
-     * This function is used to check plugin license key is expired or not
+     * This function is used to check plugin license key is expired or not.
+     *
+     * Result is cached per licence key. $network_error is set to true when the
+     * licence server could not be reached (so callers can avoid caching that result).
      */
-    function wpem_rest_api_check_license_expire_date($licence_key)
+    function wpem_rest_api_check_license_expire_date($licence_key, &$network_error = false)
     {
+        $cache_key = 'wpem_lic_' . md5($licence_key);
+        $cached    = get_transient($cache_key);
+
+        if (false !== $cached) {
+            if ('E' === (string) $cached) {
+                $network_error = true;
+                return false;
+            }
+            return '1' === (string) $cached;
+        }
 
         $args = array();
         $defaults = array(
@@ -425,9 +513,12 @@ if (!function_exists('wpem_rest_api_check_license_expire_date')) {
 
         $request_url = add_query_arg($args, WPEM_PLUGIN_ACTIVATION_API_URL);
 
-        $request = wp_remote_get(esc_url_raw($request_url));
+        $request = wp_remote_get(esc_url_raw($request_url), array('timeout' => 5));
 
+        // Network error / bad status: remember briefly (5 min) so we don't retry on every request.
         if (is_wp_error($request) || wp_remote_retrieve_response_code($request) != 200) {
+            set_transient($cache_key, 'E', 5 * MINUTE_IN_SECONDS);
+            $network_error = true;
             return false;
         }
 
@@ -435,15 +526,65 @@ if (!function_exists('wpem_rest_api_check_license_expire_date')) {
         $response = (object) $response;
 
         if (isset($response->error)) {
+            set_transient($cache_key, '0', 30 * MINUTE_IN_SECONDS);
             return false;
         }
 
-        // Set version variables
-        if (isset($response) && is_object($response) && $response !== false) {
+        set_transient($cache_key, '1', 30 * MINUTE_IN_SECONDS);
             return true;
         }
     }
+
+/**
+ * Clear the cached ecosystem info whenever something that affects it changes,
+ * so activation status / version / licence status never stay stale.
+ */
+if (!function_exists('wpem_rest_api_clear_ecosystem_cache')) {
+    function wpem_rest_api_clear_ecosystem_cache($plugin = '')
+    {
+        $watched_plugins = array(
+            'wp-event-manager-sell-tickets',
+            'wp-event-manager-registrations',
+            'wpem-guests',
+            'wpem-speaker-schedule',
+            'wpem-name-badges',
+            'wp-event-manager-bookmarks',
+        );
+
+        if ( ! is_string( $plugin ) || '' === $plugin ) {
+            return;
+        }
+
+        // "folder/file.php" => "folder"
+        $slug = (false !== strpos($plugin, '/')) ? dirname($plugin) : $plugin;
+
+        if (in_array($slug, $watched_plugins, true)) {
+            delete_transient('wpem_ecosystem_info');
+        }
+    }
 }
+add_action('activated_plugin', 'wpem_rest_api_clear_ecosystem_cache');
+add_action('deactivated_plugin', 'wpem_rest_api_clear_ecosystem_cache');
+add_action('deleted_plugin', 'wpem_rest_api_clear_ecosystem_cache');
+add_action('upgrader_process_complete', 'wpem_rest_api_clear_ecosystem_cache');
+// Catch-all: any change to the active plugins list (wp-admin, WP-CLI, code)
+add_action('update_option_active_plugins', 'wpem_rest_api_clear_ecosystem_cache');
+
+// Licence changed by WPEM Auto Updater (activated, deactivated, expired by cron, key changed/removed)
+foreach (array('added_option', 'updated_option', 'deleted_option') as $wpem_hook) {
+    add_action($wpem_hook, function ($option) {
+        if (!is_string($option)) {
+            return;
+        }
+        foreach (array('_licence_key', '_licence_key_activate', '_key_expire', '_licence_status') as $suffix) {
+            if ($suffix === substr($option, -strlen($suffix))) {
+                delete_transient('wpem_ecosystem_info');
+                return;
+            }
+        }
+    }, 10, 1);
+}
+unset($wpem_hook);
 
 if (!function_exists('wpem_get_event_users')) {
 
@@ -594,5 +735,39 @@ if (!function_exists('wpem_addon_get_event_banner')) {
         } else {
             return get_event_banner($event);
         }
+    }
+}
+
+/**
+ * Get the currency (code + symbol) the attendee actually paid in.
+ *
+ * With a multicurrency setup the site currency can differ per visitor, so the
+ * currency saved on the WooCommerce order is the only reliable value. We fall back
+ * to the store base currency when there is no order (free / offline registrations).
+ *
+ * Use the 'wpem_rest_attendee_currency' filter to override.
+ *
+ * @param int $order_id
+ * @return array array('code' => 'USD', 'symbol' => '$')
+ */
+if (!function_exists('wpem_get_attendee_currency')) {
+    function wpem_get_attendee_currency($order_id = 0) {
+        $code = '';
+        if(!empty($order_id) && function_exists('wc_get_order')) {
+            $order = wc_get_order($order_id);
+            if($order instanceof WC_Order) {
+                $code = $order->get_currency();
+            }
+        }
+        if(empty($code)) {
+            $code = get_option('woocommerce_currency');
+        }
+        $code = apply_filters('wpem_rest_attendee_currency', $code, $order_id);
+
+        $symbol = function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol($code) : $code;
+        // WooCommerce returns HTML entities (e.g. &#8377;), decode them for API consumers.
+        $symbol = html_entity_decode($symbol, ENT_QUOTES, 'UTF-8');
+
+        return array('code' => $code, 'symbol' => $symbol);
     }
 }

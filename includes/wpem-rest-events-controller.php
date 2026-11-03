@@ -250,6 +250,9 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             unset($args['post_status']);
         }
 
+        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+        $args['meta_key'] = '_event_start_date'; $args['orderby'] = 'meta_value'; $args['order'] = 'DESC';
+
         // Taxonomy query to filter events by type, category,
         // tag
         $tax_query = array();
@@ -280,16 +283,51 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         if ($current_user_id) {
             global $wpdb;
             $table_name = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
-            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events FROM {$table_name} WHERE user_id = %d", $current_user_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $settings_row = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events, date_expires FROM {$table_name} WHERE user_id = %d", $current_user_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $event_show_by = isset($settings_row['event_show_by']) ? $settings_row['event_show_by'] : '';
             $selected_events = isset($settings_row['selected_events']) ? maybe_unserialize($settings_row['selected_events']) : [];
 
-            if ($event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
+            // Admin with an expired API key is not restricted by the key's selected events
+            // (same rule as the login response, which returns event_show_by = 'loggedin' for this case).
+            $is_expired_admin = false;
+            if (!empty($settings_row) && user_can($current_user_id, 'manage_options')) {
+                $is_expired_admin = gmdate('Y-m-d', strtotime($settings_row['date_expires'])) < gmdate('Y-m-d');
+            }
+
+            if (!$is_expired_admin && $event_show_by === 'selected' && !empty($selected_events) && is_array($selected_events)) {
                 $args['post__in'] = array_map('intval', $selected_events);
                 $args['orderby'] = 'post__in';
                 unset($args['author']);
             }
         }
+
+        // --- Registrations filter: only events that have registrations ---
+        // Works on top of the selected-events logic above (post__in is intersected, not replaced).
+        if (!empty($request['registrations'])) {
+            global $wpdb;
+            // Registrations (event_registration) store their event ID in post_parent.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $registered_event_ids = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT DISTINCT post_parent FROM {$wpdb->posts} WHERE post_type = %s AND post_parent > 0 AND post_status NOT IN ('trash', 'auto-draft')",
+                    'event_registration'
+                )
+            );
+            $registered_event_ids = array_map('intval', (array) $registered_event_ids);
+
+            // If post__in is already set (selected events / include), keep only the common IDs.
+            if (!empty($args['post__in']) && is_array($args['post__in'])) {
+                $registered_event_ids = array_intersect($registered_event_ids, array_map('intval', $args['post__in']));
+            }
+
+            // Empty post__in returns all events, so use [0] to return nothing.
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+            $args['post__in'] = !empty($registered_event_ids) ? array_values($registered_event_ids) : array(0);
+            $args['meta_key'] = '_event_start_date'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+            $args['orderby'] = 'meta_value';
+            $args['order'] = 'DESC';
+        }
+
         return $args;
     }
 
@@ -356,63 +394,102 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
      */
     protected function wpem_get_event_data($event, $context = 'view')
     {
-        $meta_data = get_post_meta($event->ID);
-        $event_venue_id = 0;
-        foreach ($meta_data as $key => $value) {
-            if ('_event_start_time' == $key || '_event_end_time' == $key) {
-                $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
-                $meta_data[$key] = esc_attr(date_i18n($time_format, strtotime(get_post_meta($event->ID, $key, true))));
-            } else
-                $meta_data[$key] = get_post_meta($event->ID, $key, true);
-            if ($key == '_event_online' && $meta_data[$key] == 'no') {
-                $event_venue_id = get_post_meta($event->ID, '_event_venue_ids', true);
-            }
+        $meta_keys = array(
+            '_event_start_date',
+            '_event_start_time',
+            '_event_end_date',
+            '_event_end_time',
+            '_event_location',
+            'geolocation_lat',
+            'geolocation_long',
+            'geolocation_formatted_address',
+            '_event_online',
+            '_event_organizer_ids',
+            '_event_venue_ids',
+            '_view_count',
+            '_cancelled',
+            '_featured',
+        );
 
-            if ($key == '_paid_tickets') {
+        $meta_data = array();
 
-                $paid_tickets = [];
+        $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+        $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
 
-                foreach ($value as $v) {
-                    $unserialized = maybe_unserialize($v);
+        foreach ($meta_keys as $key) {
+            $value = get_post_meta($event->ID, $key, true);
 
-                    if (!empty($unserialized) && is_array($unserialized)) {
-                        $paid_tickets = array_merge($paid_tickets, $unserialized);
-                    }
+            if ( in_array( $key, array( '_event_start_date', '_event_end_date' ), true ) && ! empty( $value ) ) {
+                $date_timestamp = strtotime( $value );
+                if ( false !== $date_timestamp ) {
+                    // $value = date_i18n( $date_format, $timestamp );
+                    $value = date_i18n( $date_format, $date_timestamp );
                 }
+            }
 
-                // 🔥 fix indexes
-                $meta_data[$key] = array_values($paid_tickets);
+            if ($key === '_event_start_time' || $key === '_event_end_time') {
+                if (!empty($value)) {
+                    $value = esc_attr(
+                        date_i18n($time_format, strtotime($value))
+                    );
+                }
+            }
 
+            $meta_data[$key] = $value;
+        }
+
+        // Venue
+        $event_venue_ids = array();
+
+        if ($meta_data['_event_online'] === 'no') {
+            $event_venue_ids = $meta_data['_event_venue_ids'];
+        }
+
+        $venues = array();
+
+        if (!empty($event_venue_ids)) {
+            if (!is_array($event_venue_ids)) {
+                $event_venue_ids = array($event_venue_ids);
+            }
+
+            foreach ($event_venue_ids as $event_venue_id) {
+                $venue = get_post($event_venue_id);
+                if ($venue) {
+                    $venue_qrcode = get_post_meta($event_venue_id, '_venue_qrcode', true);
+
+                    $venue_data = array(
+                        'id'   => $venue->ID,
+                        'name' => $venue->post_title,
+                    );
+
+                    if (!empty($venue_qrcode)) {
+                        $venue_data['QRCode'] = $venue_qrcode;
+                    }
+                    $venues[] = $venue_data;
+                }
             }
         }
-        if ($event_venue_id) {
-            if (is_array($event_venue_id))
-                $event_venue_id = $event_venue_id[0];
-            $venue = get_post($event_venue_id);
-            if ($venue) {
-                $venue_name = $venue->post_title;
-                $venue_qrcode = get_post_meta($event_venue_id, '_venue_qrcode', true);
-            }
-        }
+
+        $colors_plugin_active = is_plugin_active( 'wp-event-manager-colors/wp-event-manager-colors.php' );
+        $cancelled_event_color = $colors_plugin_active ? get_option( 'event_manager_event_cancelled_color', '#ffe5e5' ) : '#ffe5e5';
+        $featured_event_color = $colors_plugin_active ? get_option( 'event_manager_event_featured_color', '#ffffe4' ) : '#ffffe4';
+
+        $date_time_separator = get_option( 'event_manager_date_time_format_separator', '@' );
+
         $data = array(
             'id' => $event->ID,
             'name' => $event->post_title,
             'slug' => $event->post_name,
-            'permalink' => get_permalink($event->ID),
-            'date_created' => get_the_date('', $event),
-            'date_modified' => get_the_modified_date('', $event),
             'status' => $event->post_status,
-            'featured' => $event->_featured,
             'description' => 'view' === $context ? wpautop(do_shortcode(get_the_content('', false, $event))) : get_the_content('', false, $event),
-            'event_categories' => taxonomy_exists('event_listing_category') ? get_the_terms($event->ID, 'event_listing_category') : '',
-            'event_types' => taxonomy_exists('event_listing_type') ? get_the_terms($event->ID, 'event_listing_type') : '',
-            'event_tags' => taxonomy_exists('event_listing_tag') ? get_the_terms($event->ID, 'event_listing_tag') : '',
             'images' => wpem_addon_get_event_banner($event),
             'meta_data' => $meta_data,
+            'date_time_separator' => $date_time_separator,
+            'cancelled_event_color' => $cancelled_event_color,
+            'featured_event_color' => $featured_event_color,
         );
-        if (isset($venue_qrcode) && !empty($venue_qrcode)) {
-            $data['venue']['name'] = $venue_name;
-            $data['venue']['QRCode'] = $venue_qrcode;
+        if (!empty($venues)) {
+            $data['venue'] = $venues;
         }
         return apply_filters("wpem_rest_get_{$this->post_type}_data", $data, $event, $context);
     }
@@ -1199,6 +1276,12 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             'sanitize_callback' => 'wp_parse_id_list',
             'validate_callback' => 'rest_validate_request_arg',
         );
+        $params['registrations'] = array(
+            'description' => __('Limit result set to events that have registrations.', 'wpem-rest-api'),
+            'type' => 'boolean',
+            'sanitize_callback' => 'wc_string_to_bool',
+            'validate_callback' => 'rest_validate_request_arg',
+        );
         return $params;
     }
 
@@ -1262,6 +1345,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
         }
         return $data;
     }
+
     public function wpem_get_items($request)
     {
         global $wpdb;
@@ -1301,7 +1385,7 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
                 'last_page' => max(1, $total_pages),
                 'total_pages' => $total_pages,
                 $this->rest_base => $objects,
-                'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
+                // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
             );
             return wp_send_json($response_data);
         }
