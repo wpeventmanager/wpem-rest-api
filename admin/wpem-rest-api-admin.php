@@ -129,6 +129,14 @@ class WPEM_Rest_API_Admin
             $select_events = isset($_POST['select_events']) ? maybe_serialize(array_map('absint', wp_unslash($_POST['select_events']))) : maybe_serialize(array());
             $mobile_menu = isset($_POST['mobile_menu']) ? array_map('sanitize_text_field', wp_unslash($_POST['mobile_menu'])) : array();
 
+            // "Show selected events" needs at least one event (only when published events exist to select from).
+            if ('selected' === $event_show_by && empty($_POST['select_events'])) {
+                $published_events = wp_count_posts('event_listing');
+                if (!empty($published_events->publish)) {
+                    throw new Exception(__('Select at least one event.', 'wpem-rest-api'));
+                }
+            }
+
             update_user_meta($user_id, '_mobile_menu', $mobile_menu);
 
             // Check if current user can edit other users.
