@@ -94,6 +94,8 @@ class WPEM_REST_Matchmaking_Settings_Controller extends WPEM_REST_CRUD_Controlle
             'meeting_delete_permission' => get_option('wpem_meeting_delete_policy'),
             'datepicker_date_format' => $this->wpem_get_datepicker_format_data(),
             'date_format' => $date_format,
+            'general_date_format' => get_option('date_format'),
+            'general_time_format' => get_option('time_format')
         ];
 
         $response_data = self::wpem_prepare_error_for_response(200);
