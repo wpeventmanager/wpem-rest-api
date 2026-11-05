@@ -310,6 +310,16 @@ if (!function_exists('wpem_response_default_status')) {
                 'message' => __('You are not allowed to access this resourece.', 'wpem-rest-api')
             ),
             array(
+                'code' => 415,
+                'status' => 'Error',
+                'message' => __('Your Message notifications are disabled.', 'wpem-rest-api')
+            ),
+            array(
+                'code' => 417,
+                'status' => 'Error',
+                'message' => __("Partner's Message notifications are disabled.", 'wpem-rest-api')
+            ),
+            array(
                 'code' => 500,
                 'status' => 'Internal server error',
                 'message' => __('An unexpected error has occurred in processing the request. View the logs on the device for details.', 'wpem-rest-api')

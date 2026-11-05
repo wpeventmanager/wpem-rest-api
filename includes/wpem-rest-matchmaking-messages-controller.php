@@ -260,7 +260,15 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
             // Keep only text in message field
             $msg['message'] = implode(' ', $text_parts);
+
+            // Format created_at using Event Manager date & time format
+            $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+            $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+            $msg_created_date_time = $msg['created_at'];
+            $msg_created_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_created_date_time );
+            $msg['created_at'] = $msg_created_date_time;
         }
+        unset($msg);
 
         $total_pages = max(1, ceil($total_messages / $per_page));
 
@@ -297,7 +305,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $receiver_user = get_user_by('id', $partner_id);
 
         if (!$sender_user || !$receiver_user) {
-            return self::wpem_prepare_error_for_response(400);
+            return self::wpem_prepare_error_for_response(405);
         }
 
         $sender_name = trim(get_user_meta($user_id, 'first_name', true) . ' ' . get_user_meta($user_id, 'last_name', true));
@@ -307,8 +315,11 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $sender_notify = (int) get_user_meta($user_id, '_message_notification', true);
         $receiver_notify = (int) get_user_meta($partner_id, '_message_notification', true);
 
-        if ($sender_notify !== 1 || $receiver_notify !== 1) {
-            return self::wpem_prepare_error_for_response(403);
+        if ($sender_notify !== 1) {
+            return self::wpem_prepare_error_for_response(415);
+        }
+        if ($receiver_notify !== 1) {
+            return self::wpem_prepare_error_for_response(417);
         }
 
         // --- File Upload (if provided) ---
@@ -335,23 +346,40 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         // --- Conversation Parent ID ---
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $parent_id = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM $this->table WHERE (receiver_id = %d AND sender_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at ASC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id));
+        $parent_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$this->table} WHERE (sender_id = %d AND receiver_id = %d) OR (sender_id = %d AND receiver_id = %d) ORDER BY created_at ASC, id ASC LIMIT 1", $user_id, $partner_id, $partner_id, $user_id ) );
 
         // --- Insert Message ---
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-        $wpdb->insert(
+        $inserted = $wpdb->insert(
             $this->table,
             [
-                'parent_id' => $parent_id ?: 0,
-                'sender_id' => $user_id,
+                'parent_id'   => $parent_id, // 0 for first message, updated below
+                'sender_id'   => $user_id,
                 'receiver_id' => $partner_id,
-                'message' => $final_message,
-                'created_at' => current_time('mysql'),
+                'message'     => $final_message,
+                'created_at'  => current_time('mysql'),
             ],
             ['%d', '%d', '%d', '%s', '%s']
         );
+        if ($inserted === false) {
+            return self::wpem_prepare_error_for_response(500);
+        }
 
-        $insert_id = $wpdb->insert_id;
+        $insert_id = (int) $wpdb->insert_id;
+
+        // --- First message of the conversation: parent_id = its own id ---
+        if (!$parent_id) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update(
+                $this->table,
+                ['parent_id' => $insert_id],
+                ['id'        => $insert_id],
+                ['%d'],
+                ['%d']
+            );
+
+            $parent_id = $insert_id;
+        }
 
         // --- Email Helper ---
         $send_message_email = function ($to, $subject, $from_name, $text_message, $image_url) {
@@ -384,6 +412,11 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             $image_url
         );
 
+        $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+        $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+        $msg_created_date_time = current_time('mysql');
+		$msg_created_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_created_date_time );
+
         // --- Response ---
         return new WP_REST_Response([
             'code' => 200,
@@ -396,7 +429,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
                 'partner_id' => $partner_id,
                 'message' => $text_message ?: null,
                 'image' => $image_url ?: null,
-                'created_at' => current_time('mysql'),
+                'created_at' => $msg_created_date_time,
             ],
         ], 200);
     }
@@ -537,6 +570,12 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             ['%s', '%s'],
             ['%d']
         );
+
+        $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+        $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+        $msg_update_date_time = current_time('mysql');
+		$msg_update_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_update_date_time );
+
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
             'id' => $message_id,
@@ -544,7 +583,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             'partner_id' => $message->receiver_id,
             'message' => $text_message ?: null,
             'image' => $image_url ?: null,
-            'created_at' => current_time('mysql'),
+            'created_at' => $msg_update_date_time,
             // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
