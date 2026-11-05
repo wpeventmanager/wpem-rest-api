@@ -264,7 +264,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             // Format created_at using Event Manager date & time format
             $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
             $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
-            $msg_created_date_time = $msg['created_at'];
+            $msg_created_date_time = strtotime($msg['created_at']);
             $msg_created_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_created_date_time );
             $msg['created_at'] = $msg_created_date_time;
         }
@@ -414,7 +414,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
         $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
-        $msg_created_date_time = current_time('mysql');
+        $msg_created_date_time = strtotime(current_time('mysql'));
 		$msg_created_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_created_date_time );
 
         // --- Response ---
@@ -573,7 +573,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
         $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
-        $msg_update_date_time = current_time('mysql');
+        $msg_update_date_time = strtotime(current_time('mysql'));
 		$msg_update_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_update_date_time );
 
         $response_data = self::wpem_prepare_error_for_response(200);
