@@ -265,8 +265,11 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
             $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
             $msg_created_date_time = strtotime($msg['created_at']);
-            $msg_created_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_created_date_time );
-            $msg['created_at'] = $msg_created_date_time;
+            $msg_created_date = date_i18n( $date_format, $msg_created_date_time );
+            $msg_created_time = date_i18n( $time_format, $msg_created_date_time );
+            $msg['created_date'] = $msg_created_date;
+            $msg['created_time'] = $msg_created_time;
+            unset($msg['created_at']);
         }
         unset($msg);
 
@@ -486,6 +489,12 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             // Detect if last message is an image
             $is_image = ($last_message_row && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $last_message_row->message)) ? 1 : 0;
 
+            $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
+            $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
+            $last_msg_date_time = strtotime($last_message_row->created_at);
+            $last_msg_date = date_i18n( $date_format, $last_msg_date_time );
+            $last_msg_time = date_i18n( $time_format, $last_msg_date_time );
+
             $results[] = [
                 'user_id' => (int) $partner_id,
                 'user_status' => $partner_user ? 1 : 0,
@@ -496,7 +505,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
                 'profession' => get_user_meta($partner_id, '_profession', true),
                 'company_name' => get_user_meta($partner_id, '_company_name', true),
                 'last_message' => $last_message_row ? $last_message_row->message : null,
-                'message_time' => $last_message_row ? gmdate('Y-m-d H:i:s', strtotime($last_message_row->created_at)) : null,
+                'message_date' => $last_msg_date,
+                'message_time' => $last_msg_time,
                 'last_message_is_image' => $is_image,
             ];
         }
