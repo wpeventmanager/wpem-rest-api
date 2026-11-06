@@ -330,13 +330,11 @@ class WPEM_REST_Contact_Controller extends WPEM_REST_CRUD_Controller
         update_user_meta($user_id, 'user_contacts', $contacts);
 
         // Response
-        $response_data = self::wpem_prepare_error_for_response(200);
-
-        $response_data['data'] = array(
-            'contact_id' => $contact_id,
-            'message'    => 'Contact deleted successfully.',
-            // 'user_status' => wpem_get_user_login_status($user_id),
-        );
+        $response_data = wp_send_json([
+            'code'    => 200,
+            'status'  => 'OK',
+			'message' => __('Contact deleted successfully.', 'wpem-rest-api'),
+		]);
 
         return rest_ensure_response($response_data);
     }
