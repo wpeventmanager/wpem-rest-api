@@ -1876,6 +1876,15 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
                 $is_bookmarked = in_array((int) $user['user_id'], $bookmarked_user_ids, true);
                 return $is_bookmarked === $bookmark_filter;
             }));
+            // Newest bookmark first (meta is stored oldest -> newest, so higher position = newer)
+            if ($bookmark_filter) {
+                $bookmark_order = array_flip($bookmarked_user_ids); // user_id => position in meta
+                usort($final_users, function ($a, $b) use ($bookmark_order) {
+                    $pos_a = $bookmark_order[(int) $a['user_id']] ?? 0;
+                    $pos_b = $bookmark_order[(int) $b['user_id']] ?? 0;
+                    return $pos_b <=> $pos_a; // descending
+                });
+            }
         }
 
         if (empty($final_users)) {
