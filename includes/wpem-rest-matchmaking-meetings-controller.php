@@ -547,12 +547,12 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Base WHERE clause
         if ( $is_admin ) {
             // Admin: filter by event_id if provided, otherwise all events.
-            // if ( $event_id ) {
-            //     $where_sql  = 'WHERE event_id = %d';
-            //     $params[]   = $event_id;
-            // } else {
-            //     $where_sql = 'WHERE 1=1';
-            // }
+            if ( $event_id ) {
+                $where_sql  = 'WHERE event_id = %d';
+                $params[]   = $event_id;
+            } else {
+                $where_sql = 'WHERE 1=1';
+            }
 
             if ($own_meeting === 1) {
                 // Organizer wants ONLY their own meetings (host/participant),
