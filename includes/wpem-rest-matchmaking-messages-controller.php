@@ -207,6 +207,61 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
     }
 
     /**
+     * Check whether the `is_edited` column exists on the messages table.
+     * Tries to add it once (retrying at most every 12 hours) and never
+     * throws or breaks the request if that is not possible.
+     *
+     * @since 1.3.1
+     * @return bool
+     */
+    private function wpem_has_is_edited_column()
+    {
+        global $wpdb;
+        static $has_column = null;
+
+        if (null !== $has_column) {
+            return $has_column;
+        }
+
+        $has_column = false;
+        $table = esc_sql($this->table);
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) {
+            return $has_column;
+        }
+
+        $check = function () use ($wpdb, $table) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            return !empty($wpdb->get_results("SHOW COLUMNS FROM `{$table}` LIKE 'is_edited'"));
+        };
+
+        if ($check()) {
+            $has_column = true;
+            return $has_column;
+        }
+
+        if (get_transient('wpem_matchmaking_is_edited_column_failed')) {
+            return $has_column;
+        }
+
+        $suppress = $wpdb->suppress_errors(true);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->query("ALTER TABLE `{$table}` ADD COLUMN `is_edited` TINYINT(1) NOT NULL DEFAULT 0 AFTER `message`");
+        $wpdb->suppress_errors($suppress);
+
+        if ($check()) {
+            $has_column = true;
+            update_option('wpem_matchmaking_is_edited_column_added', true);
+            delete_transient('wpem_matchmaking_is_edited_column_failed');
+        } else {
+            set_transient('wpem_matchmaking_is_edited_column_failed', 1, 12 * HOUR_IN_SECONDS);
+        }
+
+        return $has_column;
+    }
+
+    /**
      * Get a collection of messages.
      *
      * @param WP_REST_Request $request Full details about the request.
@@ -215,6 +270,9 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
     public function wpem_get_items($request)
     {
         global $wpdb;
+
+        // Falls back to a constant 0 when the column is not available.
+        $is_edited_select = $this->wpem_has_is_edited_column() ? 'is_edited' : '0 AS is_edited';
 
         $user_id = wpem_rest_get_current_user_id();
         $partner_id = intval($request->get_param('partner_id'));
@@ -236,7 +294,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $table_safe = esc_sql($table);
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-        $sql = $wpdb->prepare("(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) UNION ALL (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", $user_id, $partner_id, $partner_id, $user_id, $per_page, $offset);
+        $sql = $wpdb->prepare("(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, {$is_edited_select}, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) UNION ALL (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, {$is_edited_select}, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", $user_id, $partner_id, $partner_id, $user_id, $per_page, $offset);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
         $messages = $wpdb->get_results($sql, ARRAY_A);
 
@@ -260,6 +318,9 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
             // Keep only text in message field
             $msg['message'] = implode(' ', $text_parts);
+
+            // Flag messages that have been updated
+            $msg['is_edited'] = !empty($msg['is_edited']);
 
             // Format created_at using Event Manager date & time format
             $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
@@ -569,21 +630,29 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         }
 
         // --- Update Message ---
+        // Mark as edited only when the content actually changed.
+        $update_data = ['message' => $final_message];
+        $update_format = ['%s'];
+        $is_edited = !empty($message->is_edited) ? 1 : 0;
+
+        if ($this->wpem_has_is_edited_column() && $final_message !== $message->message) {
+            $is_edited = 1;
+            $update_data['is_edited'] = 1;
+            $update_format[] = '%d';
+        }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->update(
             $this->table,
-            [
-                'message' => $final_message,
-                'created_at' => current_time('mysql'),
-            ],
+            $update_data,
             ['id' => $message_id],
-            ['%s', '%s'],
+            $update_format,
             ['%d']
         );
 
         $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
         $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
-        $msg_update_date_time = strtotime(current_time('mysql'));
+        $msg_update_date_time = strtotime($message->created_at);
 		$msg_update_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_update_date_time );
 
         $response_data = self::wpem_prepare_error_for_response(200);
