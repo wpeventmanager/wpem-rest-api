@@ -513,6 +513,18 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $offset       = ($page - 1) * $per_page;
         $params       = array();
 
+        $display_timezone = wpem_get_matchmaking_user_display_timezone($user_id);
+        $current_time = new DateTime('now', $display_timezone);
+        $timezone_name = $display_timezone->getName();
+        $timezone_abbr = $current_time->format('T');
+        $current_time_formatted = $current_time->format('H:i');
+        if ($display_timezone->getName() === wp_timezone()->getName()) {
+            $meeting_note = "All times are displayed in the website timezone (" . $timezone_name . "(". $timezone_abbr ."), currently: ". $current_time_formatted ." ).";
+        } else {
+            $meeting_note = "All times are displayed in your selected timezone (" . $timezone_name . ", currently: ". $current_time_formatted ." ).";
+        }
+        
+
         // --- Determine current user's role tier ---
         // Use user_can() against an explicit WP_User object rather than current_user_can(),
         // because current_user_can() relies on WordPress's global current-user state which
@@ -535,11 +547,32 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // Base WHERE clause
         if ( $is_admin ) {
             // Admin: filter by event_id if provided, otherwise all events.
-            if ( $event_id ) {
-                $where_sql  = 'WHERE event_id = %d';
-                $params[]   = $event_id;
-            } else {
-                $where_sql = 'WHERE 1=1';
+            // if ( $event_id ) {
+            //     $where_sql  = 'WHERE event_id = %d';
+            //     $params[]   = $event_id;
+            // } else {
+            //     $where_sql = 'WHERE 1=1';
+            // }
+
+            if ($own_meeting === 1) {
+                // Organizer wants ONLY their own meetings (host/participant),
+                // regardless of which event it belongs to.
+                if ($event_id) {
+                    $where_sql = 'WHERE event_id = %d';
+                    $params[]  = $event_id;
+                } else {
+                    $where_sql = 'WHERE 1=1';
+                }
+
+                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                $params[]   = $user_id;
+                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
+
+                if ($partner_id) {
+                    $filter_sql .= ' AND ( user_id = %d OR participant_ids LIKE %s )';
+                    $params[]    = $partner_id;
+                    $params[]    = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
+                }
             }
         } elseif ( $is_organizer ) {
             if ($own_meeting === 1) {
@@ -585,6 +618,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                             'current_page'     => $page,
                             'last_page'        => 1,
                             'total_pages'      => 1,
+                            'timezone_note'     => $meeting_note,
                             $this->rest_base   => array(),
                             // 'user_status'      => wpem_get_user_login_status($user_id),
                         );
@@ -697,6 +731,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'current_page' => $page,
             'last_page' => (int) max(1, ceil($total / $per_page)),
             'total_pages' => (int) max(1, ceil($total / $per_page)),
+            'timezone_note'     => $meeting_note,
             $this->rest_base => $items,
             // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         );
