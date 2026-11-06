@@ -479,7 +479,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
         $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
         $msg_created_date_time = strtotime(current_time('mysql'));
-		$msg_created_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_created_date_time );
+		$msg_created_date = date_i18n( $date_format, $msg_created_date_time );
+		$msg_created_time = date_i18n( $time_format, $msg_created_date_time );
 
         // --- Response ---
         return new WP_REST_Response([
@@ -493,7 +494,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
                 'partner_id' => $partner_id,
                 'message' => $text_message ?: null,
                 'image' => $image_url ?: null,
-                'created_at' => $msg_created_date_time,
+                'created_date' => $msg_created_date,
+                'created_time' => $msg_created_time,
             ],
         ], 200);
     }
@@ -652,8 +654,9 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
         $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
-        $msg_update_date_time = strtotime($message->created_at);
-		$msg_update_date_time = date_i18n( $date_format . ' ' . $time_format, $msg_update_date_time );
+        $msg_created_date_time = strtotime($message->created_at);
+		$msg_created_date = date_i18n( $date_format, $msg_update_date_time );
+		$msg_created_time = date_i18n( $time_format, $msg_update_date_time );
 
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
@@ -662,7 +665,8 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
             'partner_id' => $message->receiver_id,
             'message' => $text_message ?: null,
             'image' => $image_url ?: null,
-            'created_at' => $msg_update_date_time,
+            'created_date' => $msg_created_date,
+            'created_time' => $msg_created_time,
             // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
         ];
         return wp_send_json($response_data);
