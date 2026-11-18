@@ -278,7 +278,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                             'email'           => $email,
                             'user_photo'      => $user_photo,
                             'order_date'      => wp_date( $local_date_format, strtotime( $order_date ) ),
-                            'order_amount'    => $order_amount,
+                            'order_amount'    => html_entity_decode(wp_strip_all_tags(wc_price($order_amount)), ENT_QUOTES, 'UTF-8'),
                             'payment_method'  => $payment_method,
                             'payment_status'  => $payment_status,
                             'organizer_name'  => $organizer_name,
