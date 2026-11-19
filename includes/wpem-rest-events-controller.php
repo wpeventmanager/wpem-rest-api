@@ -328,6 +328,73 @@ class WPEM_REST_Events_Controller extends WPEM_REST_CRUD_Controller
             $args['order'] = 'DESC';
         }
 
+        // Apply admin settings: hide cancelled / hide expired events.
+        $args = $this->wpem_apply_hide_settings($args, $request);
+
+        return $args;
+    }
+
+    /**
+     * Apply "Hide cancelled events" and "Hide expired listings" settings
+     * (Event Manager > Settings > Event Listings) to the query args.
+     *
+     * Options:
+     *  - event_manager_hide_cancelled_events (0/1)
+     *  - event_manager_hide_expired          (0/1)
+     *
+     * @param array           $args    WP_Query args.
+     * @param WP_REST_Request $request Request object.
+     * @return array
+     */
+    protected function wpem_apply_hide_settings($args, $request)
+    {
+        $hide_cancelled = ('1' === (string) get_option('event_manager_hide_cancelled_events', '0'));
+        $hide_expired   = ('1' === (string) get_option('event_manager_hide_expired', '0'));
+
+        // --- Hide cancelled events (_cancelled = 1) ---
+        if ($hide_cancelled) {
+            $cancelled_clause = array(
+                'relation' => 'OR',
+                array(
+                    'key'     => '_cancelled',
+                    'compare' => 'NOT EXISTS',
+                ),
+                array(
+                    'key'     => '_cancelled',
+                    'value'   => '1',
+                    'compare' => '!=',
+                ),
+            );
+
+            if (empty($args['meta_query']) || !is_array($args['meta_query'])) {
+                $args['meta_query'] = array($cancelled_clause); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+            } else {
+                $args['meta_query'][] = $cancelled_clause;
+                $args['meta_query']['relation'] = 'AND';
+            }
+        }
+
+        // --- Hide expired events (post_status = expired) ---
+        if ($hide_expired) {
+            $requested_status = isset($request['status']) ? $request['status'] : 'any';
+
+            if ('expired' === $requested_status) {
+                // Explicitly asked for expired events while they are hidden: return nothing.
+                $args['post__in'] = array(0);
+            } elseif (empty($args['post_status']) || 'any' === $args['post_status']) {
+                // Equivalent of "any", but without the "expired" status.
+                $statuses = array_values(
+                    array_diff(
+                        get_post_stati(array('exclude_from_search' => false)),
+                        array('expired')
+                    )
+                );
+                $args['post_status'] = $statuses;
+            } elseif (is_array($args['post_status'])) {
+                $args['post_status'] = array_values(array_diff($args['post_status'], array('expired')));
+            }
+        }
+
         return $args;
     }
 
