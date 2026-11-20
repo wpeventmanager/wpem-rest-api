@@ -1581,6 +1581,14 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         if (!is_array($participant_ids)) {
             $participant_ids = [];
         }
+
+        if($row['meeting_status'] == -1) {
+            return wp_send_json([
+				'code'    => 400,
+				'status'  => 'Error',
+				'message' => __('This meeting has already been cancelled.', 'wpem-rest-api'),
+			]);
+        }
         // // Update all participants to -1 (cancelled)
         // foreach ($participant_ids as $participant_id => $status) {
         //     $participants[$participant_id] = -1;
