@@ -775,7 +775,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $user_id       = wpem_rest_get_current_user_id();
         $event_id      = intval($request->get_param('event_id'));
         $meeting_date  = sanitize_text_field($request->get_param('meeting_date'));
-        $slot          = sanitize_text_field($request->get_param('slot'));
+        // $slot          = sanitize_text_field($request->get_param('slot'));
+        $slot          = sanitize_text_field($request->get_param('meeting_start'));
         $participants  = (array) $request->get_param('meeting_participants');
         $message       = sanitize_textarea_field($request->get_param('message'));
 
@@ -1192,9 +1193,10 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             $new_start = null !== $request->get_param( 'meeting_start' )
                 ? gmdate( 'H:i:s', strtotime( $request->get_param( 'meeting_start' ) ) )
                 : $row['meeting_start_time'];
-            $new_end   = null !== $request->get_param( 'meeting_end' )
-                ? gmdate( 'H:i:s', strtotime( $request->get_param( 'meeting_end' ) ) )
-                : $row['meeting_end_time'];
+            $new_end   = gmdate( 'H:i:s', strtotime( sanitize_text_field( $new_start ) . ' +1 hour' ) );
+            // $new_end   = null !== $request->get_param( 'meeting_end' )
+            //     ? gmdate( 'H:i:s', strtotime( $request->get_param( 'meeting_end' ) ) )
+            //     : $row['meeting_end_time'];
         }
 
         // Resolve new participants list.
