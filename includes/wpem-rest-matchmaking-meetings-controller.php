@@ -580,6 +580,70 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $own_sql    = '( user_id = %d OR participant_ids LIKE %s )';
         $own_params = array($user_id, '%' . $wpdb->esc_like('i:' . $user_id . ';i:') . '%');
 
+        // get_partners=1 : all users the current user has meetings with (host/participant), paginated.
+        // Works on own meetings, so matchmaking must be ON (509 otherwise) for every user.
+        if (1 === (int) $request->get_param('get_partners')) {
+            if (!$is_matchmaking) {
+                return wp_send_json(self::wpem_prepare_error_for_response(509));
+            }
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+            $rows = $wpdb->get_results($wpdb->prepare("SELECT user_id, participant_ids FROM {$this->table} WHERE {$own_sql}", $own_params), ARRAY_A);
+
+            $partner_ids = array();
+            foreach ($rows as $row) {
+                $partner_ids[] = (int) $row['user_id'];
+                $map = maybe_unserialize($row['participant_ids']);
+                if (is_array($map)) {
+                    $partner_ids = array_merge($partner_ids, array_map('intval', array_keys($map)));
+                }
+            }
+            $partner_ids = array_values(array_diff(array_unique($partner_ids), array($user_id)));
+
+            // Existing users only (an empty include would return ALL users), with their names.
+            $partners = array();
+            if (!empty($partner_ids)) {
+                foreach (get_users(array('include' => $partner_ids)) as $partner_user) {
+                    $first_name = get_user_meta($partner_user->ID, '_attendee_name', true);
+                    $last_name  = get_user_meta($partner_user->ID, '_attendee_last_name', true);
+                    $first_name = '' !== (string) $first_name ? $first_name : $partner_user->first_name;
+                    $last_name  = '' !== (string) $last_name ? $last_name : $partner_user->last_name;
+                    $partners[] = array(
+                        'id'           => (int) $partner_user->ID,
+                        'first_name'   => $first_name,
+                        'last_name'    => $last_name,
+                        'display_name' => $partner_user->display_name,
+                    );
+                }
+            }
+
+            // Sort A to Z by first name, or by display name when there is no first name.
+            usort($partners, function ($a, $b) {
+                $name_a = '' !== $a['first_name'] ? $a['first_name'] : $a['display_name'];
+                $name_b = '' !== $b['first_name'] ? $b['first_name'] : $b['display_name'];
+                $cmp    = strnatcasecmp($name_a, $name_b);
+                return 0 !== $cmp ? $cmp : $a['id'] - $b['id'];
+            });
+
+            // Default 10 users per page when per_page is not passed.
+            $per_page = (int) $request->get_param('per_page') > 0 ? $per_page : 10;
+            $offset   = ($page - 1) * $per_page;
+
+            $total_partners = count($partners);
+            $total_pages    = (int) max(1, ceil($total_partners / $per_page));
+            $users          = array_slice($partners, $offset, $per_page);
+
+            $response_data = self::wpem_prepare_error_for_response(200);
+            $response_data['data'] = array(
+                'total_partners' => $total_partners,
+                'current_page'       => $page,
+                'last_page'          => $total_pages,
+                'total_pages'        => $total_pages,
+                'users'              => $users,
+            );
+            return wp_send_json($response_data);
+        }
+
         $conditions = array();
         $filter_sql = '';
 
