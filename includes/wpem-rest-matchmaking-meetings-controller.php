@@ -223,6 +223,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $site_tz = wp_timezone();
         $user_tz = $this->wpem_get_user_display_timezone(wpem_rest_get_current_user_id());
 
+        $date_ymd = gmdate('Y-m-d', strtotime($row['meeting_date']));
         $start_hm = gmdate('H:i:s', strtotime($row['meeting_start_time']));
         $end_hm   = gmdate('H:i:s', strtotime($row['meeting_end_time']));
 
@@ -507,7 +508,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $event_id     = (int) $request->get_param('event_id');
         $status       = sanitize_text_field($request->get_param('status'));
         $search       = sanitize_text_field($request->get_param('search'));
-        $own_meeting  = (int) $request->get_param('own_meeting'); // NEW
+        $own_meeting  = (int) $request->get_param('own_meeting');
         $page         = max(1, (int) $request->get_param('page'));
         $per_page     = max(1, min(100, (int) $request->get_param('per_page')));
         $offset       = ($page - 1) * $per_page;
@@ -525,147 +526,97 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         }
         
 
-        // --- Determine current user's role tier ---
-        // Use user_can() against an explicit WP_User object rather than current_user_can(),
-        // because current_user_can() relies on WordPress's global current-user state which
-        // is not reliably populated during JWT/token-authenticated REST API requests.
-        $current_user_obj = get_userdata( $user_id );
-        $is_admin         = $current_user_obj && user_can( $current_user_obj, 'manage_options' );
-
-        $organizer_event_ids = array();
-        if ( ! $is_admin ) {
-            $organizer_event_ids = get_posts( array(
-                'post_type'      => 'event_listing',
-                'post_status'    => 'publish',
-                'author'         => $user_id,
-                'fields'         => 'ids',
-                'posts_per_page' => -1,
-            ) );
+        // --- Access rules ---
+        // Admin                        : all meetings (matchmaking ON or OFF).
+        // App access (valid API key)   : meetings of "selected events" or, otherwise, of the events
+        //                                they created. No such events => all meetings (like admin).
+        // Customer (no app access)     : only own meetings, matchmaking must be ON.
+        // own_meeting=1                : only own meetings (host/participant), matchmaking must be ON.
+        if (!is_numeric($user_id) || (int) $user_id <= 0) {
+            return wp_send_json(is_array($user_id) ? $user_id : self::wpem_prepare_error_for_response(405));
         }
-        $is_organizer = ! $is_admin && ! empty( $organizer_event_ids );
+        $user_id = (int) $user_id;
+        $user    = get_userdata($user_id);
+        if (!$user) {
+            return wp_send_json(self::wpem_prepare_error_for_response(405));
+        }
 
-        // Base WHERE clause
-        if ( $is_admin ) {
-            // Admin: filter by event_id if provided, otherwise all events.
-            if ( $event_id ) {
-                $where_sql  = 'WHERE event_id = %d';
-                $params[]   = $event_id;
-            } else {
-                $where_sql = 'WHERE 1=1';
-            }
+        // API key / expiry / permission / matchmaking validations (same as wpem_check_authorized_user()).
+        $auth_error = $this->wpem_check_authorized_user_access($user);
+        if ($auth_error) {
+            return wp_send_json($auth_error);
+        }
 
-            if ($own_meeting === 1) {
-                // Organizer wants ONLY their own meetings (host/participant),
-                // regardless of which event it belongs to.
-                if ($event_id) {
-                    $where_sql = 'WHERE event_id = %d';
-                    $params[]  = $event_id;
+        $is_admin       = user_can($user, 'manage_options');
+        $is_matchmaking = 1 === (int) get_user_meta($user_id, '_matchmaking_profile', true);
+        $has_app_access = false;
+        $event_ids      = array();
+
+        if (!$is_admin) {
+            $keys_table = esc_sql($wpdb->prefix . 'wpem_rest_api_keys');
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $key = $wpdb->get_row($wpdb->prepare("SELECT event_show_by, selected_events, date_expires FROM {$keys_table} WHERE user_id = %d", $user_id), ARRAY_A);
+
+            if ($key && gmdate('Y-m-d', strtotime($key['date_expires'])) >= gmdate('Y-m-d')) {
+                $has_app_access = true;
+                $selected       = maybe_unserialize($key['selected_events']);
+
+                if ('selected' === $key['event_show_by'] && !empty($selected) && is_array($selected)) {
+                    $event_ids = array_map('absint', $selected);
                 } else {
-                    $where_sql = 'WHERE 1=1';
-                }
-
-                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
-                $params[]   = $user_id;
-                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
-
-                if ($partner_id) {
-                    $filter_sql .= ' AND ( user_id = %d OR participant_ids LIKE %s )';
-                    $params[]    = $partner_id;
-                    $params[]    = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
-                }
-            }
-        } elseif ( $is_organizer ) {
-            if ($own_meeting === 1) {
-                // Organizer wants ONLY their own meetings (host/participant),
-                // regardless of which event it belongs to.
-                if ($event_id) {
-                    $where_sql = 'WHERE event_id = %d';
-                    $params[]  = $event_id;
-                } else {
-                    $where_sql = 'WHERE 1=1';
-                }
-
-                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
-                $params[]   = $user_id;
-                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
-
-                if ($partner_id) {
-                    $filter_sql .= ' AND ( user_id = %d OR participant_ids LIKE %s )';
-                    $params[]    = $partner_id;
-                    $params[]    = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
-                }
-
-            } else {
-                // Default organizer behavior — scoped to their own published events.
-                if ($event_id) {
-                    if (! in_array($event_id, $organizer_event_ids, true)) {
-                        $organizer_name = $current_user_obj ? $current_user_obj->display_name : '';
-                        $response_data  = self::wpem_prepare_error_for_response(403);
-                        $response_data['message'] = sprintf(
-                            /* translators: %s: organizer display name */
-                            __('This event is not published by you (%s).', 'wpem-rest-api'),
-                            $organizer_name
-                        );
-                        return wp_send_json($response_data);
-                    }
-                    $where_sql = 'WHERE event_id = %d';
-                    $params[]  = $event_id;
-                } else {
-                    if (empty($organizer_event_ids)) {
-                        $response_data = self::wpem_prepare_error_for_response(200);
-                        $response_data['data'] = array(
-                            'total_post_count' => 0,
-                            'current_page'     => $page,
-                            'last_page'        => 1,
-                            'total_pages'      => 1,
-                            'timezone_note'     => $meeting_note,
-                            $this->rest_base   => array(),
-                            // 'user_status'      => wpem_get_user_login_status($user_id),
-                        );
-                        return wp_send_json($response_data);
-                    }
-                    $placeholders = implode(',', array_fill(0, count($organizer_event_ids), '%d'));
-                    $where_sql    = "WHERE event_id IN ($placeholders)";
-                    $params       = array_merge($params, $organizer_event_ids);
-                }
-
-                // Narrowing to a specific partner is safe here — organizer already
-                // has full read access to every meeting within their own events.
-                if ($partner_id) {
-                    $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
-                    $params[]   = $partner_id;
-                    $params[]   = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
+                    $event_ids = get_posts(array(
+                        'post_type'      => 'event_listing',
+                        // 'post_status'    => 'publish',
+                        'post_status'    => 'any',
+                        'author'         => $user_id,
+                        'fields'         => 'ids',
+                        'posts_per_page' => -1,
+                    ));
                 }
             }
+        }
+
+        // "host OR participant" condition ('i:ID;i:' so that user 5 does not match user 55).
+        $own_sql    = '( user_id = %d OR participant_ids LIKE %s )';
+        $own_params = array($user_id, '%' . $wpdb->esc_like('i:' . $user_id . ';i:') . '%');
+
+        $conditions = array();
+        $filter_sql = '';
+
+        if (1 === $own_meeting || (!$is_admin && !$has_app_access)) {
+            // Own meetings only. Matchmaking OFF => nobody can see them.
+            if (!$is_matchmaking) {
+                return wp_send_json(self::wpem_prepare_error_for_response(509));
+                }
+            $conditions[] = $own_sql;
+            $params       = array_merge($params, $own_params);
+
+        } elseif ($has_app_access && !empty($event_ids)) {
+            // Selected events / events created by the user.
+            if ($event_id && !in_array($event_id, $event_ids, true)) {
+                $response_data = self::wpem_prepare_error_for_response(403);
+                $response_data['message'] = __('You do not have access to this event.', 'wpem-rest-api');
+                return wp_send_json($response_data);
+            }
+            $conditions[] = 'event_id IN (' . implode(',', array_fill(0, count($event_ids), '%d')) . ')';
+            $params       = array_merge($params, $event_ids);
 
         } else {
-
-            // Regular user: filter by event_id if provided, then further restrict to own meetings.
-            if ( $event_id ) {
-                $where_sql = 'WHERE event_id = %d';
-                $params[]  = $event_id;
-            } else {
-                $where_sql = 'WHERE 1=1';
-            }
-
-            if ($partner_id) {
-                // FIX (IDOR): logged-in user must ALWAYS be part of the meeting.
-                // partner_id only narrows further to meetings shared with that partner.
-                $filter_sql = ' AND (
-                    ( user_id = %d OR participant_ids LIKE %s )
-                    AND
-                    ( user_id = %d OR participant_ids LIKE %s )
-                )';
-                $params[] = $user_id;
-                $params[] = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
-                $params[] = $partner_id;
-                $params[] = '%' . $wpdb->esc_like('i:' . $partner_id) . '%';
-            } else {
-                $filter_sql = ' AND ( user_id = %d OR participant_ids LIKE %s )';
-                $params[]   = $user_id;
-                $params[]   = '%' . $wpdb->esc_like('i:' . $user_id) . '%';
-            }
+            // Admin, or app access without any event restriction.
+            $conditions[] = '1=1';
         }
+
+        if ($event_id) {
+            $conditions[] = 'event_id = %d';
+            $params[]     = $event_id;
+        }
+
+        if ($partner_id) {
+            $conditions[] = $own_sql;
+            $params       = array_merge($params, array($partner_id, '%' . $wpdb->esc_like('i:' . $partner_id . ';i:') . '%'));
+        }
+
+        $where_sql = 'WHERE ' . implode(' AND ', $conditions);
 
         // Status filter
         $current_date = current_time('Y-m-d');
@@ -719,6 +670,16 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $rows = $wpdb->get_results($sql_rows, ARRAY_A);
 
+        // Overall counts for admin / app-access users (not customers). They ignore every request param.
+        $counts = array();
+        if ($is_admin || $has_app_access) {
+            $scope_sql = !empty($event_ids) ? 'WHERE event_id IN (' . implode(',', array_map('intval', $event_ids)) . ')' : '';
+            // phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $all_meetings_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$this->table} {$scope_sql}");
+            $my_meetings_count  = $is_matchmaking ? (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} WHERE {$own_sql}", $own_params)) : 0;
+            // phpcs:enable
+        }
+
         // Format rows
         $items = [];
         foreach ((array) $rows as $row) {
@@ -731,6 +692,8 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
             'current_page' => $page,
             'last_page' => (int) max(1, ceil($total / $per_page)),
             'total_pages' => (int) max(1, ceil($total / $per_page)),
+            'all_meetings_count' => $all_meetings_count,
+            'my_meetings_count' => $my_meetings_count,
             'timezone_note'     => $meeting_note,
             $this->rest_base => $items,
             // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
