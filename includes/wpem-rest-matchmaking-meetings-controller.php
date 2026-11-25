@@ -508,6 +508,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $event_id     = (int) $request->get_param('event_id');
         $status       = sanitize_text_field($request->get_param('status'));
         $search       = sanitize_text_field($request->get_param('search'));
+        $search_partner = trim(sanitize_text_field((string) $request->get_param('search_partner')));
         $own_meeting  = (int) $request->get_param('own_meetings');
         $page         = max(1, (int) $request->get_param('page'));
         $per_page     = max(1, min(100, (int) $request->get_param('per_page')));
@@ -615,6 +616,27 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
                         'display_name' => $partner_user->display_name,
                     );
                 }
+            }
+
+            // search_partner : keep only partners whose first name, last name, display name
+            // (or "first last" full name) contains the searched text (case-insensitive).
+            if ('' !== $search_partner) {
+                $needle   = function_exists('mb_strtolower') ? mb_strtolower($search_partner) : strtolower($search_partner);
+                $partners = array_values(array_filter($partners, function ($partner) use ($needle) {
+                    $haystacks = array(
+                        (string) $partner['first_name'],
+                        (string) $partner['last_name'],
+                        (string) $partner['display_name'],
+                        trim($partner['first_name'] . ' ' . $partner['last_name']),
+                    );
+                    foreach ($haystacks as $value) {
+                        $value = function_exists('mb_strtolower') ? mb_strtolower($value) : strtolower($value);
+                        if ('' !== $value && false !== strpos($value, $needle)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }));
             }
 
             // Sort A to Z by first name, or by display name when there is no first name.
