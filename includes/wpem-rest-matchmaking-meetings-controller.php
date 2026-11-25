@@ -508,7 +508,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         $event_id     = (int) $request->get_param('event_id');
         $status       = sanitize_text_field($request->get_param('status'));
         $search       = sanitize_text_field($request->get_param('search'));
-        $own_meeting  = (int) $request->get_param('own_meeting');
+        $own_meeting  = (int) $request->get_param('own_meetings');
         $page         = max(1, (int) $request->get_param('page'));
         $per_page     = max(1, min(100, (int) $request->get_param('per_page')));
         $offset       = ($page - 1) * $per_page;
@@ -531,7 +531,7 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // App access (valid API key)   : meetings of "selected events" or, otherwise, of the events
         //                                they created. No such events => all meetings (like admin).
         // Customer (no app access)     : only own meetings, matchmaking must be ON.
-        // own_meeting=1                : only own meetings (host/participant), matchmaking must be ON.
+        // own_meetings=1                : only own meetings (host/participant), matchmaking must be ON.
         if (!is_numeric($user_id) || (int) $user_id <= 0) {
             return wp_send_json(is_array($user_id) ? $user_id : self::wpem_prepare_error_for_response(405));
         }
@@ -734,13 +734,24 @@ class WPEM_REST_Matchmaking_Meetings_Controller extends WPEM_REST_CRUD_Controlle
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $rows = $wpdb->get_results($sql_rows, ARRAY_A);
 
-        // Overall counts for admin / app-access users (not customers). They ignore every request param.
+        // Overall counts for admin / app-access users (not customers). They ignore every request param
+        // except event_id: when event_id is passed, only that event's meetings are counted.
         $counts = array();
         if ($is_admin || $has_app_access) {
-            $scope_sql = !empty($event_ids) ? 'WHERE event_id IN (' . implode(',', array_map('intval', $event_ids)) . ')' : '';
+            $scope_sql = array('1=1');
+            if (!empty($event_ids)) {
+                $scope_sql[] = 'event_id IN (' . implode(',', array_map('intval', $event_ids)) . ')';
+            }
+            $my_sql    = $own_sql;
+            $my_params = $own_params;
+            if ($event_id) {
+                $scope_sql[] = 'event_id = ' . (int) $event_id;
+                $my_sql     .= ' AND event_id = %d';
+                $my_params[] = $event_id;
+            }
             // phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $all_meetings_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$this->table} {$scope_sql}");
-            $my_meetings_count  = $is_matchmaking ? (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} WHERE {$own_sql}", $own_params)) : 0;
+            $all_meetings_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$this->table} WHERE " . implode(' AND ', $scope_sql));
+            $my_meetings_count  = $is_matchmaking ? (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} WHERE {$my_sql}", $my_params)) : 0;
             // phpcs:enable
         }
 
