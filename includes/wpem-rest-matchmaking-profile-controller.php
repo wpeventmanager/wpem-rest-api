@@ -1676,6 +1676,15 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
 
             $users = wpem_get_all_matchmaking_participants($current_user, $event_id);
 
+            // When an event is requested, keep only participants who have matchmaking
+            // enabled (_create_matchmaking = 1) for THAT event - same rule as the website
+            // event filter (wpem_get_match_making_filter_user), via the shared helper.
+            if (!empty($filters['event_id'])) {
+                $users = array_values(array_filter($users, function ($u) use ($event_id) {
+                    return wpem_user_has_matchmaking_for_event($u['user_id'], $event_id);
+                }));
+            }
+
             foreach ($users as $user) {
                 $uid = (int) $user['user_id'];
                 $filtered_users[$uid] = $this->wpem_build_matchmaking_profile($uid, $user, $fields);
