@@ -1634,12 +1634,15 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         if (!empty($filters['event_id'])) {
             $requested_event_id = absint($filters['event_id']);
 
-            if (!wpem_user_has_matchmaking_for_event($current_user, $requested_event_id)) {
+            // The viewer's OWN "Event Participation" toggle controls whether OTHER users can
+            // see the viewer's profile for this event. It must NOT block the viewer from
+            // searching. The viewer only needs to be registered for the event.
+            if (empty($this->wpem_get_user_registration_ids_by_email($current_user, $requested_event_id))) {
                 return new WP_REST_Response(
                     array(
                         'code'    => 404,
                         'status'  => 'Not found',
-                        'message' => 'Matchmaking is not enabled for this event.',
+                        'message' => 'You are not registered for this event.',
                     ),
                     404
                 );
