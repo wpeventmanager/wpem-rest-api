@@ -282,6 +282,9 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         }, $seat_labels ), 'strlen' );
                         $ticket_seats = implode( ', ', $seat_labels );
                         $ticket_seats = apply_filters( 'wpem_rest_ticket_seats', $ticket_seats, $registration_id, $event_id, $order_id );
+                        if ( '' === $ticket_seats || null === $ticket_seats ) {
+                            $ticket_seats = null;
+                        }
 
                         // Ticket amount: same source as "Ticket Price" in the ticket PDF.
                         $ticket_amount = number_format( (float) get_post_meta( $registration_id, '_total_ticket_price', true ), 2, '.', '' );
@@ -296,7 +299,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                             'order_id'        => $order_id,
                             'ticket_name'     => $ticket_name,
                             'ticket_amount'   => html_entity_decode(wp_strip_all_tags(wc_price($ticket_amount)), ENT_QUOTES, 'UTF-8'),
-                            'ticket_seat_number'    => $ticket_seats,
+                            'ticket_seat_number' => $ticket_seats,
                             'first_name'      => $first_name,
                             'last_name'       => $last_name,
                             'email'           => $email,
