@@ -1911,6 +1911,12 @@ class WPEM_REST_Matchmaking_Profile_Controller extends WPEM_REST_CRUD_Controller
         foreach ($paged_users as &$paged_user) {
             $paged_user = $this->wpem_format_profile_fields_with_label($paged_user, $fields);
             $paged_user['is_bookmarked'] = in_array((int) $paged_user['user_id'], $bookmarked_user_ids, true);
+
+            // match_percentage, mutual_interests_count, mutual_interests - calculated by the Registrations
+            // add-on (same value as the [match_making] page). Skipped when the add-on function is missing.
+            if (function_exists('wpem_get_matchmaking_match_details')) {
+                $paged_user = $paged_user + wpem_get_matchmaking_match_details((int) $paged_user['user_id'], $current_user);
+            }
         }
         unset($paged_user);
 
