@@ -167,9 +167,19 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                         }
 
                     // only process when event_id params passed
-                    $ticket_ids = get_post_meta( $registration_id, '_ticket_id', true );
-                    $ticket_id = ( is_array( $ticket_ids ) && ! empty( $ticket_ids ) ) ? absint( $ticket_ids[0] ) : 0;
-                    $ticket_name = $ticket_id ? get_the_title( $ticket_id ) : '';
+                    // _ticket_id can be stored as an array or as a single value, handle both (same as PDF generation).
+                    $ticket_ids = maybe_unserialize( get_post_meta( $registration_id, '_ticket_id', true ) );
+                    if ( is_array( $ticket_ids ) ) {
+                        $ticket_id = ! empty( $ticket_ids ) ? absint( reset( $ticket_ids ) ) : 0;
+                    } else {
+                        $ticket_id = absint( $ticket_ids );
+                    }
+                    // Ticket name: same source as the ticket PDF ($product->get_name()).
+                    $ticket_name = '';
+                    if ( $ticket_id ) {
+                        $ticket_product = function_exists( 'wc_get_product' ) ? wc_get_product( $ticket_id ) : null;
+                        $ticket_name    = $ticket_product ? $ticket_product->get_name() : get_the_title( $ticket_id );
+                    }
                     $registration_author = get_post_field( 'post_author', $registration_id );
                     $first_name = get_post_meta( $registration_id, '_attendee_name', true );
                     if ( empty( $first_name ) ) {
@@ -208,11 +218,9 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                     $organizer_name = '';
                     $venue_name     = '';
 
-                    $order_event_meta = maybe_unserialize( get_post_meta( $order_id, '_event_id', true ) );
-                    $order_event_id = 0;
-                    if ( is_array( $order_event_meta ) && ! empty( $order_event_meta[0] ) ) {
-                        $order_event_id = absint( $order_event_meta[0] );
-                    }
+                    // Use this registration's own event (an order can contain more than one event).
+                    $order_event_id = absint( $event_id );
+                    $event_online   = null;
                     if ( $order_event_id ) {
                         // event online or offline
                         $event_online = get_post_meta( $order_event_id, '_event_online', true );
@@ -263,6 +271,20 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
 
                         // get seat number
                         $seatnumber = maybe_unserialize( get_post_meta( $registration_id, '_seats_details', true ) );
+
+                        // ticket_seats: readable seat labels from _seats_labels, same as the ticket PDF.
+                        $seat_labels = maybe_unserialize( get_post_meta( $registration_id, '_seats_labels', true ) );
+                        if ( ! is_array( $seat_labels ) ) {
+                            $seat_labels = array( $seat_labels );
+                        }
+                        $seat_labels = array_filter( array_map( function ( $seat ) {
+                                return is_scalar( $seat ) ? trim( (string) $seat ) : '';
+                        }, $seat_labels ), 'strlen' );
+                        $ticket_seats = implode( ', ', $seat_labels );
+                        $ticket_seats = apply_filters( 'wpem_rest_ticket_seats', $ticket_seats, $registration_id, $event_id, $order_id );
+
+                        // Ticket amount: same source as "Ticket Price" in the ticket PDF.
+                        $ticket_amount = number_format( (float) get_post_meta( $registration_id, '_total_ticket_price', true ), 2, '.', '' );
 			            $currency = wpem_get_attendee_currency($order_id);
 
                         $date_format = (string) get_option('date_format');
@@ -273,6 +295,8 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                             'registration_id' => absint( $registration_id ),
                             'order_id'        => $order_id,
                             'ticket_name'     => $ticket_name,
+                            'ticket_amount'   => html_entity_decode(wp_strip_all_tags(wc_price($ticket_amount)), ENT_QUOTES, 'UTF-8'),
+                            'ticket_seat_number'    => $ticket_seats,
                             'first_name'      => $first_name,
                             'last_name'       => $last_name,
                             'email'           => $email,
@@ -306,7 +330,7 @@ class WPEM_REST_Ticket_Controller extends WPEM_REST_CRUD_Controller
                 'per_page' => $per_page,
                 'current_page' => $page,
                 'total_pages' => $total_pages,
-                'event_id' => $event_id,
+                'event_id' => $requested_event_id,
                 'ticket_data' => array_values($paged_ticket_data),
                 // 'user_status' => wpem_get_user_login_status( $user_id ),
             );
