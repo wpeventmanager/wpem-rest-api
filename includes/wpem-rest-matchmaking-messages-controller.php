@@ -261,6 +261,64 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         return $has_column;
     }
 
+    /*
+     * Reaction + message-format logic lives in the WPEM Registrations plugin
+     * (wp-event-manager-registrations-functions.php). The methods below only call it.
+     * If that plugin is missing / older, they fall back safely: reactions are
+     * simply unavailable and messages behave exactly as before.
+     */
+
+    /**
+     * @param mixed $value Emoji or key sent by the app.
+     * @return string|null '' = remove, key = valid, null = invalid.
+     */
+    private function wpem_normalize_reaction($value)
+    {
+        if (function_exists('wpem_normalize_chat_reaction')) {
+            return wpem_normalize_chat_reaction($value);
+        }
+        return '' === trim((string) $value) ? '' : null;
+    }
+
+    /**
+     * @param string $key Stored reaction key.
+     * @return string Emoji character or ''.
+     */
+    private function wpem_reaction_key_to_emoji($key)
+    {
+        return function_exists('wpem_chat_reaction_key_to_emoji') ? wpem_chat_reaction_key_to_emoji($key) : '';
+    }
+
+    /**
+     * @return bool
+     */
+    private function wpem_has_reacted_emoji_column()
+    {
+        return function_exists('wpem_chat_has_reacted_emoji_column') ? wpem_chat_has_reacted_emoji_column() : false;
+    }
+
+    /**
+     * Split a stored message into text and attachment.
+     *
+     * @param string $raw Message exactly as stored.
+     * @return array { text: string, file_raw: string, image_url: string }
+     */
+    private function wpem_split_message($raw)
+    {
+        $raw = (string) $raw;
+        if (!function_exists('wpem_parse_chat_message')) {
+            return array('text' => $raw, 'file_raw' => '', 'image_url' => '');
+        }
+        $parsed = wpem_parse_chat_message($raw);
+        $path = (string) wp_parse_url($parsed['file_url'], PHP_URL_PATH);
+        $is_image = ('' !== $parsed['file_url'] && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $path));
+        return array(
+            'text'      => $parsed['text'],
+            'file_raw'  => $parsed['file_raw'],
+            'image_url' => $is_image ? $parsed['file_url'] : '',
+        );
+    }
+
     /**
      * Get a collection of messages.
      *
@@ -273,6 +331,7 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         // Falls back to a constant 0 when the column is not available.
         $is_edited_select = $this->wpem_has_is_edited_column() ? 'is_edited' : '0 AS is_edited';
+        $reaction_select = $this->wpem_has_reacted_emoji_column() ? 'reacted_emoji' : "'' AS reacted_emoji";
 
         $user_id = wpem_rest_get_current_user_id();
         $partner_id = intval($request->get_param('partner_id'));
@@ -294,13 +353,32 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
         $table_safe = esc_sql($table);
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is sanitized and controlled.
-        $sql = $wpdb->prepare("(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, {$is_edited_select}, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) UNION ALL (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, {$is_edited_select}, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", $user_id, $partner_id, $partner_id, $user_id, $per_page, $offset);
+        $sql = $wpdb->prepare("(SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, {$is_edited_select}, {$reaction_select}, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) UNION ALL (SELECT id, parent_id, sender_id as user_id, receiver_id as partner_id, message, {$is_edited_select}, {$reaction_select}, created_at FROM {$table_safe} WHERE sender_id = %d AND receiver_id = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", $user_id, $partner_id, $partner_id, $user_id, $per_page, $offset);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
         $messages = $wpdb->get_results($sql, ARRAY_A);
 
         // Process messages (split text & image)
         foreach ($messages as &$msg) {
-            $parts = preg_split("/\n+/", trim($msg['message']));
+            $raw_message = (string) $msg['message'];
+
+            // Messages sent from the website are stored as "[FILE]url[/FILE]file-name".
+            // Convert an image attachment of that format to the `image` key.
+            if (false !== stripos($raw_message, '[FILE]')) {
+                $split = $this->wpem_split_message($raw_message);
+                if ('' !== $split['image_url']) {
+                    $msg['image'] = esc_url_raw($split['image_url']);
+                    $raw_message = $split['text'];
+                }
+            }
+
+            // Reaction: send the emoji only when one is set.
+            $reaction_emoji = $this->wpem_reaction_key_to_emoji(isset($msg['reacted_emoji']) ? $msg['reacted_emoji'] : '');
+            unset($msg['reacted_emoji']);
+            if ('' !== $reaction_emoji) {
+                $msg['reacted_emoji'] = $reaction_emoji;
+            }
+
+            $parts = preg_split("/\n+/", trim($raw_message));
             $text_parts = [];
 
             foreach ($parts as $part) {
@@ -591,6 +669,10 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
     /**
      * This function handles the update of a message.
+     *
+     * - `message` / `file`  : edit the message (sender only). Text-only edit keeps the existing image.
+     * - `reacted_emoji`     : react to the message (sender OR receiver). Send empty value to remove.
+     *
      * @since 1.3.0
      */
     public function wpem_update_message(WP_REST_Request $request)
@@ -599,72 +681,129 @@ class WPEM_REST_Matchmaking_Messages_Controller extends WPEM_REST_CRUD_Controlle
 
         $user_id = wpem_rest_get_current_user_id();
         $message_id = (int) $request->get_param('id'); // pulled from route param
-        $text_message = sanitize_textarea_field($request->get_param('message'));
+        $text_message = sanitize_textarea_field((string) $request->get_param('message'));
+        $has_file = !empty($_FILES['file']['tmp_name']); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $has_reaction_param = $request->has_param('reacted_emoji');
 
-        // --- File Upload (if provided) ---
-        $image_url = '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-        if (!empty($_FILES['file']['tmp_name'])) {
-            require_once ABSPATH . 'wp-admin/includes/file.php';// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-            $uploaded = wp_handle_upload($_FILES['file'], ['test_form' => false]);     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
-            if (isset($uploaded['url'])) {
-                $image_url = esc_url_raw($uploaded['url']);
+        // --- Reaction value ---
+        $reaction_key = null;
+        if ($has_reaction_param) {
+            $reaction_key = $this->wpem_normalize_reaction($request->get_param('reacted_emoji'));
+            if (null === $reaction_key) {
+                return self::wpem_prepare_error_for_response(400); // not one of the 6 allowed emojis
             }
         }
 
-        // --- Ensure at least one of message or image ---
-        if (!$text_message && !$image_url) {
+        // --- Ensure something to do ---
+        $wants_content_change = ('' !== $text_message || $has_file);
+        if (!$wants_content_change && !$has_reaction_param) {
             return self::wpem_prepare_error_for_response(400);
         }
+
+        // --- Validate message exists and current user is sender or receiver ---
         $table = esc_sql($this->table);
-        // --- Validate Message Exists ---
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $message = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d AND sender_id = %d", $message_id, $user_id));
+        $message = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d AND (sender_id = %d OR receiver_id = %d)", $message_id, $user_id, $user_id));
 
         if (!$message) {
             return self::wpem_prepare_error_for_response(404); // message not found
         }
 
-        // --- Build Final Message ---
-        $final_message = $text_message;
-        if ($image_url) {
-            $final_message .= ($final_message ? "\n\n" : '') . $image_url;
+        $is_owner = ((int) $message->sender_id === (int) $user_id);
+
+        // Only the sender may edit the content. A receiver can only react.
+        if ($wants_content_change && !$is_owner) {
+            if (!$has_reaction_param) {
+                return self::wpem_prepare_error_for_response(404);
+            }
+            $wants_content_change = false;
+            $has_file = false;
         }
 
-        // --- Update Message ---
-        // Mark as edited only when the content actually changed.
-        $update_data = ['message' => $final_message];
-        $update_format = ['%s'];
+        $current = $this->wpem_split_message($message->message);
+        $final_text = $current['text'];
+        $final_image = $current['image_url'];
+        $update_data = array();
+        $update_format = array();
         $is_edited = !empty($message->is_edited) ? 1 : 0;
 
-        if ($this->wpem_has_is_edited_column() && $final_message !== $message->message) {
-            $is_edited = 1;
-            $update_data['is_edited'] = 1;
-            $update_format[] = '%d';
+        // --- Content edit (sender only) ---
+        if ($wants_content_change) {
+            $image_url = '';
+            if ($has_file) {
+                require_once ABSPATH . 'wp-admin/includes/file.php'; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                $uploaded = wp_handle_upload($_FILES['file'], ['test_form' => false]); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                if (isset($uploaded['url'])) {
+                    $image_url = esc_url_raw($uploaded['url']);
+                }
+            }
+
+            $new_text = ('' !== $text_message) ? $text_message : $current['text'];
+            $file_part = ('' !== $image_url) ? $image_url : $current['file_raw'];
+
+            if ('' === $new_text && '' === $file_part) {
+                return self::wpem_prepare_error_for_response(400);
+            }
+
+            $final_message = $new_text;
+            if ('' !== $file_part) {
+                $final_message .= ('' !== $final_message ? "\n\n" : '') . $file_part;
+            }
+
+            $final_text = $new_text;
+            $final_image = ('' !== $image_url) ? $image_url : $current['image_url'];
+
+            // Mark as edited only when the content actually changed.
+            if ($final_message !== $message->message) {
+                $update_data['message'] = $final_message;
+                $update_format[] = '%s';
+                if ($this->wpem_has_is_edited_column()) {
+                    $is_edited = 1;
+                    $update_data['is_edited'] = 1;
+                    $update_format[] = '%d';
+                }
+            }
         }
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $wpdb->update(
-            $this->table,
-            $update_data,
-            ['id' => $message_id],
-            $update_format,
-            ['%d']
-        );
+        // --- Reaction (sender or receiver) ---
+        $current_reaction_key = isset($message->reacted_emoji) ? (string) $message->reacted_emoji : '';
+        if ($has_reaction_param) {
+            if (!$this->wpem_has_reacted_emoji_column()) {
+                return self::wpem_prepare_error_for_response(500);
+            }
+            if ($reaction_key !== $current_reaction_key) {
+                $update_data['reacted_emoji'] = $reaction_key;
+                $update_format[] = '%s';
+            }
+            $current_reaction_key = $reaction_key;
+        }
+
+        if (!empty($update_data)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update(
+                $this->table,
+                $update_data,
+                ['id' => $message_id],
+                $update_format,
+                ['%d']
+            );
+        }
 
         $date_format = WP_Event_Manager_Date_Time::get_event_manager_view_date_format();
         $time_format = WP_Event_Manager_Date_Time::get_timepicker_format();
         $msg_created_date_time = strtotime($message->created_at);
-		$msg_created_date = date_i18n( $date_format, $msg_update_date_time );
-		$msg_created_time = date_i18n( $time_format, $msg_update_date_time );
+        $msg_created_date = date_i18n($date_format, $msg_created_date_time);
+        $msg_created_time = date_i18n($time_format, $msg_created_date_time);
 
         $response_data = self::wpem_prepare_error_for_response(200);
         $response_data['data'] = [
             'id' => $message_id,
             'user_id' => $user_id,
-            'partner_id' => $message->receiver_id,
-            'message' => $text_message ?: null,
-            'image' => $image_url ?: null,
+            'partner_id' => $is_owner ? (int) $message->receiver_id : (int) $message->sender_id,
+            'message' => ('' !== $final_text) ? $final_text : null,
+            'image' => ('' !== $final_image) ? $final_image : null,
+            'is_edited' => !empty($is_edited),
+            'reacted_emoji' => $this->wpem_reaction_key_to_emoji($current_reaction_key),
             'created_date' => $msg_created_date,
             'created_time' => $msg_created_time,
             // 'user_status' => wpem_get_user_login_status(wpem_rest_get_current_user_id())
